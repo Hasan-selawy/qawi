@@ -1,0 +1,155 @@
+Phase 1 is complete and working. Now build Phase 2 exactly as specified below.
+
+IMPORTANT: Do not change any existing code. Only ADD new entities, repositories, services, controllers and endpoints.
+
+ADD THESE ENTITIES:
+
+ExerciseCategory:
+  - id (UUID)
+  - name (String)
+  - nameAr (String)
+  - iconUrl (String, nullable)
+
+ExerciseTemplate:
+  - id (UUID)
+  - categoryId (UUID, FK → ExerciseCategory)
+  - name (String)
+  - nameAr (String)
+  - defaultSets (int)
+  - defaultReps (int)
+  - defaultWeight (double)
+  - videoUrl (String, nullable)
+  - isCustom (boolean, default false)
+  - createdByCoachId (UUID, nullable)
+
+WorkoutTemplate:
+  - id (UUID)
+  - coachId (UUID, FK → User)
+  - name (String)
+  - nameAr (String)
+  - description (String, nullable)
+  - createdAt (LocalDateTime)
+
+WorkoutTemplateDay:
+  - id (UUID)
+  - templateId (UUID, FK → WorkoutTemplate)
+  - dayNumber (int)
+  - dayName (String)
+  - dayNameAr (String)
+  - isRestDay (boolean, default false)
+
+WorkoutTemplateDayExercise:
+  - id (UUID)
+  - templateDayId (UUID, FK → WorkoutTemplateDay)
+  - exerciseTemplateId (UUID, nullable)
+  - customName (String, nullable)
+  - customNameAr (String, nullable)
+  - sets (int)
+  - reps (int)
+  - targetWeight (double)
+  - videoUrl (String, nullable)
+  - orderIndex (int)
+
+WorkoutPlan:
+  - id (UUID)
+  - name (String)
+  - coachId (UUID, FK → User)
+  - memberId (UUID, FK → User)
+  - startDate (LocalDate)
+  - endDate (LocalDate)
+  - createdAt (LocalDateTime)
+
+ScheduleDay:
+  - id (UUID)
+  - workoutPlanId (UUID, FK → WorkoutPlan)
+  - dayDate (LocalDate)
+  - dayName (String)
+  - dayNameAr (String)
+  - isRestDay (boolean, default false)
+  - isCompleted (boolean, default false)
+  - completedAt (LocalDateTime, nullable)
+
+PlanExercise:
+  - id (UUID)
+  - scheduleDayId (UUID, FK → ScheduleDay)
+  - exerciseTemplateId (UUID, nullable)
+  - customName (String, nullable)
+  - customNameAr (String, nullable)
+  - sets (int)
+  - reps (int)
+  - targetWeight (double)
+  - videoUrl (String, nullable)
+  - orderIndex (int)
+
+WorkoutLog:
+  - id (UUID)
+  - memberId (UUID, FK → User)
+  - planExerciseId (UUID, FK → PlanExercise)
+  - actualSets (int)
+  - actualReps (int)
+  - actualWeight (double)
+  - loggedAt (LocalDateTime)
+
+ENDPOINTS:
+
+EXERCISE LIBRARY:
+GET /api/v1/exercises/categories
+GET /api/v1/exercises/library
+GET /api/v1/exercises/library/{categoryId}
+POST /api/v1/exercises/library (COACH only — add custom exercise)
+  Request: { categoryId, name, nameAr, defaultSets, defaultReps, defaultWeight, videoUrl? }
+
+WORKOUT TEMPLATES:
+POST /api/v1/templates (COACH only)
+  Request: { name, nameAr, description?, days: [{dayNumber, dayName, dayNameAr, isRestDay, exercises: [{exerciseTemplateId?, customName?, customNameAr?, sets, reps, targetWeight, videoUrl?}]}] }
+
+GET /api/v1/templates (COACH only — own templates)
+GET /api/v1/templates/{templateId}
+DELETE /api/v1/templates/{templateId}
+
+WORKOUT PLANS:
+POST /api/v1/workouts (COACH only)
+  Request: { name, memberId, startDate, endDate }
+
+POST /api/v1/workouts/from-template (COACH only)
+  Request: { templateId, memberId, startDate }
+  Auto-generates schedule days from template
+
+GET /api/v1/workouts/member/{memberId}
+GET /api/v1/workouts/{planId}
+
+POST /api/v1/workouts/{planId}/days (COACH only)
+  Request: { dayDate, dayName, dayNameAr, isRestDay }
+
+POST /api/v1/workouts/days/{dayId}/exercises (COACH only)
+  Request: { exerciseTemplateId?, customName?, customNameAr?, sets, reps, targetWeight, videoUrl? }
+
+PUT /api/v1/workouts/days/{dayId}/complete (MEMBER only)
+  Marks day as complete
+
+POST /api/v1/workouts/logs (MEMBER only)
+  Request: { planExerciseId, actualSets, actualReps, actualWeight }
+
+GET /api/v1/workouts/logs/member/{memberId}
+
+SEED DATA:
+Add these 7 categories with Arabic names:
+  Chest/صدر, Back/ظهر, Legs/أرجل, Shoulders/أكتاف, Arms/أذرع, Core/كور, Cardio/كارديو
+
+Add 10 exercises per category (70 total) with Arabic names, default sets/reps/weight, and video URLs.
+
+Chest: Bench Press/بنش برس, Incline Press/ضغط مائل, Cable Fly/كيبل فلاي, Push Ups/تمرين الضغط, Dips/ديبس, Decline Press/ضغط هبوطي, Chest Press Machine/ماكينة الصدر, Pec Deck/بيك ديك, Dumbbell Fly/فلاي دمبل, Incline Dumbbell Press/ضغط دمبل مائل
+
+Legs: Barbell Squat/سكوات, Deadlift/ديدليفت, Leg Press/ليج بريس, Lunges/لانجز, Leg Curl/ليج كيرل, Leg Extension/ليج إكستنشن, Romanian Deadlift/رومانيان ديدليفت, Calf Raises/رفع الكعب, Hack Squat/هاك سكوات, Sumo Squat/سومو سكوات
+
+Back: Pull Up/بول أب, Lat Pulldown/لات بول داون, Barbell Row/بارييل رو, Seated Cable Row/كيبل رو, T-Bar Row/تي بار رو, Single Arm Row/رو بذراع واحدة, Face Pull/فيس بول, Straight Arm Pulldown/ستريت آرم, Hyperextension/هايبر إكستنشن, Deadlift/ديدليفت
+
+Shoulders: Overhead Press/أوفر هيد برس, Lateral Raise/رفع جانبي, Front Raise/رفع أمامي, Rear Delt Fly/فلاي خلفي, Arnold Press/أرنولد برس, Shrugs/شراغز, Cable Lateral Raise/كيبل جانبي, Machine Press/ماكينة أكتاف, Upright Row/أبرايت رو, Face Pull/فيس بول
+
+Arms: Barbell Curl/بارييل كيرل, Hammer Curl/هامر كيرل, Tricep Pushdown/ترايسب, Skull Crusher/سكال كراشر, Preacher Curl/بريتشر كيرل, Cable Curl/كيبل كيرل, Overhead Tricep/ترايسب أوفر هيد, Concentration Curl/كونسنتريشن كيرل, Dips/ديبس, Close Grip Bench/بنش ضيق
+
+Core: Plank/بلانك, Crunches/كرانتش, Leg Raises/رفع الأرجل, Russian Twist/روسيان تويست, Ab Wheel/عجلة البطن, Cable Crunch/كيبل كرانتش, Hanging Knee Raise/رفع الركبة, Side Plank/بلانك جانبي, Mountain Climbers/ماونتن كلايمبرز, Bicycle Crunch/كرانتش دراجة
+
+Cardio: Treadmill/جهاز الجري, Rowing Machine/روينج, Stair Climber/سلم متحرك, Jump Rope/تخطي الحبل, Cycling/دراجة, Elliptical/إليبتيكال, HIIT/هيت, Box Jumps/بوكس جامبس, Battle Ropes/حبال المعركة, Burpees/بيربيز
+
+Make sure server starts and all endpoints work correctly.
