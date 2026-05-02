@@ -22,7 +22,7 @@ public class Gym {
     @Column(nullable = false)
     private String name;
 
-    @Column(name = "owner_id", nullable = false)
+    @Column(name = "owner_id")
     private UUID ownerId;
 
     @Enumerated(EnumType.STRING)
