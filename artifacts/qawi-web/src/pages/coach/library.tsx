@@ -24,16 +24,23 @@ export default function Library() {
     queryFn: () => apiFetch('/exercises/categories'),
   });
 
-  const { data: exercises, isLoading } = useQuery<any[]>({
-    queryKey: ['exercises', 'library', activeCategory, search],
-    queryFn: () => {
-      const params = new URLSearchParams();
-      if (activeCategory) params.append('category', activeCategory);
-      if (search) params.append('search', search);
-      const url = params.toString() ? `/exercises/library?${params.toString()}` : '/exercises/library';
-      return apiFetch(url);
-    },
+  const { data: rawExercises, isLoading } = useQuery<any[]>({
+    queryKey: ['exercises', 'library', activeCategory],
+    queryFn: () =>
+      activeCategory
+        ? apiFetch(`/exercises/library/${activeCategory}`)
+        : apiFetch('/exercises/library'),
   });
+
+  const exercises = useMemo(() => {
+    const list = rawExercises || [];
+    if (!search.trim()) return list;
+    const q = search.trim().toLowerCase();
+    return list.filter((ex: any) =>
+      (ex.name || '').toLowerCase().includes(q) ||
+      (ex.nameAr || '').toLowerCase().includes(q)
+    );
+  }, [rawExercises, search]);
 
   const addExercise = useMutation({
     mutationFn: (data: any) => apiFetch('/exercises/library', { method: 'POST', data }),
