@@ -1,0 +1,315 @@
+DESIGN VISION — Make this the most beautiful gym management dashboard ever built.
+
+THEME: "Dark Elite" — Premium dark theme used by top SaaS products like Linear, Vercel, and Planetscale.
+
+VISUAL STYLE:
+- Background: #0A0F1E (deep navy, not pure black)
+- Surface: #111827 with subtle border #1F2937
+- Cards: glass-morphism effect — backdrop-filter: blur(12px), background: rgba(255,255,255,0.03), border: 1px solid rgba(255,255,255,0.08)
+- Accent: #22C55E (electric green) with glow effect on hover: box-shadow: 0 0 20px rgba(34,197,94,0.3)
+- Gradients: use subtle green-to-transparent gradients on hero sections and stat cards
+- Stat cards: left border accent (4px solid #22C55E) + subtle top gradient overlay
+- Charts: green gradient fills, no gridlines, smooth curves
+- Sidebar: slightly lighter than background, with green glow on active item
+- Avatars: gradient backgrounds (green-to-teal) with white initials
+
+TYPOGRAPHY:
+- Arabic: Cairo 700/600/400
+- English: Inter 700/600/400
+- Stat numbers: Inter 700, very large (2.5rem+), bright white
+- Labels: text-secondary #94A3B8, uppercase tracking-wider for section headers
+
+MICRO-DETAILS that make it premium:
+- Hover states on every interactive element
+- Subtle green dot pulse animation on "Active" badges
+- Skeleton loaders that match card shapes
+- Empty states with centered icon + message
+- Table rows highlight on hover with rgba(34,197,94,0.05)
+- Input focus ring: 2px solid #22C55E with glow
+- Scrollbars: thin, dark, styled (webkit-scrollbar)
+- Page titles have a subtle green underline accent
+- Numbers animate from 0 to final value on page load
+- Success toasts have green left border + checkmark icon
+- Sidebar collapse button is a floating circle with arrow icon
+
+LAYOUT POLISH:
+- Consistent 24px padding everywhere
+- Cards have 16px border-radius
+- Generous whitespace between sections
+- Responsive grid that looks good at 1280px and 1920px
+- Sidebar width: 260px expanded, 72px collapsed
+- Navbar height: 64px with bottom border
+
+MAKE IT FEEL LIKE A $500/month SaaS PRODUCT.
+
+---
+
+IMPORTANT RULES:
+- Backend API runs at http://localhost:9000
+- Store this in VITE_API_URL environment variable
+- Do NOT modify the backend
+- All API calls need Authorization: Bearer {token} header
+- Roles are exactly: MEMBER, COACH, GYM_ADMIN, SUPER_ADMIN
+- Login endpoint: POST /api/v1/auth/login
+- After login route by role:
+  GYM_ADMIN → /admin/dashboard
+  COACH → /coach/dashboard
+  SUPER_ADMIN → /super/dashboard
+
+Build a production-ready React web dashboard for Qawi (قوي) gym management app.
+
+TECH STACK:
+- React 18 + TypeScript
+- Vite
+- React Router v6
+- Axios
+- Tailwind CSS
+- Recharts
+- TanStack Query (React Query)
+- React Hook Form + Zod validation
+- Framer Motion for animations
+- date-fns for date formatting
+
+FOLDER STRUCTURE:
+/src
+  /components
+    /ui (Button, Input, Card, Badge, Modal, Table, Avatar, Spinner, Toast, Tabs, SearchInput)
+    /layout (Sidebar, Navbar, PageHeader, PageWrapper)
+    /charts (AttendanceChart, WorkoutProgressChart, MemberGrowthChart)
+    /exercises (CategoryGrid, ExerciseCard, ExercisePicker)
+    /schedule (PlanCalendar, DayCard, ExerciseRow)
+    /members (MemberCard, MemberTable, SubscriptionBadge)
+    /notifications (NotificationBell, NotificationDropdown)
+  /pages
+    /auth (LoginPage)
+    /admin (AdminDashboard, ManageMembers, ManageCoaches, Analytics, SubscriptionManagement)
+    /coach (CoachDashboard, MemberDetail, CreateWorkoutPlan, WorkoutTemplates, ExerciseLibrary, CoachNotes)
+    /super (SuperDashboard)
+  /hooks (useAuth, useLanguage, useNotifications, useToast)
+  /services (api.ts, auth.service.ts, members.service.ts, workouts.service.ts, nutrition.service.ts, measurements.service.ts, attendance.service.ts, notifications.service.ts, subscriptions.service.ts)
+  /context (AuthContext, LanguageContext)
+  /types (index.ts)
+  /locales (en.json, ar.json)
+  /utils (dates.ts, formatting.ts)
+
+ARABIC + RTL:
+- Toggle in navbar: AR | EN
+- Saved in localStorage
+- Arabic → document.dir = "rtl", Cairo font
+- English → document.dir = "ltr", Inter font
+- All text from translation files
+- Full translations in both en.json and ar.json for all screens
+
+LOGIN PAGE:
+- Full dark screen #0A0F1E background
+- Centered glass-morphism card with green glow border
+- Large green قوي logo at top with subtle glow
+- Tagline: "Smart Gym Management" / "إدارة الصالة الذكية"
+- Email + password inputs with show/hide password toggle
+- Green login button with loading spinner + glow on hover
+- Language toggle AR | EN pill top right
+- Shake animation on wrong credentials
+- Auto-route by role after login
+- "Register Your Gym" link below login form with arrow icon
+
+GYM REGISTRATION PAGE (/register):
+- 3-step wizard with progress indicator:
+  Step 1: Gym name + your name
+  Step 2: Email + password
+  Step 3: Choose plan (Basic $49 / Pro $99 / Enterprise $199) — cards with features list
+- "14-day free trial — no credit card" badge
+- On success → auto login → admin dashboard
+
+ADMIN DASHBOARD (/admin/dashboard):
+- Top stats row (4 animated count-up cards with glass effect):
+  Total Members (blue icon, blue glow)
+  Active This Week (green icon, green glow)
+  Expiring This Week (orange icon, orange glow — clickable → subscriptions page)
+  Total Coaches (purple icon, purple glow)
+- Charts row:
+  Left 60%: Attendance This Week (bar chart, green gradient bars, last 7 days)
+  Right 40%: Member Growth (area chart, green gradient fill, last 6 months)
+- Bottom row:
+  Left: Top Performing Members (ranked list with medal icons 🥇🥈🥉, progress bars)
+  Right: Expiring Subscriptions (list with days remaining countdown + renew button)
+
+MANAGE MEMBERS PAGE (/admin/members):
+- Search bar + filter tabs (All / Active / Expiring / Expired)
+- Members table with hover highlight:
+  Name (avatar + name) | Email | Coach | Subscription End | Status badge | Actions
+- Add Member button (green, top right) → modal
+- Click member row → slide-in side panel with tabs: Info | Subscription | Assign Coach
+- Subscription tab: history timeline + renew form
+- Assign Coach tab: coach dropdown
+
+MANAGE COACHES PAGE (/admin/coaches):
+- Coach cards grid: gradient avatar, name, email, member count badge
+- Add Coach button → modal: name, email, password
+- Click coach → member list modal
+
+SUBSCRIPTION MANAGEMENT PAGE (/admin/subscriptions):
+- Urgency cards for expiring members
+- Days remaining: red badge < 3 days, orange < 7 days
+- Renew button → modal: plan, start date, end date, price
+- Subscription history timeline
+
+ANALYTICS PAGE (/admin/analytics):
+- Full width attendance bar chart
+- Member growth area chart
+- Top performers leaderboard with rank badges
+- Revenue summary card with trend
+- Inactive members alert list
+
+COACH DASHBOARD (/coach/dashboard):
+- Header: "مرحباً [Name] 👋" with date subtitle
+- Member grid cards (glass effect):
+  Gradient avatar with initials
+  Name + email
+  Last checkin badge (green "Today", orange "2 days ago", red "5 days ago")
+  This week progress: "3 workouts ✅"
+  Subscription status badge with pulse animation if active
+  Current plan name (muted)
+  "View Profile" button
+- Filter tabs: All | Active | Inactive | Expiring
+
+MEMBER DETAIL PAGE (/coach/members/:id):
+- Left sidebar (sticky): member card with gradient avatar, name, email, subscription badge, streak 🔥, total workouts stat
+- Right content: 6 tabs with smooth transitions
+
+  Tab 1 — WORKOUT PLAN:
+    Plan calendar — day cells color coded (green ✅, gray 😴, yellow ⏳, blue ring = today)
+    Click day → exercises slide down
+    Buttons: "Create New Plan" | "Use Template"
+
+  Tab 2 — NUTRITION:
+    Meal type cards (Breakfast 🌅, Lunch ☀️, Dinner 🌙, Snack 🍎)
+    Calories + protein tags per meal
+    "Create Nutrition Plan" button
+
+  Tab 3 — MEASUREMENTS:
+    Body stat cards in a grid: weight, height, chest, waist, arms, legs, body fat
+    Each shows current value + delta from last measurement (↑ red / ↓ green)
+    Line chart: weight over time
+    "Add Measurement" button → form modal
+
+  Tab 4 — PROGRESS PHOTOS:
+    Masonry photo grid with date labels
+    "Upload Photo" button → URL + caption + date form
+
+  Tab 5 — ATTENDANCE:
+    Streak card: 🔥 X days — animated flame
+    Monthly calendar heatmap (green = attended)
+    Recent checkins list
+
+  Tab 6 — NOTES:
+    Coach notes timeline (newest first)
+    Note cards with date + edit/delete buttons
+    "Add Note" textarea at top — auto-save on blur
+
+CREATE WORKOUT PLAN (/coach/plans/create):
+Step 1: Plan details + member picker + date range OR "Use Template"
+Step 2: Schedule builder — click dates to add days, toggle rest day
+Step 3: Exercise picker per day — category grid → exercise cards → tap to add → edit inline
+
+WORKOUT TEMPLATES (/coach/templates):
+- Template cards: name, day count, exercise count, preview button, use button
+- Create Template button
+
+EXERCISE LIBRARY (/coach/library):
+- Category tabs with emoji icons: 💪 Chest | 🏋️ Back | 🦵 Legs | 🎯 Shoulders | 💪 Arms | 🔥 Core | 🏃 Cardio
+- Search bar
+- Exercise cards: Arabic name large, English name small, sets×reps, YouTube button (red play icon)
+- Add Custom Exercise button
+
+COACH NOTES (/coach/notes):
+- Member dropdown selector
+- Large textarea with character count
+- Save button
+- Notes timeline below
+
+SUPER ADMIN DASHBOARD (/super/dashboard):
+- Platform stats row: Total Gyms, Total Members, Total Coaches, Active Gyms, Expiring Gyms
+- Gyms table: gym name | plan badge | members | coaches | status | admin email | actions
+- Add Gym button → full form modal
+- Renew subscription per gym
+
+COMPONENTS:
+- Sidebar: 260px/72px toggle, logo top, green glow on active, role-based items, collapse button
+- Navbar: 64px, language toggle pill, notification bell with red badge, avatar dropdown
+- StatCard: glass card, colored left border, large number, icon, label
+- Badge: active (green + pulse), expiring (orange), expired (red), info (blue)
+- Modal: blur backdrop, scale+fade, X button, close on backdrop
+- Toast: slide in from top-right, colored left border, auto-dismiss 3s
+- Avatar: gradient circle, white initials, consistent colors per name
+
+ANIMATIONS:
+- Page enter: fade + slide up 20px, 300ms
+- Card stagger: 0.08s delay each
+- Stat numbers: count up from 0 over 1.2s
+- Modal: scale 0.95→1 + fade
+- Sidebar: smooth width transition 200ms
+- Button hover: scale 1.02, press: scale 0.97
+- Success: green checkmark draws itself
+- Error: horizontal shake 3 times
+- Active badge: green dot pulses every 2s
+- Notification bell: shake when new notification arrives
+
+NOTIFICATIONS:
+- Bell with red unread count badge
+- Dropdown: last 5 notifications, Arabic messages, time ago
+- Mark as read on click (opacity change)
+- Mark all read button
+- Poll every 30 seconds
+
+API ENDPOINTS:
+POST /api/v1/auth/login
+GET /api/v1/auth/me
+GET /api/v1/admin/analytics
+GET /api/v1/admin/members
+POST /api/v1/admin/members
+PUT /api/v1/admin/members/{id}/assign
+PUT /api/v1/admin/members/{id}/subscription
+GET /api/v1/admin/members/{id}/subscription-history
+GET /api/v1/admin/expiring-subscriptions
+GET /api/v1/admin/coaches
+POST /api/v1/admin/coaches
+DELETE /api/v1/admin/users/{id}
+GET /api/v1/coach/members
+GET /api/v1/coach/members/{id}/overview
+GET /api/v1/exercises/categories
+GET /api/v1/exercises/library
+POST /api/v1/exercises/library
+GET /api/v1/workouts/member/{memberId}
+POST /api/v1/workouts
+POST /api/v1/workouts/from-template
+POST /api/v1/workouts/{planId}/days
+POST /api/v1/workouts/days/{dayId}/exercises
+GET /api/v1/templates
+POST /api/v1/templates
+DELETE /api/v1/templates/{id}
+GET /api/v1/nutrition/member/{memberId}
+POST /api/v1/nutrition
+POST /api/v1/nutrition/{planId}/meals
+GET /api/v1/measurements/member/{memberId}
+POST /api/v1/measurements
+GET /api/v1/photos/member/{memberId}
+POST /api/v1/photos
+GET /api/v1/attendance/member/{memberId}
+GET /api/v1/attendance/member/{memberId}/streak
+GET /api/v1/notes/member/{memberId}
+POST /api/v1/notes
+PUT /api/v1/notes/{id}
+DELETE /api/v1/notes/{id}
+GET /api/v1/notifications
+PUT /api/v1/notifications/{id}/read
+PUT /api/v1/notifications/read-all
+GET /api/v1/super/gyms
+POST /api/v1/super/gyms
+PUT /api/v1/super/gyms/{id}/subscription
+GET /api/v1/super/stats
+GET /api/v1/public/plans
+POST /api/v1/public/register-gym
+
+This should look and feel like a $500/month premium SaaS product.
+Every screen should be polished, every interaction should feel smooth.
+This is a product people will pay for — make it look like it.

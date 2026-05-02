@@ -1,0 +1,88 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "search": "Search...",
+    "all": "All",
+    "active": "Active",
+    "inactive": "Inactive",
+    "expiring": "Expiring",
+    "expired": "Expired",
+    "actions": "Actions",
+    "status": "Status",
+    "email": "Email",
+    "name": "Name",
+    "password": "Password",
+    "logout": "Logout",
+    "language": "Language",
+    "dashboard": "Dashboard",
+    "members": "Members",
+    "coaches": "Coaches",
+    "subscriptions": "Subscriptions",
+    "analytics": "Analytics",
+    "templates": "Templates",
+    "library": "Library",
+    "notes": "Notes"
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Register Your Gym",
+    "smart_gym": "Smart Gym Management",
+    "email_placeholder": "Enter your email",
+    "password_placeholder": "Enter your password",
+    "login_button": "Login to your account"
+  },
+  "admin": {
+    "total_members": "Total Members",
+    "active_this_week": "Active This Week",
+    "expiring_this_week": "Expiring This Week",
+    "total_coaches": "Total Coaches",
+    "top_performers": "Top Performers",
+    "expiring_subscriptions": "Expiring Subscriptions",
+    "renew": "Renew"
+  },
+  "coach": {
+    "welcome": "Welcome",
+    "workouts_this_week": "workouts this week",
+    "view_profile": "View Profile"
+  },
+  "super": {
+    "total_gyms": "Total Gyms",
+    "active_gyms": "Active Gyms",
+    "expiring_gyms": "Expiring Gyms"
+  },
+  "member": {
+    "add_member": "Add Member"
+  },
+  "plan": {
+    "create_new": "Create New Plan",
+    "use_template": "Use Template"
+  },
+  "workout": {
+    "exercises": "Exercises"
+  },
+  "nutrition": {
+    "create_plan": "Create Nutrition Plan",
+    "add_meal": "Add Meal"
+  },
+  "measurement": {
+    "add": "Add Measurement"
+  },
+  "photo": {
+    "upload": "Upload Photo"
+  },
+  "attendance": {
+    "streak": "Streak"
+  },
+  "note": {
+    "add": "Add Note"
+  },
+  "notification": {},
+  "validation": {},
+  "time": {}
+}

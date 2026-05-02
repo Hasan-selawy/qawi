@@ -1,0 +1,88 @@
+{
+  "common": {
+    "loading": "جاري التحميل...",
+    "error": "حدث خطأ",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "delete": "حذف",
+    "edit": "تعديل",
+    "add": "إضافة",
+    "search": "بحث...",
+    "all": "الكل",
+    "active": "نشط",
+    "inactive": "غير نشط",
+    "expiring": "ينتهي قريباً",
+    "expired": "منتهي",
+    "actions": "إجراءات",
+    "status": "الحالة",
+    "email": "البريد الإلكتروني",
+    "name": "الاسم",
+    "password": "كلمة المرور",
+    "logout": "تسجيل الخروج",
+    "language": "اللغة",
+    "dashboard": "لوحة التحكم",
+    "members": "الأعضاء",
+    "coaches": "المدربين",
+    "subscriptions": "الاشتراكات",
+    "analytics": "التحليلات",
+    "templates": "القوالب",
+    "library": "المكتبة",
+    "notes": "الملاحظات"
+  },
+  "auth": {
+    "login": "تسجيل الدخول",
+    "register": "سجل صالتك الرياضية",
+    "smart_gym": "إدارة الصالة الذكية",
+    "email_placeholder": "أدخل بريدك الإلكتروني",
+    "password_placeholder": "أدخل كلمة المرور",
+    "login_button": "تسجيل الدخول لحسابك"
+  },
+  "admin": {
+    "total_members": "إجمالي الأعضاء",
+    "active_this_week": "نشط هذا الأسبوع",
+    "expiring_this_week": "ينتهي هذا الأسبوع",
+    "total_coaches": "إجمالي المدربين",
+    "top_performers": "أفضل الأعضاء",
+    "expiring_subscriptions": "اشتراكات تقترب من الانتهاء",
+    "renew": "تجديد"
+  },
+  "coach": {
+    "welcome": "مرحباً",
+    "workouts_this_week": "تمارين هذا الأسبوع",
+    "view_profile": "عرض الملف"
+  },
+  "super": {
+    "total_gyms": "إجمالي الصالات",
+    "active_gyms": "الصالات النشطة",
+    "expiring_gyms": "صالات تقترب من الانتهاء"
+  },
+  "member": {
+    "add_member": "إضافة عضو"
+  },
+  "plan": {
+    "create_new": "إنشاء خطة جديدة",
+    "use_template": "استخدام قالب"
+  },
+  "workout": {
+    "exercises": "التمارين"
+  },
+  "nutrition": {
+    "create_plan": "إنشاء خطة غذائية",
+    "add_meal": "إضافة وجبة"
+  },
+  "measurement": {
+    "add": "إضافة قياس"
+  },
+  "photo": {
+    "upload": "رفع صورة"
+  },
+  "attendance": {
+    "streak": "سلسلة الحضور"
+  },
+  "note": {
+    "add": "إضافة ملاحظة"
+  },
+  "notification": {},
+  "validation": {},
+  "time": {}
+}
