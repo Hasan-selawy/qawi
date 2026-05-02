@@ -27,6 +27,7 @@ import Library from "@/pages/coach/library";
 import CoachNotes from "@/pages/coach/notes";
 
 import SuperDashboard from "@/pages/super/dashboard";
+import SuperGyms from "@/pages/super/gyms";
 
 const queryClient = new QueryClient();
 
@@ -77,6 +78,9 @@ function Router() {
       {/* Super Admin Routes */}
       <Route path="/super/dashboard">
         <RoleRoute role="SUPER_ADMIN"><AppShell><SuperDashboard /></AppShell></RoleRoute>
+      </Route>
+      <Route path="/super/gyms">
+        <RoleRoute role="SUPER_ADMIN"><AppShell><SuperGyms /></AppShell></RoleRoute>
       </Route>
 
       <Route component={NotFound} />

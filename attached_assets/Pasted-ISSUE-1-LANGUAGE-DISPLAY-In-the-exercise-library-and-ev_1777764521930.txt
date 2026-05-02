@@ -1,0 +1,66 @@
+ISSUE 1 — LANGUAGE DISPLAY:
+In the exercise library (and everywhere in the app), when language is set to EN,
+show ONLY English names. When set to AR, show ONLY Arabic names.
+Currently both languages show at the same time — fix this everywhere.
+
+ISSUE 2 — SUPER ADMIN ACCESS:
+SUPER_ADMIN must have access to ALL pages in the system, not just /super/dashboard.
+Add to the super admin sidebar:
+
+Dashboard (super stats)
+All Gyms (manage gyms)
+All Members (view all members across all gyms)
+All Coaches (view all coaches across all gyms)
+Analytics (platform-wide)
+Exercise Library
+Subscription Management
+SUPER_ADMIN should never hit a "forbidden" or redirect — they see everything.
+ISSUE 3 — COACH: ASSIGN EXERCISES TO MEMBERS:
+On the Member Detail page → Workout Plan tab, the coach must be able to:
+
+Create a new workout plan for the member (pick date range)
+Add days to the plan (day by day — Monday chest, Tuesday legs, etc.)
+For each day, open the exercise picker and add exercises with sets/reps/weight
+Save the full plan
+This flow is currently missing or broken — build it fully.
+ISSUE 4 — COACH: FULL WEEKLY/MONTHLY SCHEDULE BUILDER:
+The coach needs a proper schedule builder where they can:
+
+Pick a date range (e.g. full month: May 1 → May 31)
+See a calendar grid of all days in that range
+Click any day to open it and add exercises
+Toggle any day as a rest day
+See all days filled in at once (not one by one)
+Save the entire plan in one click
+This should work for both weekly and monthly plans.
+The create plan wizard at /coach/plans/create must support this fully.
+Good catches! Add these to the same fix list. Paste this to Agent:
+ISSUE 5 — WORKOUT PLAN VIEW (Coach viewing member):
+On the Member Detail → Plan tab:
+Currently only shows 1 day (May 5). It must show ALL days in the plan
+as a full calendar grid (May 1 → May 31), not just days that were manually added.
+Each day cell should be clickable to:
+Add exercises to that day
+View exercises already assigned
+Toggle as rest day
+The coach must be able to ADD more days/exercises directly from this view
+without leaving the page. Add an "+ Add Day" button or click any empty date.
+Show a button: "Add New Plan" if no plan exists yet.
+ISSUE 6 — WEIGHT INPUT (Critical UX fix):
+
+In the exercise library and workout plan builder, REMOVE the default
+target weight values (60kg, 50kg, etc.) from what the COACH sees when
+building a plan. The coach sets sets and reps only.
+The MEMBER (player) inputs their own actual weight used when they
+complete the exercise — it should be an empty input, not pre-filled.
+In the workout log form for members: weight field must be blank/placeholder
+only ("Enter weight used"), never pre-filled with a default value.
+ISSUE 7 — TODAY'S WORKOUT VIEW (Coach viewing member):
+
+On Member Detail → Plan tab, highlight TODAY's date visually
+(blue ring or "Today" label).
+When coach clicks today's day cell, show:
+List of exercises assigned for today
+Whether the member has logged weights for each exercise
+Whether the member marked the day complete
+This gives the coach real-time visibility into what the member did today.

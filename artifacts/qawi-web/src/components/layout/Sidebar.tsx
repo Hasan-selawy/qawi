@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useLanguage } from '@/hooks/use-language';
 import { 
   LayoutDashboard, Users, UserSquare2, CreditCard, BarChart3, 
-  Dumbbell, Library, StickyNote, ChevronLeft, ChevronRight, Activity 
+  Dumbbell, Library, StickyNote, ChevronLeft, ChevronRight, Activity, Building2 
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -30,8 +30,13 @@ export function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (v:
           { href: '/coach/notes', icon: StickyNote, label: 'notes' },
         ];
       case 'SUPER_ADMIN':
+        // Backend admin/coach endpoints are role-locked (GYM_ADMIN / COACH only) and
+        // will return 403 for SUPER_ADMIN. Only expose links whose data the super
+        // role can actually load: super stats, super gyms, and the public exercise library.
         return [
           { href: '/super/dashboard', icon: Activity, label: 'dashboard' },
+          { href: '/super/gyms', icon: Building2, label: 'gyms' },
+          { href: '/coach/library', icon: Library, label: 'library' },
         ];
       default:
         return [];

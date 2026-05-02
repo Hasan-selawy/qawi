@@ -75,9 +75,9 @@ export default function SuperDashboard() {
                 className="space-y-4"
               >
                 <Input name="gymName" placeholder="Gym Name" required className="bg-black/20" />
-                <Input name="ownerName" placeholder="Owner Name" required className="bg-black/20" />
-                <Input name="ownerEmail" type="email" placeholder="Owner Email" required className="bg-black/20" />
-                <Input name="ownerPassword" type="password" placeholder="Owner Initial Password" required className="bg-black/20" />
+                <Input name="adminName" placeholder="Owner / Admin Name" required className="bg-black/20" />
+                <Input name="adminEmail" type="email" placeholder="Admin Email" required className="bg-black/20" />
+                <Input name="adminPassword" type="password" placeholder="Admin Initial Password" required className="bg-black/20" />
                 <Select name="subscriptionPlan" required defaultValue="BASIC">
                   <SelectTrigger className="bg-black/20"><SelectValue placeholder="Subscription Plan" /></SelectTrigger>
                   <SelectContent>

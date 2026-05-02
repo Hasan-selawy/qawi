@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/services/api';
 import { useLanguage } from '@/hooks/use-language';
+import { pickName } from '@/lib/i18n-name';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { PageWrapper } from '@/components/layout/PageWrapper';
 import { Button } from '@/components/ui/button';
@@ -86,7 +87,7 @@ export default function Library() {
                 <Select name="categoryId" required>
                   <SelectTrigger className="bg-black/20"><SelectValue placeholder="Category" /></SelectTrigger>
                   <SelectContent>
-                    {categories?.map((c: any) => <SelectItem key={c.id} value={c.id}>{lang === 'ar' && c.nameAr ? c.nameAr : c.name}</SelectItem>)}
+                    {categories?.map((c: any) => <SelectItem key={c.id} value={c.id}>{pickName(lang, c)}</SelectItem>)}
                   </SelectContent>
                 </Select>
                 <div className="grid grid-cols-2 gap-4">
@@ -122,7 +123,7 @@ export default function Library() {
               activeCategory === c.id ? 'bg-primary text-white' : 'bg-black/20 text-muted-foreground hover:bg-white/10'
             )}
           >
-            <span>{getEmojiForCategory(c.name)}</span> {lang === 'ar' && c.nameAr ? c.nameAr : c.name}
+            <span>{getEmojiForCategory(c.name)}</span> {pickName(lang, c)}
           </button>
         ))}
       </div>
@@ -144,13 +145,11 @@ export default function Library() {
                   {getEmojiForCategory(cat?.name)}
                 </div>
                 <div className="mb-6 relative z-10">
-                  <h3 className="text-2xl font-bold leading-tight mb-1" dir="rtl">{ex.nameAr || ex.name}</h3>
-                  <p className="text-sm text-muted-foreground">{ex.name}</p>
+                  <h3 className="text-2xl font-bold leading-tight mb-1" dir={lang === 'ar' ? 'rtl' : 'ltr'}>{pickName(lang, ex)}</h3>
                 </div>
                 <div className="mt-auto flex items-center justify-between relative z-10 pt-4 border-t border-white/5">
                   <span className="bg-black/40 text-muted-foreground px-2 py-1 rounded-md text-xs font-bold font-mono">
                     {ex.defaultSets} × {ex.defaultReps}
-                    {ex.defaultWeight ? ` @ ${ex.defaultWeight}kg` : ''}
                   </span>
                   {ex.videoUrl && (
                     <a href={ex.videoUrl} target="_blank" rel="noreferrer" className="text-red-500 hover:text-red-400 transition-colors p-1 bg-red-500/10 rounded-full hover:bg-red-500/20">

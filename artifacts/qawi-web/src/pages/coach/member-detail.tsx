@@ -1,21 +1,27 @@
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/services/api';
 import { useLanguage } from '@/hooks/use-language';
-import { useLocation } from 'wouter';
+import { Link } from 'wouter';
 import { PageWrapper } from '@/components/layout/PageWrapper';
 import { GradientAvatar } from '@/components/GradientAvatar';
 import { StatusBadge, BadgeStatus } from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Flame, Plus, Activity, Trash2 } from 'lucide-react';
-import { format, isToday } from 'date-fns';
+import { Loader2, Flame, Plus, Activity, Trash2, BedDouble, X, CheckCircle2 } from 'lucide-react';
+import { format, isToday, parseISO, eachDayOfInterval } from 'date-fns';
 import { toast } from 'sonner';
 import { WeightChart } from '@/components/charts/WeightChart';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { getSubStatus } from '@/lib/sub-status';
+import { pickName } from '@/lib/i18n-name';
+
+const DAY_EN_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const DAY_AR_FULL = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 
 export default function MemberDetail({ id }: { id: string }) {
   const { lang } = useLanguage();
@@ -71,7 +77,7 @@ export default function MemberDetail({ id }: { id: string }) {
             <TabsTrigger value="notes" className="py-2">Notes</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="plan" className="m-0"><PlanTab plan={overview?.currentWorkoutPlan} /></TabsContent>
+          <TabsContent value="plan" className="m-0"><PlanTab plan={overview?.currentWorkoutPlan} memberId={id} lang={lang} /></TabsContent>
           <TabsContent value="nutrition" className="m-0"><NutritionTab plan={overview?.nutritionPlan} lang={lang} memberId={id} /></TabsContent>
           <TabsContent value="measurements" className="m-0"><MeasurementsTab memberId={id} /></TabsContent>
           <TabsContent value="photos" className="m-0"><PhotosTab memberId={id} /></TabsContent>
@@ -83,14 +89,89 @@ export default function MemberDetail({ id }: { id: string }) {
   );
 }
 
-function PlanTab({ plan }: { plan: any }) {
+function PlanTab({ plan, memberId, lang }: { plan: any; memberId: string; lang: 'en' | 'ar' }) {
+  const queryClient = useQueryClient();
+  const [activeDateStr, setActiveDateStr] = useState<string | null>(null);
+
+  const { data: workoutLogs } = useQuery<any[]>({
+    queryKey: ['workouts', 'logs', memberId],
+    queryFn: () => apiFetch(`/workouts/logs/member/${memberId}`),
+    enabled: !!plan,
+  });
+
+  const { data: categories } = useQuery<any[]>({
+    queryKey: ['exercises', 'categories'],
+    queryFn: () => apiFetch('/exercises/categories'),
+    enabled: !!plan,
+  });
+
+  const { data: libraryExercises } = useQuery<any[]>({
+    queryKey: ['exercises', 'library', 'all'],
+    queryFn: () => apiFetch('/exercises/library'),
+    enabled: !!plan,
+  });
+
+  const dayByDateStr = useMemo<Record<string, any>>(() => {
+    const map: Record<string, any> = {};
+    (plan?.scheduleDays || []).forEach((d: any) => {
+      if (d.dayDate) map[String(d.dayDate).slice(0, 10)] = d;
+    });
+    return map;
+  }, [plan]);
+
+  const logsByExerciseId = useMemo<Record<string, any[]>>(() => {
+    const map: Record<string, any[]> = {};
+    (workoutLogs || []).forEach((l: any) => {
+      const k = l.planExerciseId;
+      (map[k] ||= []).push(l);
+    });
+    return map;
+  }, [workoutLogs]);
+
+  const dateRange = useMemo(() => {
+    if (!plan?.startDate || !plan?.endDate) return [];
+    try {
+      return eachDayOfInterval({ start: parseISO(String(plan.startDate)), end: parseISO(String(plan.endDate)) });
+    } catch { return []; }
+  }, [plan]);
+
+  const addDayMut = useMutation({
+    mutationFn: ({ dateStr, isRestDay }: { dateStr: string; isRestDay: boolean }) => {
+      const dow = parseISO(dateStr).getDay();
+      return apiFetch(`/workouts/${plan.id}/days`, {
+        method: 'POST',
+        data: { dayDate: dateStr, dayName: DAY_EN_FULL[dow], dayNameAr: DAY_AR_FULL[dow], isRestDay },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['coach', 'members', memberId, 'overview'] });
+      toast.success('Day added');
+    },
+    onError: (err: any) => toast.error(err?.error || 'Failed'),
+  });
+
+  const addExMut = useMutation({
+    mutationFn: ({ dayId, data }: { dayId: string; data: any }) =>
+      apiFetch(`/workouts/days/${dayId}/exercises`, { method: 'POST', data }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['coach', 'members', memberId, 'overview'] });
+      toast.success('Exercise added');
+    },
+    onError: (err: any) => toast.error(err?.error || 'Failed'),
+  });
+
   if (!plan) {
     return (
       <div className="glass-card p-12 text-center border-dashed">
-        <p className="text-muted-foreground">No active workout plan for this member yet.</p>
+        <p className="text-muted-foreground mb-6">No active workout plan for this member yet.</p>
+        <Link href={`/coach/plans/create?memberId=${memberId}`}>
+          <Button size="lg" className="glow-hover"><Plus className="mr-2 h-4 w-4" /> Add New Plan</Button>
+        </Link>
       </div>
     );
   }
+
+  const activeDay = activeDateStr ? dayByDateStr[activeDateStr] : null;
 
   return (
     <div className="space-y-6">
@@ -98,40 +179,180 @@ function PlanTab({ plan }: { plan: any }) {
         <div>
           <h3 className="text-lg font-semibold">{plan.name}</h3>
           <p className="text-xs text-muted-foreground">
-            {plan.startDate ? format(new Date(plan.startDate), 'PP') : ''} → {plan.endDate ? format(new Date(plan.endDate), 'PP') : ''}
+            {plan.startDate ? format(parseISO(String(plan.startDate)), 'PP') : ''} → {plan.endDate ? format(parseISO(String(plan.endDate)), 'PP') : ''}
           </p>
         </div>
+        <Link href={`/coach/plans/create?memberId=${memberId}`}>
+          <Button variant="outline" size="sm"><Plus className="mr-2 h-4 w-4" /> New Plan</Button>
+        </Link>
       </div>
 
-      {plan.scheduleDays && plan.scheduleDays.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-          {plan.scheduleDays.map((day: any) => {
-            const isRest = day.isRestDay;
-            const date = day.dayDate ? new Date(day.dayDate) : null;
-            const today = date ? isToday(date) : false;
+      {dateRange.length === 0 ? (
+        <p className="text-center py-8 text-muted-foreground">Plan has no date range.</p>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
+          {dateRange.map(date => {
+            const ds = format(date, 'yyyy-MM-dd');
+            const day = dayByDateStr[ds];
+            const today = isToday(date);
+            const dow = date.getDay();
+            const exCount = day?.exercises?.length || 0;
             return (
-              <div
-                key={day.id}
+              <button
+                key={ds}
+                onClick={() => setActiveDateStr(ds)}
                 className={cn(
-                  'glass-card p-3 flex flex-col cursor-pointer transition-transform hover:-translate-y-1 border',
-                  isRest ? 'opacity-60 border-white/5' : 'border-white/10',
+                  'text-left p-3 rounded-xl border transition-all hover:-translate-y-0.5 relative',
                   today ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-background' : '',
-                  day.isCompleted ? 'border-primary/40 bg-primary/5' : ''
+                  day?.isCompleted ? 'bg-primary/15 border-primary/40' :
+                    day?.isRestDay ? 'bg-orange-500/10 border-orange-500/30' :
+                    day && exCount > 0 ? 'bg-blue-500/10 border-blue-500/30' :
+                    'bg-black/20 border-white/5 hover:border-white/20',
                 )}
               >
-                <p className="text-xs text-muted-foreground mb-1">{date ? format(date, 'EEE, MMM d') : day.dayName}</p>
-                <div
-                  className={cn(
-                    'flex-1 rounded-lg flex items-center justify-center min-h-[60px] text-center font-medium text-xs p-2',
-                    isRest ? 'bg-black/40 text-muted-foreground' : 'bg-primary/20 text-primary border border-primary/30'
-                  )}
-                >
-                  {isRest ? 'Rest Day' : `${day.exercises?.length || 0} Exercises`}
+                {today && <span className="absolute top-1 right-1 text-[9px] bg-blue-500 text-white px-1.5 py-0.5 rounded-full font-bold">TODAY</span>}
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{lang === 'ar' ? DAY_AR_FULL[dow] : DAY_EN_FULL[dow].slice(0, 3)}</p>
+                <p className="font-bold text-lg leading-tight">{format(date, 'd')}</p>
+                <p className="text-[10px] text-muted-foreground">{format(date, 'MMM')}</p>
+                <div className="mt-2 text-[10px] font-medium flex items-center gap-1">
+                  {!day ? <span className="text-muted-foreground/60">+ Add</span> :
+                    day.isRestDay ? <span className="text-orange-400">Rest</span> :
+                    <span className="text-blue-400">{exCount} ex</span>}
+                  {day?.isCompleted && <CheckCircle2 size={10} className="text-primary" />}
                 </div>
-                {day.isCompleted && <p className="text-[10px] text-primary mt-1 text-center">✓ Done</p>}
-              </div>
+              </button>
             );
           })}
+        </div>
+      )}
+
+      <Dialog open={!!activeDateStr} onOpenChange={(o) => !o && setActiveDateStr(null)}>
+        <DialogContent className="glass-card border-white/10 max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span>{activeDateStr ? format(parseISO(activeDateStr), 'EEEE, MMMM d') : ''}</span>
+              {activeDateStr && isToday(parseISO(activeDateStr)) && (
+                <span className="text-xs bg-blue-500 text-white px-2 py-0.5 rounded-full font-bold">TODAY</span>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+
+          {!activeDay ? (
+            <div className="py-6 space-y-3 text-center">
+              <p className="text-muted-foreground text-sm">No day exists yet for this date.</p>
+              <div className="flex gap-2 justify-center">
+                <Button onClick={() => activeDateStr && addDayMut.mutate({ dateStr: activeDateStr, isRestDay: false })} disabled={addDayMut.isPending}>
+                  <Plus className="mr-2 h-4 w-4" /> Add Workout Day
+                </Button>
+                <Button variant="outline" onClick={() => activeDateStr && addDayMut.mutate({ dateStr: activeDateStr, isRestDay: true })} disabled={addDayMut.isPending}>
+                  <BedDouble className="mr-2 h-4 w-4" /> Mark as Rest Day
+                </Button>
+              </div>
+            </div>
+          ) : activeDay.isRestDay ? (
+            <div className="py-12 text-center text-muted-foreground">
+              <BedDouble className="h-12 w-12 mx-auto mb-3 text-orange-500/60" />
+              Rest day. No exercises assigned.
+            </div>
+          ) : (
+            <DayDetail
+              day={activeDay}
+              lang={lang}
+              logsByExerciseId={logsByExerciseId}
+              categories={categories || []}
+              libraryExercises={libraryExercises || []}
+              onAddExercise={(data) => addExMut.mutate({ dayId: activeDay.id, data })}
+              addPending={addExMut.isPending}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function DayDetail({ day, lang, logsByExerciseId, categories, libraryExercises, onAddExercise, addPending }: {
+  day: any; lang: 'en' | 'ar'; logsByExerciseId: Record<string, any[]>;
+  categories: any[]; libraryExercises: any[];
+  onAddExercise: (data: any) => void; addPending: boolean;
+}) {
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [catFilter, setCatFilter] = useState('');
+
+  const filtered = libraryExercises.filter(e => !catFilter || e.categoryId === catFilter);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <p className="text-sm text-muted-foreground">{day.exercises?.length || 0} exercises assigned</p>
+        {day.isCompleted && (
+          <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full flex items-center gap-1">
+            <CheckCircle2 size={12} /> Completed by member
+          </span>
+        )}
+      </div>
+
+      <div className="space-y-2 max-h-[40vh] overflow-y-auto">
+        {(day.exercises || []).map((ex: any) => {
+          const logs = logsByExerciseId[ex.id] || [];
+          const latestLog = logs[0];
+          // PlanExercise stores either a custom name OR an exerciseTemplateId — resolve
+          // the template name from the library when no custom name is set.
+          const template = ex.exerciseTemplateId ? libraryExercises.find((t: any) => t.id === ex.exerciseTemplateId) : null;
+          const displayName = pickName(lang, ex) || pickName(lang, template) || '(unnamed exercise)';
+          return (
+            <div key={ex.id} className="p-3 bg-black/30 rounded-lg border border-white/5">
+              <p className="font-medium text-sm">{displayName}</p>
+              <p className="text-xs text-muted-foreground mt-1">Target: {ex.sets} × {ex.reps}</p>
+              {latestLog ? (
+                <div className="mt-2 pt-2 border-t border-white/5 text-xs flex items-center gap-2">
+                  <CheckCircle2 size={12} className="text-primary" />
+                  <span className="text-primary font-medium">Logged:</span>
+                  <span>{latestLog.actualSets} × {latestLog.actualReps} @ {latestLog.actualWeight}kg</span>
+                </div>
+              ) : (
+                <p className="mt-2 pt-2 border-t border-white/5 text-xs text-muted-foreground">Not logged yet</p>
+              )}
+            </div>
+          );
+        })}
+        {(!day.exercises || day.exercises.length === 0) && (
+          <p className="text-center text-xs text-muted-foreground py-6">No exercises yet — add one below.</p>
+        )}
+      </div>
+
+      {!pickerOpen ? (
+        <Button onClick={() => setPickerOpen(true)} className="w-full" variant="outline">
+          <Plus className="mr-2 h-4 w-4" /> Add Exercise
+        </Button>
+      ) : (
+        <div className="border-t border-white/5 pt-4 space-y-3">
+          <div className="flex justify-between items-center">
+            <Select value={catFilter || 'all'} onValueChange={v => setCatFilter(v === 'all' ? '' : v)}>
+              <SelectTrigger className="w-[200px] bg-black/20 h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories.map((c: any) => <SelectItem key={c.id} value={c.id}>{pickName(lang, c)}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Button variant="ghost" size="sm" onClick={() => setPickerOpen(false)}><X size={14} /></Button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[30vh] overflow-y-auto">
+            {filtered.map((ex: any) => (
+              <button
+                key={ex.id}
+                disabled={addPending}
+                onClick={() => onAddExercise({ exerciseTemplateId: ex.id, sets: ex.defaultSets || 3, reps: ex.defaultReps || 10, targetWeight: 0, orderIndex: day.exercises?.length || 0 })}
+                className="text-left p-3 bg-black/20 rounded-lg border border-white/5 hover:border-primary/40 transition-colors flex items-center justify-between group disabled:opacity-50"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium leading-tight truncate">{pickName(lang, ex)}</p>
+                  <p className="text-[10px] text-muted-foreground">{ex.defaultSets} × {ex.defaultReps}</p>
+                </div>
+                <Plus size={16} className="text-muted-foreground group-hover:text-primary shrink-0 ml-2" />
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -208,7 +429,7 @@ function NutritionTab({ plan, lang, memberId }: { plan: any; lang: string; membe
             <div className="space-y-3 flex-1">
               {meals.map((meal: any) => (
                 <div key={meal.id} className="p-3 bg-black/20 rounded-lg border border-white/5">
-                  <p className="font-medium mb-2">{lang === 'ar' && meal.descriptionAr ? meal.descriptionAr : meal.description}</p>
+                  <p className="font-medium mb-2">{lang === 'ar' ? (meal.descriptionAr || meal.description) : meal.description}</p>
                   <div className="flex gap-2">
                     <span className="text-xs bg-orange-500/20 text-orange-500 px-2 py-1 rounded-md">{meal.calories} kcal</span>
                     <span className="text-xs bg-blue-500/20 text-blue-500 px-2 py-1 rounded-md">{meal.protein}g protein</span>

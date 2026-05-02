@@ -91,7 +91,7 @@ export default function Templates() {
                 <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center mb-4 text-primary">
                   <Dumbbell size={24} />
                 </div>
-                <h3 className="text-xl font-bold mb-1">{lang === 'ar' && tpl.nameAr ? tpl.nameAr : tpl.name}</h3>
+                <h3 className="text-xl font-bold mb-1">{lang === 'ar' ? (tpl.nameAr || tpl.name) : tpl.name}</h3>
                 {tpl.description && <p className="text-xs text-muted-foreground mt-2">{tpl.description}</p>}
                 <p className="text-xs text-muted-foreground mt-3">Created {tpl.createdAt ? format(new Date(tpl.createdAt), 'PP') : '-'}</p>
               </div>

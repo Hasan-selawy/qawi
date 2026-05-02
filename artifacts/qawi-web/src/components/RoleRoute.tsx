@@ -18,13 +18,16 @@ export function RoleRoute({ role, children }: { role: Role | Role[], children: R
     return <Redirect to="/login" />;
   }
 
+  // SUPER_ADMIN has access to every page in the system.
+  if (user.role === "SUPER_ADMIN") {
+    return <>{children}</>;
+  }
+
   const allowedRoles = Array.isArray(role) ? role : [role];
-  
+
   if (!allowedRoles.includes(user.role)) {
-    // Redirect based on role
-    if (user.role === 'GYM_ADMIN') return <Redirect to="/admin/dashboard" />;
-    if (user.role === 'COACH') return <Redirect to="/coach/dashboard" />;
-    if (user.role === 'SUPER_ADMIN') return <Redirect to="/super/dashboard" />;
+    if (user.role === "GYM_ADMIN") return <Redirect to="/admin/dashboard" />;
+    if (user.role === "COACH") return <Redirect to="/coach/dashboard" />;
     return <Redirect to="/login" />;
   }
 

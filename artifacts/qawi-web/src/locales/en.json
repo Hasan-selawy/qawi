@@ -27,7 +27,8 @@
     "analytics": "Analytics",
     "templates": "Templates",
     "library": "Library",
-    "notes": "Notes"
+    "notes": "Notes",
+    "gyms": "Gyms"
   },
   "auth": {
     "login": "Login",
