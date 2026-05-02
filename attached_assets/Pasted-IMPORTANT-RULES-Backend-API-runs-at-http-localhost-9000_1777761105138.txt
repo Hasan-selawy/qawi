@@ -1,0 +1,300 @@
+IMPORTANT RULES:
+- Backend API runs at http://localhost:9000
+- Store this in VITE_API_URL environment variable
+- Do NOT modify the backend
+- All API calls need Authorization: Bearer {token} header
+- Roles are exactly: MEMBER, COACH, GYM_ADMIN, SUPER_ADMIN
+- Login endpoint: POST /api/v1/auth/login
+- After login route by role:
+  GYM_ADMIN → /admin/dashboard
+  COACH → /coach/dashboard
+  SUPER_ADMIN → /super/dashboard
+
+Build a production-ready React web dashboard for Qawi (قوي) gym management app.
+
+TECH STACK:
+- React 18 + TypeScript
+- Vite
+- React Router v6
+- Axios
+- Tailwind CSS
+- Recharts
+- TanStack Query (React Query)
+- React Hook Form + Zod validation
+- Framer Motion for animations
+- date-fns for date formatting
+
+DESIGN SYSTEM:
+  background: #0F172A
+  surface: #1E293B
+  card: #111827
+  accent: #22C55E
+  accent-hover: #16A34A
+  danger: #EF4444
+  warning: #F59E0B
+  info: #3B82F6
+  text-primary: #F8FAFC
+  text-secondary: #94A3B8
+  border: #1E293B
+
+Typography:
+  Arabic: Cairo (Google Fonts)
+  English: Inter (Google Fonts)
+
+FOLDER STRUCTURE:
+/src
+  /components
+    /ui (Button, Input, Card, Badge, Modal, Table, Avatar, Spinner, Toast, Tabs, SearchInput)
+    /layout (Sidebar, Navbar, PageHeader, PageWrapper)
+    /charts (AttendanceChart, WorkoutProgressChart, MemberGrowthChart)
+    /exercises (CategoryGrid, ExerciseCard, ExercisePicker)
+    /schedule (PlanCalendar, DayCard, ExerciseRow)
+    /members (MemberCard, MemberTable, SubscriptionBadge)
+    /notifications (NotificationBell, NotificationDropdown)
+  /pages
+    /auth (LoginPage)
+    /admin (AdminDashboard, ManageMembers, ManageCoaches, Analytics, SubscriptionManagement)
+    /coach (CoachDashboard, MemberDetail, CreateWorkoutPlan, WorkoutTemplates, ExerciseLibrary, CoachNotes)
+    /super (SuperDashboard)
+  /hooks (useAuth, useLanguage, useNotifications, useToast)
+  /services (api.ts, auth.service.ts, members.service.ts, workouts.service.ts, nutrition.service.ts, measurements.service.ts, attendance.service.ts, notifications.service.ts, subscriptions.service.ts)
+  /context (AuthContext, LanguageContext)
+  /types (index.ts)
+  /locales (en.json, ar.json)
+  /utils (dates.ts, formatting.ts)
+
+ARABIC + RTL:
+- Toggle in navbar: AR | EN
+- Saved in localStorage
+- Arabic → document.dir = "rtl", Cairo font
+- English → document.dir = "ltr", Inter font
+- All text from translation files
+- Full translations in both en.json and ar.json for all screens
+
+LOGIN PAGE:
+- Full dark screen #0F172A background
+- Centered glass-effect card
+- Large green قوي logo at top
+- Email + password inputs with show/hide password toggle
+- Green login button with loading spinner
+- Language toggle AR | EN pill top right
+- Shake animation on wrong credentials
+- Auto-route by role after login:
+  GYM_ADMIN → /admin/dashboard
+  COACH → /coach/dashboard
+  SUPER_ADMIN → /super/dashboard
+- Show "Register Your Gym" link below login form
+
+GYM REGISTRATION PAGE (/register):
+- 3-step wizard:
+  Step 1: Gym name + your name
+  Step 2: Email + password
+  Step 3: Choose plan (Basic $49 / Pro $99 / Enterprise $199)
+- 14-day free trial messaging
+- On success → auto login → admin dashboard
+
+ADMIN DASHBOARD (/admin/dashboard):
+- Top stats row (4 animated count-up cards):
+  Total Members (blue)
+  Active This Week (green)
+  Expiring This Week (orange, clickable → subscriptions page)
+  Total Coaches (purple)
+- Charts row:
+  Left 60%: Attendance This Week (bar chart, green bars, last 7 days)
+  Right 40%: Member Growth (area chart, last 6 months)
+- Bottom row:
+  Left: Top Performing Members (ranked list with workout counts)
+  Right: Expiring Subscriptions (list with days remaining + renew button)
+
+MANAGE MEMBERS PAGE (/admin/members):
+- Search bar + filter by status (All / Active / Expiring / Expired)
+- Members table: Name | Email | Coach | Subscription End | Status | Actions
+- Add Member button → modal: name, email, password, subscription end date
+- Click member row → side panel with tabs: Info | Subscription | Assign Coach
+- Subscription tab: show history + renew form (plan, start date, end date, price)
+- Assign Coach tab: dropdown of coaches in same gym
+
+MANAGE COACHES PAGE (/admin/coaches):
+- Coach cards: name, email, member count
+- Add Coach button → modal: name, email, password
+- Click coach → see their member list
+
+SUBSCRIPTION MANAGEMENT PAGE (/admin/subscriptions):
+- List of members with expiring/expired subscriptions
+- Days remaining countdown (red if < 3 days, orange if < 7)
+- Renew button → modal: plan (Monthly/Quarterly/Yearly), start date, end date, price
+- Subscription history timeline per member
+
+ANALYTICS PAGE (/admin/analytics):
+- Full width attendance chart
+- Member growth area chart
+- Top performers leaderboard
+- Revenue summary card
+- Inactive members alert list
+
+COACH DASHBOARD (/coach/dashboard):
+- Header: "مرحباً Coach [Name] 👋"
+- Member grid cards showing:
+  Avatar (initials, colored)
+  Name + email
+  Last checkin (X days ago, color coded — green/orange/red)
+  This week: X workouts completed
+  Subscription status badge
+  Current plan name
+  View button
+- Filter: All | Active | Inactive | Expiring
+
+MEMBER DETAIL PAGE (/coach/members/:id):
+- Left sidebar: member info card (avatar, name, email, subscription badge, streak, total workouts)
+- Right content tabs:
+
+  Tab 1 — WORKOUT PLAN:
+    Current plan calendar (days color coded: ✅ completed, 😴 rest, ⏳ pending, 🔵 today)
+    Click day → see exercises list
+    Button: Create New Plan | Use Template
+
+  Tab 2 — NUTRITION:
+    Meal cards by type (Breakfast, Lunch, Dinner, Snack)
+    Calories + protein per meal
+    Button: Create Nutrition Plan → form with meal type, description (AR+EN), calories, protein
+
+  Tab 3 — MEASUREMENTS:
+    Latest measurement cards: weight, height, chest, waist, arms, legs, body fat
+    Progress chart (weight over time)
+    Button: Add Measurement → form
+    History table
+
+  Tab 4 — PROGRESS PHOTOS:
+    Grid of photos with dates
+    Upload new photo (URL input + caption + date)
+
+  Tab 5 — ATTENDANCE:
+    Streak display with 🔥
+    Monthly calendar heatmap
+    Recent checkins list
+
+  Tab 6 — NOTES:
+    Timeline of coach notes (newest first)
+    Add note textarea
+    Edit/delete notes
+
+CREATE WORKOUT PLAN PAGE (/coach/plans/create):
+3-step wizard:
+  Step 1: Plan name, member selection (dropdown), start + end date
+           OR: "Use Template" button → template picker modal
+
+  Step 2: Build schedule
+    Calendar showing date range
+    Click date to add a day
+    For each day: day name EN + AR, toggle Training/Rest Day
+
+  Step 3: Add exercises per day
+    Category grid (Chest, Back, Legs, Shoulders, Arms, Core, Cardio with icons)
+    Click category → exercise list
+    Each exercise: Arabic name, default sets/reps/weight, video button
+    Tap exercise → added instantly with default values
+    Edit sets/reps/weight inline
+    Custom exercise option
+
+  Save → success animation → redirect to member detail
+
+WORKOUT TEMPLATES PAGE (/coach/templates):
+- Grid of template cards: name, days count, exercise count, created date
+- Create Template button (same UI as plan builder)
+- Click template → preview all days and exercises
+- Use Template button on each card
+
+EXERCISE LIBRARY PAGE (/coach/library):
+- Category filter tabs at top
+- Search bar
+- Exercise grid: Arabic name, EN name, default sets/reps, video button
+- Add Custom Exercise button → modal
+
+COACH NOTES PAGE (/coach/notes):
+- Member selector dropdown
+- Note textarea
+- Save Note button
+- Notes timeline (newest first)
+- Edit/delete per note
+
+SUPER ADMIN DASHBOARD (/super/dashboard):
+- Stats: Total Gyms, Total Members, Total Coaches, Active Gyms, Expiring Gyms
+- Gyms table: name, members count, coaches count, plan, subscription status, admin email, actions
+- Add Gym button → modal (gym name, admin name, admin email, password, plan, expiry date)
+- Renew gym subscription button per row
+
+COMPONENTS DETAILS:
+- Sidebar: collapsible, role-based menu items, Qawi logo at top, green accent
+- Navbar: language toggle, notification bell with unread count, user avatar + dropdown (profile, logout)
+- NotificationBell: dropdown showing last 5 notifications with Arabic messages, mark as read
+- StatCard: icon, number (animated count-up), label, optional trend indicator
+- Badge variants: active (green), expiring (orange), expired (red), info (blue)
+- Modal: backdrop blur, scale+fade animation, close on backdrop click
+- Toast: top-right, auto-dismiss after 3s, success/error/warning variants
+
+ANIMATIONS (Framer Motion):
+- Page transitions: fade + slide up
+- Cards stagger: 0.1s delay each
+- Stats count-up on load
+- Modal: scale + fade
+- Sidebar collapse: smooth
+- Button press: scale 0.97
+- Success: checkmark animation
+- Error: shake animation
+
+NOTIFICATIONS:
+- Bell icon in navbar with unread count badge (red)
+- Dropdown: list of notifications, Arabic messages, mark as read on click
+- "Mark all read" button
+- Poll every 30 seconds
+
+API ENDPOINTS USED:
+POST /api/v1/auth/login
+GET /api/v1/auth/me
+GET /api/v1/admin/analytics
+GET /api/v1/admin/members
+POST /api/v1/admin/members
+PUT /api/v1/admin/members/{id}/assign
+PUT /api/v1/admin/members/{id}/subscription
+GET /api/v1/admin/members/{id}/subscription-history
+GET /api/v1/admin/expiring-subscriptions
+GET /api/v1/admin/coaches
+POST /api/v1/admin/coaches
+DELETE /api/v1/admin/users/{id}
+GET /api/v1/coach/members
+GET /api/v1/coach/members/{id}/overview
+GET /api/v1/exercises/categories
+GET /api/v1/exercises/library
+POST /api/v1/exercises/library
+GET /api/v1/workouts/member/{memberId}
+POST /api/v1/workouts
+POST /api/v1/workouts/from-template
+POST /api/v1/workouts/{planId}/days
+POST /api/v1/workouts/days/{dayId}/exercises
+GET /api/v1/templates
+POST /api/v1/templates
+DELETE /api/v1/templates/{id}
+GET /api/v1/nutrition/member/{memberId}
+POST /api/v1/nutrition
+POST /api/v1/nutrition/{planId}/meals
+GET /api/v1/measurements/member/{memberId}
+POST /api/v1/measurements
+GET /api/v1/photos/member/{memberId}
+POST /api/v1/photos
+GET /api/v1/attendance/member/{memberId}
+GET /api/v1/attendance/member/{memberId}/streak
+GET /api/v1/notes/member/{memberId}
+POST /api/v1/notes
+PUT /api/v1/notes/{id}
+DELETE /api/v1/notes/{id}
+GET /api/v1/notifications
+PUT /api/v1/notifications/{id}/read
+PUT /api/v1/notifications/read-all
+GET /api/v1/super/gyms
+POST /api/v1/super/gyms
+PUT /api/v1/super/gyms/{id}/subscription
+GET /api/v1/super/stats
+GET /api/v1/public/plans
+POST /api/v1/public/register-gym
+
+Make the dashboard fully functional, beautiful, and production ready.
