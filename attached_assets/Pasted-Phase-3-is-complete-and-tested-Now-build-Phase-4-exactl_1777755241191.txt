@@ -1,0 +1,139 @@
+Phase 3 is complete and tested. Now build Phase 4 exactly as specified.
+
+IMPORTANT: Do not change any existing code. Only ADD new entities and endpoints.
+
+ADD THIS ENTITY:
+
+SubscriptionHistory:
+  - id (UUID)
+  - memberId (UUID, FK → User)
+  - managedByAdminId (UUID, FK → User)
+  - startDate (LocalDate)
+  - endDate (LocalDate)
+  - plan (Enum: MONTHLY, QUARTERLY, YEARLY)
+  - price (double)
+  - createdAt (LocalDateTime)
+
+ENDPOINTS:
+
+GYM ADMIN (all scoped to admin's gymId):
+
+POST /api/v1/admin/coaches
+  Request: { name, email, password }
+  Creates COACH account in same gym as admin
+
+POST /api/v1/admin/members
+  Request: { name, email, password, subscriptionEndDate }
+  Creates MEMBER account in same gym as admin
+
+GET /api/v1/admin/coaches
+  Returns all coaches in admin's gym
+
+GET /api/v1/admin/members
+  Returns all members in admin's gym with isActive + subscription status
+
+PUT /api/v1/admin/members/{memberId}/assign
+  Request: { coachId }
+  Assigns member to coach (creates CoachMember record)
+
+DELETE /api/v1/admin/users/{userId}
+  Soft delete — sets isActive = false
+
+SUBSCRIPTION MANAGEMENT:
+PUT /api/v1/admin/members/{memberId}/subscription
+  Request: { startDate, endDate, plan, price }
+  Updates member subscriptionStartDate + subscriptionEndDate
+  Creates SubscriptionHistory record
+  If days remaining < 7 → creates SUBSCRIPTION_ALERT notification for member
+
+GET /api/v1/admin/members/{memberId}/subscription-history
+  Returns full subscription history for member
+
+GET /api/v1/admin/expiring-subscriptions
+  Returns members whose subscriptionEndDate is within next 7 days
+
+ANALYTICS:
+GET /api/v1/admin/analytics
+  Returns:
+  {
+    totalMembers,
+    activeMembers (checked in last 7 days),
+    inactiveMembers (no checkin in 14+ days),
+    totalCoaches,
+    expiringThisWeek (subscription ends in 7 days),
+    expiredMembers (subscription already expired),
+    avgWorkoutsPerMember,
+    attendanceThisWeek: [{day, count} x 7],
+    topPerformingMembers: [{name, workoutsLogged} x 5],
+    revenueThisMonth (sum of subscription prices this month),
+    memberGrowth: [{month, count} x 6]
+  }
+
+COACH DASHBOARD:
+GET /api/v1/coach/members
+  Returns coach's assigned members with:
+  - id, name, email
+  - lastCheckinDate
+  - currentWorkoutPlanName
+  - workoutsCompletedThisWeek
+  - subscriptionStatus (ACTIVE, EXPIRING, EXPIRED)
+  - isActive
+
+GET /api/v1/coach/members/{memberId}/overview
+  Returns:
+  {
+    member: { id, name, email, subscriptionEndDate },
+    currentWorkoutPlan: { id, name, scheduleDays with exercises },
+    nutritionPlan: { meals },
+    latestMeasurements: { weight, chest, waist, arms, legs, bodyFat },
+    attendanceStreak: number,
+    recentPhotos: [ last 3 photoUrls ],
+    coachNotes: [ all notes for this member ]
+  }
+
+SUPER ADMIN:
+POST /api/v1/super/gyms
+  Request: { gymName, adminName, adminEmail, adminPassword, subscriptionPlan, subscriptionExpiresAt }
+  Creates gym + GYM_ADMIN account
+  Response: { gym, admin }
+
+GET /api/v1/super/gyms
+  Returns all gyms with totalMembers, totalCoaches, subscriptionStatus, adminEmail
+
+PUT /api/v1/super/gyms/{gymId}/subscription
+  Request: { subscriptionPlan, subscriptionExpiresAt }
+
+DELETE /api/v1/super/gyms/{gymId}
+  Sets all users in gym isActive = false
+
+GET /api/v1/super/stats
+  Returns: { totalGyms, totalMembers, totalCoaches, activeGyms, expiringGyms }
+
+PUBLIC (no auth):
+POST /api/v1/public/register-gym
+  Request: { gymName, adminName, adminEmail, adminPassword, subscriptionPlan }
+  Creates gym with subscriptionExpiresAt = 14 days from now (free trial)
+  Creates GYM_ADMIN user
+  Response: { token, user, gym, trialExpiresAt,
+    message: "Welcome to Qawi! Your 14-day free trial has started.",
+    messageAr: "مرحباً بك في قوي! بدأت تجربتك المجانية لمدة 14 يوماً." }
+
+GET /api/v1/public/plans
+  Returns:
+  [
+    { plan: "BASIC", price: 49, currency: "USD", maxMembers: 50, maxCoaches: 3 },
+    { plan: "PRO", price: 99, currency: "USD", maxMembers: 200, maxCoaches: 10 },
+    { plan: "ENTERPRISE", price: 199, currency: "USD", maxMembers: 999, maxCoaches: 999 }
+  ]
+
+POST /api/v1/public/check-email
+  Request: { email }
+  Response: { available: true/false }
+
+SEED DATA:
+- Add 1 SUPER_ADMIN: super@qawi.com / qawi_super_2024
+- Add 2 SubscriptionHistory records for Sam and Riley
+
+All endpoints protected with @PreAuthorize except /public/*.
+Admin can only manage users within their own gymId.
+Make sure server starts and all endpoints work correctly.
