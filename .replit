@@ -24,13 +24,13 @@ args = "Qawi Spring Boot API"
 name = "Qawi Spring Boot API"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "cd qawi-backend && mvn spring-boot:run -Dspring-boot.run.jvmArguments='-Dserver.port=8080'"
-waitForPort = 8080
-
 [workflows.workflow.metadata]
 outputType = "console"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd qawi-backend && mvn spring-boot:run"
+waitForPort = 9000
 
 [agent]
 stack = "PNPM_WORKSPACE"
@@ -47,3 +47,7 @@ externalPort = 8080
 [[ports]]
 localPort = 8081
 externalPort = 80
+
+[[ports]]
+localPort = 9000
+externalPort = 9000

@@ -1,0 +1,103 @@
+STOP. Delete everything inside the qawi-backend folder and start completely over. You ignored my requirements and built the wrong app.
+
+IMPORTANT RULES:
+- Follow my specification EXACTLY
+- Do NOT add any features not listed below
+- Use EXACTLY these 3 roles: MEMBER, COACH, GYM_ADMIN
+- Do NOT create: SUPER_ADMIN, GYM_OWNER, STAFF, GymClass, ClassBooking, Payment entities
+- Do NOT invent any entities not listed below
+
+Build a Java Spring Boot 3 backend for a gym management app called Qawi (قوي).
+
+TECH STACK:
+- Java 17
+- Spring Boot 3
+- Maven
+- PostgreSQL
+- Spring Security with JWT (jjwt library)
+- Spring Data JPA with Hibernate
+- Lombok
+- Bean Validation (@Valid)
+
+PROJECT STRUCTURE:
+com.qawi
+  /config
+  /controller
+  /service
+  /repository
+  /entity
+  /dto
+  /exception
+  /security
+
+EXACTLY THESE ENTITIES AND NOTHING ELSE:
+
+Gym:
+  - id (UUID)
+  - name (String)
+  - ownerId (UUID)
+  - subscriptionPlan (Enum: BASIC, PRO, ENTERPRISE)
+  - subscriptionExpiresAt (LocalDateTime)
+  - createdAt (LocalDateTime)
+
+User:
+  - id (UUID)
+  - name (String)
+  - email (String, unique)
+  - password (String, bcrypt hashed)
+  - role (Enum: MEMBER, COACH, GYM_ADMIN)
+  - gymId (UUID, nullable FK → Gym)
+  - isActive (boolean, default true)
+  - subscriptionStartDate (LocalDate)
+  - subscriptionEndDate (LocalDate)
+  - createdAt (LocalDateTime)
+
+CoachMember:
+  - id (UUID)
+  - coachId (UUID, FK → User)
+  - memberId (UUID, FK → User)
+
+ENDPOINTS:
+
+POST /api/v1/auth/register
+  Request: { name, email, password, role, gymId? }
+  Response: { token, user }
+
+POST /api/v1/auth/login
+  Request: { email, password }
+  Response: { token, user, subscriptionAlert? }
+  Logic:
+  - If member subscription expired → block login, return error in Arabic and English
+  - If subscription expires within 7 days → add subscriptionAlert to response
+
+GET /api/v1/auth/me
+  Protected route → returns current user
+
+SECURITY:
+- JWT expires in 7 days
+- Roles enforced via @PreAuthorize
+- BCrypt password hashing
+- CORS enabled for all origins
+
+GLOBAL EXCEPTION HANDLER:
+- All errors return: { error: "message", messageAr: "رسالة", timestamp }
+- 400, 401, 403, 404, 500 handled
+
+SEED DATA (on startup if DB empty):
+- 1 gym: Iron Peak Gym
+- 1 GYM_ADMIN: admin@ironpeak.com / password123
+- 2 COACHes: coach.jordan@ironpeak.com, coach.morgan@ironpeak.com / password123
+- 4 MEMBERs: sam@ironpeak.com, casey@ironpeak.com, riley@ironpeak.com, drew@ironpeak.com / password123
+  - Sam: subscription ends in 30 days
+  - Casey: subscription ends in 5 days (triggers alert)
+  - Riley: subscription ends in 30 days
+  - Drew: subscription already expired (cannot login)
+- Assign sam + casey to coach jordan
+- Assign riley + drew to coach morgan
+
+application.properties:
+  spring.datasource.url=${DATABASE_URL}
+  spring.jpa.hibernate.ddl-auto=update
+  server.port=${PORT:8080}
+
+Make the server start and all 3 auth endpoints work correctly. Nothing else.
