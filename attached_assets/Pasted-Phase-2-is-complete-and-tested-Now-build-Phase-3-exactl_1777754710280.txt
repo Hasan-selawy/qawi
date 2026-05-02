@@ -1,0 +1,147 @@
+Phase 2 is complete and tested. Now build Phase 3 exactly as specified.
+
+IMPORTANT: Do not change any existing code. Only ADD new entities and endpoints.
+
+ADD THESE ENTITIES:
+
+NutritionPlan:
+  - id (UUID)
+  - memberId (UUID, FK → User)
+  - coachId (UUID, FK → User)
+  - createdAt (LocalDateTime)
+
+Meal:
+  - id (UUID)
+  - nutritionPlanId (UUID, FK → NutritionPlan)
+  - mealType (Enum: BREAKFAST, LUNCH, DINNER, SNACK)
+  - description (String)
+  - descriptionAr (String)
+  - calories (int, nullable)
+  - protein (int, nullable)
+  - orderIndex (int)
+
+Attendance:
+  - id (UUID)
+  - memberId (UUID, FK → User)
+  - gymId (UUID, FK → Gym)
+  - checkedInAt (LocalDateTime)
+
+BodyMeasurement:
+  - id (UUID)
+  - memberId (UUID, FK → User)
+  - recordedBy (UUID, FK → User)
+  - weight (double, nullable)
+  - height (double, nullable)
+  - chest (double, nullable)
+  - waist (double, nullable)
+  - hips (double, nullable)
+  - arms (double, nullable)
+  - legs (double, nullable)
+  - bodyFatPercentage (double, nullable)
+  - notes (String, nullable)
+  - recordedAt (LocalDateTime)
+
+ProgressPhoto:
+  - id (UUID)
+  - memberId (UUID, FK → User)
+  - photoUrl (String)
+  - caption (String, nullable)
+  - takenAt (LocalDate)
+  - uploadedAt (LocalDateTime)
+
+CoachNote:
+  - id (UUID)
+  - coachId (UUID, FK → User)
+  - memberId (UUID, FK → User)
+  - note (String)
+  - createdAt (LocalDateTime)
+  - updatedAt (LocalDateTime)
+
+Notification:
+  - id (UUID)
+  - userId (UUID, FK → User)
+  - type (Enum: MISSED_DAYS, SUBSCRIPTION_ALERT, DAY_COMPLETED, MEASUREMENT_ADDED)
+  - message (String)
+  - messageAr (String)
+  - isRead (boolean, default false)
+  - createdAt (LocalDateTime)
+
+ENDPOINTS:
+
+NUTRITION:
+POST /api/v1/nutrition (Coach only)
+  Request: { memberId }
+
+GET /api/v1/nutrition/member/{memberId} (Coach or own member)
+
+POST /api/v1/nutrition/{planId}/meals (Coach only)
+  Request: { mealType, description, descriptionAr, calories?, protein? }
+
+PUT /api/v1/nutrition/meals/{mealId} (Coach only)
+
+DELETE /api/v1/nutrition/meals/{mealId} (Coach only)
+
+ATTENDANCE:
+POST /api/v1/attendance/checkin (Member only)
+  Uses gymId from JWT
+  If gap > 3 days since last checkin → create MISSED_DAYS notification
+  Response: { attendance, streak, notification? }
+
+GET /api/v1/attendance/member/{memberId}
+
+GET /api/v1/attendance/member/{memberId}/streak
+  Response: { streak, lastCheckIn }
+
+BODY MEASUREMENTS:
+POST /api/v1/measurements (Coach or Member)
+  Request: { memberId, weight?, height?, chest?, waist?, hips?, arms?, legs?, bodyFatPercentage?, notes? }
+
+GET /api/v1/measurements/member/{memberId}
+
+GET /api/v1/measurements/member/{memberId}/latest
+
+PROGRESS PHOTOS:
+POST /api/v1/photos (Member only)
+  Request: { photoUrl, caption?, takenAt }
+
+GET /api/v1/photos/member/{memberId}
+
+DELETE /api/v1/photos/{photoId} (Member only)
+
+COACH NOTES:
+POST /api/v1/notes (Coach only)
+  Request: { memberId, note }
+
+GET /api/v1/notes/member/{memberId} (Coach only)
+
+PUT /api/v1/notes/{noteId} (Coach only)
+
+DELETE /api/v1/notes/{noteId} (Coach only)
+
+NOTIFICATIONS:
+GET /api/v1/notifications (current user)
+
+PUT /api/v1/notifications/{id}/read
+
+PUT /api/v1/notifications/read-all
+
+AUTOMATION:
+- Checkin gap > 3 days → create MISSED_DAYS notification:
+  message: "We missed you! You haven't trained in X days 💪"
+  messageAr: "اشتقنا إليك! لم تتمرن منذ X أيام 💪"
+
+- Day marked complete → create DAY_COMPLETED notification:
+  message: "Great work! You completed today's workout 🔥"
+  messageAr: "أحسنت! أكملت تمرين اليوم 🔥"
+
+- New measurement added → create MEASUREMENT_ADDED notification:
+  message: "New measurements recorded 📊"
+  messageAr: "تم تسجيل قياساتك الجديدة 📊"
+
+SEED DATA:
+- 2 body measurements per member (different dates, realistic values)
+- 1 nutrition plan per member with 4 meals (breakfast, lunch, dinner, snack)
+- 10 attendance records per member (spread over last 30 days)
+- 2 coach notes per member
+
+Make sure server starts and all endpoints work correctly.

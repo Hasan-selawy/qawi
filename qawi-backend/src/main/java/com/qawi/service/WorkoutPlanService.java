@@ -25,6 +25,7 @@ public class WorkoutPlanService {
     private final WorkoutTemplateDayRepository templateDayRepository;
     private final WorkoutTemplateDayExerciseRepository templateDayExerciseRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     @Transactional
     public WorkoutPlan createPlan(CreateWorkoutPlanRequest req, String coachEmail) {
@@ -140,11 +141,19 @@ public class WorkoutPlanService {
 
     @Transactional
     public ScheduleDay completeDay(UUID dayId, String memberEmail) {
+        User member = getUser(memberEmail);
         ScheduleDay day = scheduleDayRepository.findById(dayId)
                 .orElseThrow(() -> new AppException("Day not found", "اليوم غير موجود", HttpStatus.NOT_FOUND));
         day.setCompleted(true);
         day.setCompletedAt(LocalDateTime.now());
-        return scheduleDayRepository.save(day);
+        ScheduleDay saved = scheduleDayRepository.save(day);
+        notificationService.create(
+                member.getId(),
+                com.qawi.entity.NotificationType.DAY_COMPLETED,
+                "Great work! You completed today's workout 🔥",
+                "أحسنت! أكملت تمرين اليوم 🔥"
+        );
+        return saved;
     }
 
     @Transactional
