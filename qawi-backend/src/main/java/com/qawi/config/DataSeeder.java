@@ -27,14 +27,22 @@ public class DataSeeder implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) {
         if (userRepository.count() > 0) {
-            log.info("Database already seeded, skipping.");
+            seedSuperAdminIfMissing();
             return;
         }
 
         log.info("Seeding database...");
         String hashed = passwordEncoder.encode("password123");
 
-        // 1. Create Gym
+        // SUPER_ADMIN
+        userRepository.save(User.builder()
+                .name("Qawi Admin")
+                .email("super@qawi.com")
+                .password(passwordEncoder.encode("qawi_super_2024"))
+                .role(Role.SUPER_ADMIN)
+                .build());
+
+        // Gym
         Gym gym = gymRepository.save(Gym.builder()
                 .name("Iron Peak Gym")
                 .ownerId(java.util.UUID.randomUUID())
@@ -42,7 +50,7 @@ public class DataSeeder implements ApplicationRunner {
                 .subscriptionExpiresAt(LocalDateTime.now().plusYears(1))
                 .build());
 
-        // 2. GYM_ADMIN
+        // GYM_ADMIN
         User admin = userRepository.save(User.builder()
                 .name("Admin")
                 .email("admin@ironpeak.com")
@@ -51,7 +59,10 @@ public class DataSeeder implements ApplicationRunner {
                 .gymId(gym.getId())
                 .build());
 
-        // 3. Coaches
+        gym.setOwnerId(admin.getId());
+        gymRepository.save(gym);
+
+        // Coaches
         User jordan = userRepository.save(User.builder()
                 .name("Coach Jordan")
                 .email("coach.jordan@ironpeak.com")
@@ -68,66 +79,56 @@ public class DataSeeder implements ApplicationRunner {
                 .gymId(gym.getId())
                 .build());
 
-        // 4. Members
+        // Members
         LocalDate today = LocalDate.now();
 
-        // Sam: ends in 30 days
         User sam = userRepository.save(User.builder()
-                .name("Sam")
-                .email("sam@ironpeak.com")
-                .password(hashed)
-                .role(Role.MEMBER)
-                .gymId(gym.getId())
+                .name("Sam").email("sam@ironpeak.com").password(hashed)
+                .role(Role.MEMBER).gymId(gym.getId())
                 .subscriptionStartDate(today.minusDays(30))
                 .subscriptionEndDate(today.plusDays(30))
                 .build());
 
-        // Casey: ends in 5 days (triggers alert)
         User casey = userRepository.save(User.builder()
-                .name("Casey")
-                .email("casey@ironpeak.com")
-                .password(hashed)
-                .role(Role.MEMBER)
-                .gymId(gym.getId())
+                .name("Casey").email("casey@ironpeak.com").password(hashed)
+                .role(Role.MEMBER).gymId(gym.getId())
                 .subscriptionStartDate(today.minusDays(25))
                 .subscriptionEndDate(today.plusDays(5))
                 .build());
 
-        // Riley: ends in 30 days
         User riley = userRepository.save(User.builder()
-                .name("Riley")
-                .email("riley@ironpeak.com")
-                .password(hashed)
-                .role(Role.MEMBER)
-                .gymId(gym.getId())
+                .name("Riley").email("riley@ironpeak.com").password(hashed)
+                .role(Role.MEMBER).gymId(gym.getId())
                 .subscriptionStartDate(today.minusDays(30))
                 .subscriptionEndDate(today.plusDays(30))
                 .build());
 
-        // Drew: subscription already expired (cannot login)
         User drew = userRepository.save(User.builder()
-                .name("Drew")
-                .email("drew@ironpeak.com")
-                .password(hashed)
-                .role(Role.MEMBER)
-                .gymId(gym.getId())
+                .name("Drew").email("drew@ironpeak.com").password(hashed)
+                .role(Role.MEMBER).gymId(gym.getId())
                 .subscriptionStartDate(today.minusDays(60))
                 .subscriptionEndDate(today.minusDays(5))
                 .build());
 
-        // 5. CoachMember assignments
-        // Jordan → Sam, Casey
-        coachMemberRepository.save(CoachMember.builder()
-                .coachId(jordan.getId()).memberId(sam.getId()).build());
-        coachMemberRepository.save(CoachMember.builder()
-                .coachId(jordan.getId()).memberId(casey.getId()).build());
+        // Coach assignments
+        coachMemberRepository.save(CoachMember.builder().coachId(jordan.getId()).memberId(sam.getId()).build());
+        coachMemberRepository.save(CoachMember.builder().coachId(jordan.getId()).memberId(casey.getId()).build());
+        coachMemberRepository.save(CoachMember.builder().coachId(morgan.getId()).memberId(riley.getId()).build());
+        coachMemberRepository.save(CoachMember.builder().coachId(morgan.getId()).memberId(drew.getId()).build());
 
-        // Morgan → Riley, Drew
-        coachMemberRepository.save(CoachMember.builder()
-                .coachId(morgan.getId()).memberId(riley.getId()).build());
-        coachMemberRepository.save(CoachMember.builder()
-                .coachId(morgan.getId()).memberId(drew.getId()).build());
+        log.info("Seeding complete. Users: {}", userRepository.count());
+    }
 
-        log.info("Seeding complete. Gym: {}, Users: {}", gym.getName(), userRepository.count());
+    private void seedSuperAdminIfMissing() {
+        if (!userRepository.existsByEmail("super@qawi.com")) {
+            log.info("Adding SUPER_ADMIN seed user...");
+            userRepository.save(User.builder()
+                    .name("Qawi Admin")
+                    .email("super@qawi.com")
+                    .password(passwordEncoder.encode("qawi_super_2024"))
+                    .role(Role.SUPER_ADMIN)
+                    .build());
+            log.info("SUPER_ADMIN created.");
+        }
     }
 }
