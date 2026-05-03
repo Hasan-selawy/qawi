@@ -20,4 +20,18 @@ public class GymDetailResponse {
     private long totalMembers;
     private long totalCoaches;
     private String subscriptionStatus;
+
+    // Feature flags
+    private boolean nutritionEnabled;
+    private boolean pushNotificationsEnabled;
+    private boolean customBrandingEnabled;
+    private boolean classBookingEnabled;
+    private boolean analyticsAdvancedEnabled;
+
+    // Limits
+    private Integer maxMembers;
+
+    // Branding
+    private String logoUrl;
+    private String primaryColor;
 }

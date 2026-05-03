@@ -13,6 +13,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -22,20 +23,48 @@ public class AttendanceController {
 
     private final AttendanceService attendanceService;
 
-    @PostMapping("/checkin")
+    // ───────── Member self-routes ─────────
+
+    @PostMapping("/me/checkin")
     @PreAuthorize("hasRole('MEMBER')")
-    public ResponseEntity<CheckInResponse> checkIn(@AuthenticationPrincipal UserDetails userDetails) {
+    public ResponseEntity<CheckInResponse> myCheckin(@AuthenticationPrincipal UserDetails ud) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(attendanceService.checkIn(userDetails.getUsername()));
+                .body(attendanceService.checkIn(ud.getUsername()));
     }
 
+    @PostMapping("/me/checkout")
+    @PreAuthorize("hasRole('MEMBER')")
+    public ResponseEntity<Attendance> myCheckout(@AuthenticationPrincipal UserDetails ud) {
+        return ResponseEntity.ok(attendanceService.checkOut(ud.getUsername()));
+    }
+
+    @GetMapping("/me")
+    @PreAuthorize("hasRole('MEMBER')")
+    public ResponseEntity<List<Map<String, Object>>> myAttendance(@AuthenticationPrincipal UserDetails ud) {
+        return ResponseEntity.ok(attendanceService.getMyAttendance(ud.getUsername()));
+    }
+
+    @GetMapping("/me/stats")
+    @PreAuthorize("hasRole('MEMBER')")
+    public ResponseEntity<Map<String, Object>> myStats(@AuthenticationPrincipal UserDetails ud) {
+        return ResponseEntity.ok(attendanceService.getMyStats(ud.getUsername()));
+    }
+
+    // ───────── Coach / admin views ─────────
+
     @GetMapping("/member/{memberId}")
-    public ResponseEntity<List<Attendance>> getByMember(@PathVariable UUID memberId) {
-        return ResponseEntity.ok(attendanceService.getByMember(memberId));
+    @PreAuthorize("hasAnyRole('COACH','GYM_ADMIN','SUPER_ADMIN')")
+    public ResponseEntity<List<Attendance>> getByMember(
+            @PathVariable UUID memberId,
+            @AuthenticationPrincipal UserDetails ud) {
+        return ResponseEntity.ok(attendanceService.getByMember(memberId, ud.getUsername()));
     }
 
     @GetMapping("/member/{memberId}/streak")
-    public ResponseEntity<StreakResponse> getStreak(@PathVariable UUID memberId) {
-        return ResponseEntity.ok(attendanceService.getStreak(memberId));
+    @PreAuthorize("hasAnyRole('COACH','GYM_ADMIN','SUPER_ADMIN')")
+    public ResponseEntity<StreakResponse> getStreak(
+            @PathVariable UUID memberId,
+            @AuthenticationPrincipal UserDetails ud) {
+        return ResponseEntity.ok(attendanceService.getStreakForCaller(memberId, ud.getUsername()));
     }
 }

@@ -25,7 +25,6 @@ public class CoachDashboardService {
     private final NutritionPlanRepository nutritionPlanRepository;
     private final MealRepository mealRepository;
     private final BodyMeasurementRepository bodyMeasurementRepository;
-    private final ProgressPhotoRepository progressPhotoRepository;
     private final CoachNoteRepository coachNoteRepository;
     private final ScheduleDayRepository scheduleDayRepository;
     private final PlanExerciseRepository planExerciseRepository;
@@ -131,11 +130,6 @@ public class CoachDashboardService {
         // Attendance streak
         int streak = calculateStreak(memberId);
 
-        // Recent 3 photos
-        List<String> recentPhotos = progressPhotoRepository
-                .findByMemberIdOrderByTakenAtDesc(memberId).stream()
-                .limit(3).map(ProgressPhoto::getPhotoUrl).toList();
-
         // Coach notes
         List<CoachNote> notes = coachNoteRepository.findByMemberIdOrderByCreatedAtDesc(memberId);
 
@@ -152,7 +146,6 @@ public class CoachDashboardService {
         result.put("nutritionPlan", nutritionPlanMap);
         result.put("latestMeasurements", measurementsMap);
         result.put("attendanceStreak", streak);
-        result.put("recentPhotos", recentPhotos);
         result.put("coachNotes", notes);
         return result;
     }

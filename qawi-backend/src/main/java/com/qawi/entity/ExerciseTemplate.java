@@ -47,4 +47,14 @@ public class ExerciseTemplate {
 
     @Column(name = "created_by_coach_id")
     private UUID createdByCoachId;
+
+    /** Visibility scope — GLOBAL (seeded), GYM (gym-added), COACH (coach-private). */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 16)
+    @Builder.Default
+    private ExerciseScope scope = ExerciseScope.GLOBAL;
+
+    /** Owning gym for GYM scope, and (informationally) the coach's gym for COACH scope. */
+    @Column(name = "gym_id")
+    private UUID gymId;
 }

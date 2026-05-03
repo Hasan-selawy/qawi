@@ -1,15 +1,12 @@
 package com.qawi.controller;
 
-import com.qawi.dto.CheckInResponse;
 import com.qawi.dto.CreateMeasurementRequest;
-import com.qawi.dto.CreateProgressPhotoRequest;
 import com.qawi.entity.*;
 import com.qawi.exception.AppException;
 import com.qawi.repository.*;
-import com.qawi.service.AttendanceService;
 import com.qawi.service.MeasurementService;
 import com.qawi.service.NutritionService;
-import com.qawi.service.ProgressPhotoService;
+import java.time.temporal.ChronoUnit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,78 +25,18 @@ import java.util.*;
 public class MemberController {
 
     private final UserRepository userRepository;
-    private final AttendanceService attendanceService;
-    private final AttendanceRepository attendanceRepository;
     private final WorkoutPlanRepository workoutPlanRepository;
     private final ScheduleDayRepository scheduleDayRepository;
+    private final org.springframework.transaction.support.TransactionTemplate txTemplate;
     private final PlanExerciseRepository planExerciseRepository;
     private final ExerciseTemplateRepository exerciseTemplateRepository;
     private final NutritionService nutritionService;
+    private final com.qawi.service.GymFeatureService gymFeatureService;
     private final NutritionPlanRepository nutritionPlanRepository;
     private final MealRepository mealRepository;
     private final MeasurementService measurementService;
     private final BodyMeasurementRepository measurementRepository;
-    private final ProgressPhotoService photoService;
-    private final ProgressPhotoRepository photoRepository;
     private final MealLogRepository mealLogRepository;
-
-    // ───────────────────────── ATTENDANCE ─────────────────────────
-
-    @PostMapping("/attendance/checkin")
-    public ResponseEntity<CheckInResponse> checkin(@AuthenticationPrincipal UserDetails ud) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(attendanceService.checkIn(ud.getUsername()));
-    }
-
-    @PostMapping("/attendance/checkout")
-    public ResponseEntity<Attendance> checkout(@AuthenticationPrincipal UserDetails ud) {
-        return ResponseEntity.ok(attendanceService.checkOut(ud.getUsername()));
-    }
-
-    @GetMapping("/attendance")
-    public ResponseEntity<List<Map<String, Object>>> attendance(@AuthenticationPrincipal UserDetails ud) {
-        User me = self(ud);
-        List<Attendance> rows = attendanceRepository.findByMemberIdOrderByCheckedInAtDesc(me.getId());
-        return ResponseEntity.ok(rows.stream().map(a -> {
-            Map<String, Object> m = new LinkedHashMap<>();
-            m.put("id", a.getId());
-            m.put("date", a.getCheckedInAt() == null ? null : a.getCheckedInAt().toString());
-            m.put("checkedInAt", a.getCheckedInAt());
-            return m;
-        }).toList());
-    }
-
-    @GetMapping("/attendance/stats")
-    public ResponseEntity<Map<String, Object>> attendanceStats(@AuthenticationPrincipal UserDetails ud) {
-        User me = self(ud);
-        var streak = attendanceService.getStreak(me.getId());
-        List<Attendance> all = attendanceRepository.findByMemberIdOrderByCheckedInAtDesc(me.getId());
-        LocalDate weekStart = LocalDate.now().minusDays(6);
-        long thisWeek = all.stream()
-                .filter(a -> a.getCheckedInAt() != null && !a.getCheckedInAt().toLocalDate().isBefore(weekStart))
-                .map(a -> a.getCheckedInAt().toLocalDate())
-                .distinct()
-                .count();
-        long total = all.stream()
-                .filter(a -> a.getCheckedInAt() != null)
-                .map(a -> a.getCheckedInAt().toLocalDate())
-                .distinct()
-                .count();
-        Attendance todays = all.stream()
-                .filter(a -> a.getCheckedInAt() != null
-                        && LocalDate.now().equals(a.getCheckedInAt().toLocalDate()))
-                .findFirst()
-                .orElse(null);
-        Map<String, Object> out = new LinkedHashMap<>();
-        out.put("streak", streak.getStreak());
-        out.put("lastCheckIn", streak.getLastCheckIn());
-        out.put("thisWeek", thisWeek);
-        out.put("totalDays", total);
-        out.put("checkedInToday", todays != null);
-        out.put("checkedOutToday", todays != null && todays.getCheckedOutAt() != null);
-        out.put("checkedOutAt", todays == null ? null : todays.getCheckedOutAt());
-        return ResponseEntity.ok(out);
-    }
 
     // ───────────────────────── WORKOUTS ─────────────────────────
 
@@ -119,6 +56,10 @@ public class MemberController {
                         .orElse(null));
 
         if (plan == null) return ResponseEntity.noContent().build();
+
+        // Auto-shift: if any uncompleted workout day is in the past, slide the
+        // tail of the plan forward so no muscle group is silently skipped.
+        autoShiftPlanIfStale(plan, today);
 
         ScheduleDay day = scheduleDayRepository.findByWorkoutPlanIdOrderByDayDate(plan.getId()).stream()
                 .filter(d -> today.equals(d.getDayDate()))
@@ -146,6 +87,56 @@ public class MemberController {
 
         out.put("exercises", buildExerciseList(day.getId()));
         return ResponseEntity.ok(out);
+    }
+
+    /**
+     * If a non-rest workout day in this plan was scheduled in the past but never
+     * completed, shift it (and every later day, including rest days) forward by
+     * the same number of days so the member resumes at the next planned workout
+     * without losing leg/back/etc. days. Plan endDate slides too.
+     */
+    private void autoShiftPlanIfStale(WorkoutPlan plan, LocalDate today) {
+        // Cheap precheck outside of the transaction.
+        boolean hasStale = scheduleDayRepository.findByWorkoutPlanIdOrderByDayDate(plan.getId()).stream()
+                .anyMatch(d -> d.getDayDate() != null
+                        && !d.isRestDay()
+                        && !d.isCompleted()
+                        && d.getDayDate().isBefore(today));
+        if (!hasStale) return;
+
+        // Re-read everything inside a write transaction with a row lock on the
+        // plan, so concurrent /workouts/today calls cannot double-shift.
+        txTemplate.executeWithoutResult(status -> {
+            WorkoutPlan locked = workoutPlanRepository.findByIdForUpdate(plan.getId()).orElse(null);
+            if (locked == null) return;
+
+            List<ScheduleDay> days = scheduleDayRepository.findByWorkoutPlanIdOrderByDayDate(locked.getId());
+            ScheduleDay firstStale = days.stream()
+                    .filter(d -> d.getDayDate() != null
+                            && !d.isRestDay()
+                            && !d.isCompleted()
+                            && d.getDayDate().isBefore(today))
+                    .findFirst()
+                    .orElse(null);
+            if (firstStale == null) return; // another thread already shifted
+
+            long delta = ChronoUnit.DAYS.between(firstStale.getDayDate(), today);
+            if (delta <= 0) return;
+
+            LocalDate anchor = firstStale.getDayDate();
+            for (ScheduleDay d : days) {
+                if (d.getDayDate() != null && !d.getDayDate().isBefore(anchor)) {
+                    d.setDayDate(d.getDayDate().plusDays(delta));
+                }
+            }
+            scheduleDayRepository.saveAll(days);
+            if (locked.getEndDate() != null) {
+                locked.setEndDate(locked.getEndDate().plusDays(delta));
+                workoutPlanRepository.save(locked);
+            }
+            // Reflect back onto caller-held instance for the rest of this request.
+            plan.setEndDate(locked.getEndDate());
+        });
     }
 
     private List<Map<String, Object>> buildExerciseList(UUID scheduleDayId) {
@@ -250,6 +241,7 @@ public class MemberController {
 
     @GetMapping("/nutrition/active")
     public ResponseEntity<Map<String, Object>> activeNutrition(@AuthenticationPrincipal UserDetails ud) {
+        gymFeatureService.assertEnabled(ud.getUsername(), com.qawi.service.GymFeatureService.Feature.NUTRITION);
         User me = self(ud);
         List<NutritionPlan> plans = nutritionPlanRepository.findByMemberId(me.getId());
         if (plans.isEmpty()) return ResponseEntity.noContent().build();
@@ -340,38 +332,6 @@ public class MemberController {
         if (n != null) req.setNotes(n.toString());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(measurementService.addMeasurement(req, ud.getUsername()));
-    }
-
-    // ───────────────────────── PHOTOS ─────────────────────────
-
-    @GetMapping("/photos")
-    public ResponseEntity<List<ProgressPhoto>> photos(@AuthenticationPrincipal UserDetails ud) {
-        User me = self(ud);
-        return ResponseEntity.ok(photoRepository.findByMemberIdOrderByTakenAtDesc(me.getId()));
-    }
-
-    @PostMapping("/photos")
-    public ResponseEntity<ProgressPhoto> addPhoto(
-            @AuthenticationPrincipal UserDetails ud,
-            @RequestBody Map<String, Object> body) {
-        CreateProgressPhotoRequest req = new CreateProgressPhotoRequest();
-        Object url = body.get("photoUrl");
-        if (url == null) url = body.get("imageBase64");
-        if (url == null) {
-            throw new AppException("Photo data required", "بيانات الصورة مطلوبة", HttpStatus.BAD_REQUEST);
-        }
-        req.setPhotoUrl(url.toString());
-        Object cap = body.get("caption");
-        if (cap != null) req.setCaption(cap.toString());
-        Object takenAt = body.get("takenAt");
-        LocalDate when = LocalDate.now();
-        if (takenAt != null) {
-            String s = takenAt.toString();
-            try { when = LocalDate.parse(s.length() >= 10 ? s.substring(0, 10) : s); } catch (Exception ignored) {}
-        }
-        req.setTakenAt(when);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(photoService.addPhoto(req, ud.getUsername()));
     }
 
     // ───────────────────────── helpers ─────────────────────────

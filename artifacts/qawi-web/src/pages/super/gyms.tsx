@@ -9,7 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, Plus, Trash2 } from 'lucide-react';
+import { Link } from 'wouter';
+import { Loader2, Plus, Settings, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -126,6 +127,9 @@ export default function SuperGyms() {
                       <StatusBadge status={(gym.subscriptionStatus || 'ACTIVE') as BadgeStatus} label={gym.subscriptionStatus || 'ACTIVE'} />
                     </TableCell>
                     <TableCell className="text-right space-x-2">
+                      <Link href={`/super/gyms/${gym.id}`}>
+                        <Button variant="outline" size="sm" title="Configure features, limits & branding"><Settings size={14} className="mr-1" /> Configure</Button>
+                      </Link>
                       <Dialog>
                         <DialogTrigger asChild><Button variant="outline" size="sm">Renew</Button></DialogTrigger>
                         <DialogContent className="glass-card border-white/10">

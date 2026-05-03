@@ -26,6 +26,8 @@ public class GymAdminService {
     private final WorkoutLogRepository workoutLogRepository;
     private final PasswordEncoder passwordEncoder;
     private final NotificationService notificationService;
+    private final GymRepository gymRepository;
+    private final GymFeatureService gymFeatureService;
 
     // ── COACH CRUD ──────────────────────────────────────────────────────────
 
@@ -51,6 +53,19 @@ public class GymAdminService {
     public User createMember(CreateGymUserRequest req, String adminEmail) {
         UUID gymId = getAdmin(adminEmail).getGymId();
         validateNewEmail(req.getEmail());
+
+        // Enforce per-gym maxMembers cap (null = unlimited)
+        Gym gym = gymRepository.findById(gymId).orElse(null);
+        if (gym != null && gym.getMaxMembers() != null) {
+            long current = userRepository.countByGymIdAndRole(gymId, Role.MEMBER);
+            if (current >= gym.getMaxMembers()) {
+                throw new AppException(
+                        "Member limit reached for this gym (" + gym.getMaxMembers() + "). Upgrade your plan to add more.",
+                        "تم بلوغ الحد الأقصى لعدد الأعضاء (" + gym.getMaxMembers() + "). الرجاء ترقية الخطة.",
+                        HttpStatus.FORBIDDEN);
+            }
+        }
+
         return userRepository.save(User.builder()
                 .name(req.getName()).email(req.getEmail())
                 .password(passwordEncoder.encode(req.getPassword()))
@@ -253,13 +268,18 @@ public class GymAdminService {
             memberGrowth.add(m);
         }
 
+        boolean advanced = gymFeatureService.isEnabledForGymId(gymId, GymFeatureService.Feature.ANALYTICS_ADVANCED);
+
         return AdminAnalyticsResponse.builder()
                 .totalMembers(totalMembers).activeMembers(activeMembers)
                 .inactiveMembers(Math.max(0, inactiveMembers)).totalCoaches(totalCoaches)
                 .expiringThisWeek(expiringThisWeek).expiredMembers(expiredMembers)
-                .avgWorkoutsPerMember(avgWorkouts).attendanceThisWeek(attendanceThisWeek)
-                .topPerformingMembers(topPerforming).revenueThisMonth(revenueThisMonth)
-                .memberGrowth(memberGrowth).build();
+                .avgWorkoutsPerMember(advanced ? avgWorkouts : 0d)
+                .attendanceThisWeek(advanced ? attendanceThisWeek : List.of())
+                .topPerformingMembers(advanced ? topPerforming : List.of())
+                .revenueThisMonth(advanced ? revenueThisMonth : 0d)
+                .memberGrowth(advanced ? memberGrowth : List.of())
+                .build();
     }
 
     // ── HELPERS ───────────────────────────────────────────────────────────────

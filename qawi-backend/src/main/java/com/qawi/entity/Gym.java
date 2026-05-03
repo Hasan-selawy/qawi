@@ -35,4 +35,41 @@ public class Gym {
     @Column(name = "created_at", nullable = false, updatable = false)
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    // ── Per-gym Pro feature flags (super-admin controlled) ──────────────
+    // nutrition + push default to ON to preserve existing behaviour for
+    // already-provisioned gyms; the rest are Pro upsells defaulting to OFF.
+
+    @Column(name = "nutrition_enabled", nullable = false)
+    @Builder.Default
+    private boolean nutritionEnabled = true;
+
+    @Column(name = "push_notifications_enabled", nullable = false)
+    @Builder.Default
+    private boolean pushNotificationsEnabled = true;
+
+    @Column(name = "custom_branding_enabled", nullable = false)
+    @Builder.Default
+    private boolean customBrandingEnabled = false;
+
+    @Column(name = "class_booking_enabled", nullable = false)
+    @Builder.Default
+    private boolean classBookingEnabled = false;
+
+    @Column(name = "analytics_advanced_enabled", nullable = false)
+    @Builder.Default
+    private boolean analyticsAdvancedEnabled = false;
+
+    // ── Limits ──────────────────────────────────────────────────────────
+    // null = unlimited
+    @Column(name = "max_members")
+    private Integer maxMembers;
+
+    // ── Branding ────────────────────────────────────────────────────────
+    @Column(name = "logo_url")
+    private String logoUrl;
+
+    /** Hex string e.g. "#22c55e". Only honoured when customBrandingEnabled is true. */
+    @Column(name = "primary_color")
+    private String primaryColor;
 }

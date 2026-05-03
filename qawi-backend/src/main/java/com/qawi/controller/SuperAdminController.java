@@ -30,11 +30,37 @@ public class SuperAdminController {
         return ResponseEntity.ok(superAdminService.getAllGyms());
     }
 
+    @GetMapping("/gyms/{gymId}")
+    public ResponseEntity<GymDetailResponse> getGym(@PathVariable UUID gymId) {
+        return ResponseEntity.ok(superAdminService.getGym(gymId));
+    }
+
     @PutMapping("/gyms/{gymId}/subscription")
     public ResponseEntity<GymDetailResponse> updateSubscription(
             @PathVariable UUID gymId,
             @Valid @RequestBody UpdateSubscriptionRequest request) {
         return ResponseEntity.ok(superAdminService.updateSubscription(gymId, request));
+    }
+
+    @PutMapping("/gyms/{gymId}/features")
+    public ResponseEntity<GymDetailResponse> updateFeatures(
+            @PathVariable UUID gymId,
+            @Valid @RequestBody GymFeaturesRequest request) {
+        return ResponseEntity.ok(superAdminService.updateFeatures(gymId, request));
+    }
+
+    @PutMapping("/gyms/{gymId}/limits")
+    public ResponseEntity<GymDetailResponse> updateLimits(
+            @PathVariable UUID gymId,
+            @Valid @RequestBody GymLimitsRequest request) {
+        return ResponseEntity.ok(superAdminService.updateLimits(gymId, request));
+    }
+
+    @PutMapping("/gyms/{gymId}/branding")
+    public ResponseEntity<GymDetailResponse> updateBranding(
+            @PathVariable UUID gymId,
+            @Valid @RequestBody GymBrandingRequest request) {
+        return ResponseEntity.ok(superAdminService.updateBranding(gymId, request));
     }
 
     @DeleteMapping("/gyms/{gymId}")

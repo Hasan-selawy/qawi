@@ -2,7 +2,9 @@ package com.qawi.service;
 
 import com.qawi.entity.Notification;
 import com.qawi.entity.NotificationType;
+import com.qawi.entity.User;
 import com.qawi.repository.NotificationRepository;
+import com.qawi.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,8 +17,20 @@ import java.util.UUID;
 public class NotificationService {
 
     private final NotificationRepository notificationRepository;
+    private final UserRepository userRepository;
+    private final GymFeatureService gymFeatureService;
 
+    /**
+     * Creates an in-app notification, gated on the recipient's gym
+     * pushNotificationsEnabled flag. Returns null when the feature is disabled
+     * for the recipient's gym so callers can no-op safely.
+     */
     public Notification create(UUID userId, NotificationType type, String message, String messageAr) {
+        User recipient = userRepository.findById(userId).orElse(null);
+        if (recipient != null
+                && !gymFeatureService.isEnabledForGymId(recipient.getGymId(), GymFeatureService.Feature.PUSH_NOTIFICATIONS)) {
+            return null;
+        }
         return notificationRepository.save(Notification.builder()
                 .userId(userId)
                 .type(type)

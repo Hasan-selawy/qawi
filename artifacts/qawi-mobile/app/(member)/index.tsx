@@ -1,8 +1,9 @@
 import { Feather } from "@expo/vector-icons";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
+import * as Haptics from "expo-haptics";
 import React, { useState } from "react";
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 
 import { RoleHeader } from "@/components/RoleHeader";
 import { Badge, Button, Card, EmptyState, Screen, SectionTitle } from "@/components/ui";
@@ -100,12 +101,40 @@ export default function MemberHome() {
   });
   const stats = useQuery({
     queryKey: ["member", "stats"],
-    queryFn: () => apiFetch<any>("/member/attendance/stats").catch(() => null),
+    queryFn: () => apiFetch<any>("/attendance/me/stats").catch(() => null),
   });
   const upcoming = useQuery({
     queryKey: ["member", "upcoming"],
     queryFn: () => apiFetch<any[]>("/member/workouts/upcoming").catch(() => []),
   });
+
+  const qc = useQueryClient();
+  const checkedIn = !!stats.data?.checkedInToday;
+  const checkedOut = !!stats.data?.checkedOutToday;
+  const checkedOutAt: string | undefined = stats.data?.checkedOutAt;
+
+  const checkin = useMutation({
+    mutationFn: () => apiFetch("/attendance/me/checkin", { method: "POST" }),
+    onSuccess: () => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      qc.invalidateQueries({ queryKey: ["member"] });
+    },
+    onError: (e: any) => Alert.alert("Qawi", e?.body?.error || "Check-in failed"),
+  });
+  const checkout = useMutation({
+    mutationFn: () => apiFetch("/attendance/me/checkout", { method: "POST" }),
+    onSuccess: () => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      qc.invalidateQueries({ queryKey: ["member"] });
+    },
+    onError: (e: any) => Alert.alert("Qawi", e?.body?.error || "Check-out failed"),
+  });
+
+  const formatTime = (iso?: string) => {
+    if (!iso) return "";
+    try { return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); }
+    catch { return ""; }
+  };
 
   const refreshing = today.isFetching || stats.isFetching || upcoming.isFetching;
 
@@ -118,6 +147,51 @@ export default function MemberHome() {
           <RefreshControl tintColor={c.primary} refreshing={refreshing} onRefresh={() => { today.refetch(); stats.refetch(); upcoming.refetch(); }} />
         }
       >
+        <Card style={{ alignItems: "center", paddingVertical: 22 }}>
+          <View style={{ flexDirection: isRTL ? "row-reverse" : "row", alignItems: "center", gap: 12 }}>
+            <Feather
+              name={checkedOut ? "log-out" : checkedIn ? "check-circle" : "log-in"}
+              size={28}
+              color={c.primary}
+            />
+            <Text style={{ color: c.foreground, fontSize: 18, fontWeight: "800" }}>
+              {checkedOut
+                ? t("member.checkedOutAt").replace("{t}", formatTime(checkedOutAt))
+                : checkedIn
+                ? t("member.alreadyCheckedIn")
+                : t("member.checkIn")}
+            </Text>
+          </View>
+          {!!stats.data?.streak && (
+            <Text style={{ color: c.mutedForeground, fontSize: 12, marginTop: 6 }}>
+              🔥 {t("member.streak").replace("{n}", String(stats.data.streak))}
+            </Text>
+          )}
+          {!checkedIn && (
+            <Button
+              title={t("member.checkIn")}
+              icon="check"
+              onPress={() => checkin.mutate()}
+              loading={checkin.isPending}
+              style={{ marginTop: 14, alignSelf: "stretch" }}
+            />
+          )}
+          {checkedIn && !checkedOut && (
+            <Button
+              title={t("member.endDay")}
+              icon="log-out"
+              onPress={() =>
+                Alert.alert("Qawi", t("member.endDay") + "?", [
+                  { text: t("common.cancel"), style: "cancel" },
+                  { text: t("member.checkOut"), onPress: () => checkout.mutate() },
+                ])
+              }
+              loading={checkout.isPending}
+              style={{ marginTop: 14, alignSelf: "stretch" }}
+            />
+          )}
+        </Card>
+
         <View style={{ flexDirection: isRTL ? "row-reverse" : "row", gap: 12 }}>
           <Card style={{ flex: 1, alignItems: "center" }}>
             <Feather name="zap" size={20} color={c.primary} />

@@ -42,16 +42,17 @@ public class ExerciseController {
     }
 
     @PostMapping("/library")
-    @PreAuthorize("hasRole('COACH')")
+    @PreAuthorize("hasAnyRole('COACH','GYM_ADMIN','SUPER_ADMIN')")
     public ResponseEntity<ExerciseTemplate> addExercise(
             @Valid @RequestBody AddExerciseRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
+        // Scope (GLOBAL / GYM / COACH) is decided by the caller's role inside the service.
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(exerciseService.addCustomExercise(request, userDetails.getUsername()));
     }
 
     @DeleteMapping("/library/{id}")
-    @PreAuthorize("hasRole('COACH')")
+    @PreAuthorize("hasAnyRole('COACH','GYM_ADMIN','SUPER_ADMIN')")
     public ResponseEntity<Void> deleteExercise(
             @PathVariable UUID id,
             @AuthenticationPrincipal UserDetails userDetails) {

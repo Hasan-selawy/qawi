@@ -218,6 +218,36 @@ public class DataSeeder implements ApplicationRunner {
 
         log.info("Exercise seeding complete. Categories: {}, Exercises: {}",
                 categoryRepository.count(), exerciseTemplateRepository.count());
+
+        backfillExerciseScopes();
+    }
+
+    /**
+     * Idempotent backfill: ensure every {@link ExerciseTemplate} row has a non-null
+     * {@code scope}. Built-ins → GLOBAL, custom rows → COACH (and gym_id is set
+     * from the creating coach's gym). Safe to run on every boot.
+     */
+    private void backfillExerciseScopes() {
+        var rows = exerciseTemplateRepository.findAll();
+        int updated = 0;
+        for (ExerciseTemplate t : rows) {
+            boolean dirty = false;
+            if (t.getScope() == null) {
+                t.setScope(t.isCustom() ? ExerciseScope.COACH : ExerciseScope.GLOBAL);
+                dirty = true;
+            }
+            if (t.getScope() == ExerciseScope.COACH && t.getGymId() == null && t.getCreatedByCoachId() != null) {
+                userRepository.findById(t.getCreatedByCoachId())
+                        .map(User::getGymId)
+                        .ifPresent(t::setGymId);
+                dirty = true;
+            }
+            if (dirty) {
+                exerciseTemplateRepository.save(t);
+                updated++;
+            }
+        }
+        if (updated > 0) log.info("Backfilled scope/gym_id on {} exercise templates", updated);
     }
 
     private ExerciseCategory cat(String name, String nameAr, String iconUrl) {

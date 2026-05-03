@@ -1,9 +1,10 @@
 import { Link, useLocation } from 'wouter';
 import { useAuth } from '@/hooks/use-auth';
 import { useLanguage } from '@/hooks/use-language';
+import { useGymConfig } from '@/hooks/use-gym-config';
 import { 
   LayoutDashboard, Users, UserSquare2, CreditCard, BarChart3, 
-  Dumbbell, Library, StickyNote, ChevronLeft, ChevronRight, Activity, Building2 
+  Dumbbell, Library, ChevronLeft, ChevronRight, Activity, Building2 
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -11,23 +12,28 @@ export function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (v:
   const { user } = useAuth();
   const { t, lang } = useLanguage();
   const [location] = useLocation();
+  const { features } = useGymConfig();
 
   const getLinks = () => {
     switch (user?.role) {
-      case 'GYM_ADMIN':
-        return [
+      case 'GYM_ADMIN': {
+        // Gym admins share the coach's library page; the backend scopes
+        // visibility (GLOBAL + their gym's GYM/COACH rows) automatically.
+        const links = [
           { href: '/admin/dashboard', icon: LayoutDashboard, label: 'dashboard' },
           { href: '/admin/members', icon: Users, label: 'members' },
           { href: '/admin/coaches', icon: UserSquare2, label: 'coaches' },
           { href: '/admin/subscriptions', icon: CreditCard, label: 'subscriptions' },
           { href: '/admin/analytics', icon: BarChart3, label: 'analytics' },
+          { href: '/coach/library', icon: Library, label: 'library' },
         ];
+        return links;
+      }
       case 'COACH':
         return [
           { href: '/coach/dashboard', icon: LayoutDashboard, label: 'dashboard' },
           { href: '/coach/templates', icon: Dumbbell, label: 'templates' },
           { href: '/coach/library', icon: Library, label: 'library' },
-          { href: '/coach/notes', icon: StickyNote, label: 'notes' },
         ];
       case 'SUPER_ADMIN':
         // Backend admin/coach endpoints are role-locked (GYM_ADMIN / COACH only) and

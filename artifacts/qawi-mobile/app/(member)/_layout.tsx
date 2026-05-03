@@ -4,9 +4,11 @@ import React from "react";
 
 import { RoleTabBar } from "@/components/RoleTabBar";
 import { useLanguage } from "@/context/LanguageContext";
+import { useGymConfig } from "@/hooks/useGymConfig";
 
 export default function MemberLayout() {
   const { t } = useLanguage();
+  const { features } = useGymConfig();
   return (
     <Tabs screenOptions={{ headerShown: false }} tabBar={(props) => <RoleTabBar {...props} />}>
       <Tabs.Screen
@@ -18,12 +20,13 @@ export default function MemberLayout() {
         options={{ title: t("member.tabs.workout"), tabBarIcon: ({ color, size }) => <Feather name="activity" size={size} color={color} /> }}
       />
       <Tabs.Screen
-        name="checkin"
-        options={{ title: t("member.tabs.checkin"), tabBarIcon: ({ color, size }) => <Feather name="check-circle" size={size} color={color} /> }}
-      />
-      <Tabs.Screen
         name="nutrition"
-        options={{ title: t("member.tabs.nutrition"), tabBarIcon: ({ color, size }) => <Feather name="coffee" size={size} color={color} /> }}
+        options={{
+          title: t("member.tabs.nutrition"),
+          tabBarIcon: ({ color, size }) => <Feather name="coffee" size={size} color={color} />,
+          // Hide entirely when the gym hasn't paid for the nutrition feature.
+          href: features.nutritionEnabled ? undefined : null,
+        }}
       />
       <Tabs.Screen
         name="progress"

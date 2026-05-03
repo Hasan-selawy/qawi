@@ -18,10 +18,6 @@ export default function CoachLayout() {
         options={{ title: t("coach.tabs.plans"), tabBarIcon: ({ color, size }) => <Feather name="layers" size={size} color={color} /> }}
       />
       <Tabs.Screen
-        name="notes"
-        options={{ title: t("coach.tabs.notes"), tabBarIcon: ({ color, size }) => <Feather name="edit-3" size={size} color={color} /> }}
-      />
-      <Tabs.Screen
         name="library"
         options={{ title: t("coach.tabs.library"), tabBarIcon: ({ color, size }) => <Feather name="book-open" size={size} color={color} /> }}
       />

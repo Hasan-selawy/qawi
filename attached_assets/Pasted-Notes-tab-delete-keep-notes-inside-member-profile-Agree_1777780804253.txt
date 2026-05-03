@@ -1,0 +1,43 @@
+Notes tab → delete, keep notes inside member profile. Agreed, no downside. The tab adds nothing the profile doesn't already give you.
+
+2. Progress photos → delete. Agreed. Heavy feature, low usage, also has privacy/storage cost when you go to stores (App Store will ask about photo permissions and image storage).
+
+3. Check-in button + streak — my honest opinion: KEEP both, just don't waste a tab on check-in.
+Streaks are the single most effective retention mechanic in fitness apps — Strava, MyFitnessPal, Apple Fitness all use them because they work. The "don't break my streak" feeling is exactly what makes someone open your app on a tired Tuesday. If you remove it, you're removing your strongest "why open the app today" lever, and that hurts day-30 retention which is what determines whether subscriptions stick.
+
+What I'd actually do: move check-in from a dedicated tab to a big primary button at the top of the member home (with the streak number right next to it, so it's celebratory). One less tab, more visibility, retention loop kept. Later you can add a "scan gym QR to check in" flow which is the natural upgrade.
+
+4. Parallel attendance routes → fix. Agreed, pure cleanup, will consolidate everything under MemberController (member-self) + AttendanceController (coach/admin views) with no overlap.
+
+5. Templates → keep. Your warm-up example is a perfect use case. Agreed.
+
+6. Nutrition gated by gym subscription plan + super-admin toggle. Strongly agree, and I'd push this one step further: build it as a generic "gym feature flags" system, not a single nutritionEnabled boolean. Reason: the moment you have one toggle, you'll want more (analytics, custom branding, multi-location, advanced templates…). A gym_features table or a features JSON column on Gym lets the super admin flip any feature per gym, and lets you sell "Pro / Pro Plus / Enterprise" tiers without a schema change every time. Mobile/web hides the nutrition tab + routes when the flag is off.
+
+7. Super admin adds global exercises, gym admin adds gym-wide exercises, coach adds private exercises. Strongly agree — this is the right model. The cleanest way to do it:
+
+Add to ExerciseTemplate:
+
+a scope enum: GLOBAL / GYM / COACH
+a nullable gymId
+(already has createdByCoachId)
+Then visibility for any user becomes:
+
+show me exercises where scope=GLOBAL, OR (scope=GYM AND gymId=mine), OR (scope=COACH AND createdBy=me)
+And write permissions:
+
+SUPER_ADMIN → can create GLOBAL
+GYM_ADMIN → can create GYM (auto-tagged with their gymId)
+COACH → can create COACH (auto-tagged with their userId, only visible to them)
+Each scope can only be deleted by an account in the matching scope
+In the mobile UI, the existing "Add custom" modal stays as-is for coaches, and we add a similar "Add exercise" entry point in the admin screens (one for super-admin → global, one for gym-admin → gym-wide). The library list automatically picks up everything visible to the caller; no UI change needed there.
+
+One thing I'd add to your "ready-to-publish" thinking that's not on your list: when you delete the photos feature, also remove the related permission strings from app.json / Info.plist, otherwise Apple review will ask why you're requesting camera/photos access without using them. I'll handle that as part of the cleanup when you give me the go-ahead.
+
+So my proposed order of operations when you say "go":
+
+Delete coach Notes tab (notes still in member profile) + delete Progress Photos end-to-end (entity, controller, service, repo, mobile/web screens, image perms)
+Move member check-in to a prominent button on home, delete the tab
+Consolidate the parallel attendance routes
+Add Gym.features JSON + nutritionEnabled flag, super-admin toggle UI, hide nutrition when off
+Add scope + gymId to ExerciseTemplate, migration, update visibility queries, add admin "add exercise" screens
+Let me know what to keep / drop / reorder, and whether you want all 5 in one pass or split across a couple of rounds. (Also — those 3 failed workflows are leftovers from the earlier session; I'll restart them as soon as we start touching code.)

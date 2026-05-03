@@ -64,23 +64,49 @@ public class SuperAdminService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public GymDetailResponse getGym(UUID gymId) {
+        return toGymDetail(loadGym(gymId));
+    }
+
     @Transactional
     public GymDetailResponse updateSubscription(UUID gymId, UpdateSubscriptionRequest req) {
-        Gym gym = gymRepository.findById(gymId)
-                .orElseThrow(() -> new AppException("Gym not found", "الصالة غير موجودة", HttpStatus.NOT_FOUND));
-
+        Gym gym = loadGym(gymId);
         gym.setSubscriptionPlan(req.getSubscriptionPlan());
         gym.setSubscriptionExpiresAt(req.getSubscriptionExpiresAt());
+        return toGymDetail(gymRepository.save(gym));
+    }
 
+    @Transactional
+    public GymDetailResponse updateFeatures(UUID gymId, GymFeaturesRequest req) {
+        Gym gym = loadGym(gymId);
+        if (req.getNutritionEnabled() != null) gym.setNutritionEnabled(req.getNutritionEnabled());
+        if (req.getPushNotificationsEnabled() != null) gym.setPushNotificationsEnabled(req.getPushNotificationsEnabled());
+        if (req.getCustomBrandingEnabled() != null) gym.setCustomBrandingEnabled(req.getCustomBrandingEnabled());
+        if (req.getClassBookingEnabled() != null) gym.setClassBookingEnabled(req.getClassBookingEnabled());
+        if (req.getAnalyticsAdvancedEnabled() != null) gym.setAnalyticsAdvancedEnabled(req.getAnalyticsAdvancedEnabled());
+        return toGymDetail(gymRepository.save(gym));
+    }
+
+    @Transactional
+    public GymDetailResponse updateLimits(UUID gymId, GymLimitsRequest req) {
+        Gym gym = loadGym(gymId);
+        gym.setMaxMembers(req.getMaxMembers()); // null = unlimited
+        return toGymDetail(gymRepository.save(gym));
+    }
+
+    @Transactional
+    public GymDetailResponse updateBranding(UUID gymId, GymBrandingRequest req) {
+        Gym gym = loadGym(gymId);
+        gym.setLogoUrl(emptyToNull(req.getLogoUrl()));
+        gym.setPrimaryColor(emptyToNull(req.getPrimaryColor()));
         return toGymDetail(gymRepository.save(gym));
     }
 
     @Transactional
     public void deactivateGym(UUID gymId) {
-        Gym gym = gymRepository.findById(gymId)
-                .orElseThrow(() -> new AppException("Gym not found", "الصالة غير موجودة", HttpStatus.NOT_FOUND));
-
-        List<User> users = userRepository.findByGymId(gymId);
+        Gym gym = loadGym(gymId);
+        List<User> users = userRepository.findByGymId(gym.getId());
         users.forEach(u -> u.setActive(false));
         userRepository.saveAll(users);
     }
@@ -97,6 +123,15 @@ public class SuperAdminService {
                 .activeGyms(gymRepository.countActiveGyms(now))
                 .expiringGyms(gymRepository.countExpiringGyms(now, in30Days))
                 .build();
+    }
+
+    private Gym loadGym(UUID gymId) {
+        return gymRepository.findById(gymId)
+                .orElseThrow(() -> new AppException("Gym not found", "الصالة غير موجودة", HttpStatus.NOT_FOUND));
+    }
+
+    private static String emptyToNull(String s) {
+        return (s == null || s.isBlank()) ? null : s.trim();
     }
 
     private GymDetailResponse toGymDetail(Gym gym) {
@@ -130,6 +165,14 @@ public class SuperAdminService {
                 .totalMembers(members)
                 .totalCoaches(coaches)
                 .subscriptionStatus(status)
+                .nutritionEnabled(gym.isNutritionEnabled())
+                .pushNotificationsEnabled(gym.isPushNotificationsEnabled())
+                .customBrandingEnabled(gym.isCustomBrandingEnabled())
+                .classBookingEnabled(gym.isClassBookingEnabled())
+                .analyticsAdvancedEnabled(gym.isAnalyticsAdvancedEnabled())
+                .maxMembers(gym.getMaxMembers())
+                .logoUrl(gym.getLogoUrl())
+                .primaryColor(gym.getPrimaryColor())
                 .build();
     }
 }

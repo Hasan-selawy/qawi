@@ -24,10 +24,10 @@ import MemberDetail from "@/pages/coach/member-detail";
 import CreatePlan from "@/pages/coach/create-plan";
 import Templates from "@/pages/coach/templates";
 import Library from "@/pages/coach/library";
-import CoachNotes from "@/pages/coach/notes";
 
 import SuperDashboard from "@/pages/super/dashboard";
 import SuperGyms from "@/pages/super/gyms";
+import SuperGymDetail from "@/pages/super/gym-detail";
 
 const queryClient = new QueryClient();
 
@@ -69,10 +69,7 @@ function Router() {
         <RoleRoute role="COACH"><AppShell><Templates /></AppShell></RoleRoute>
       </Route>
       <Route path="/coach/library">
-        <RoleRoute role="COACH"><AppShell><Library /></AppShell></RoleRoute>
-      </Route>
-      <Route path="/coach/notes">
-        <RoleRoute role="COACH"><AppShell><CoachNotes /></AppShell></RoleRoute>
+        <RoleRoute role={["COACH", "GYM_ADMIN"]}><AppShell><Library /></AppShell></RoleRoute>
       </Route>
 
       {/* Super Admin Routes */}
@@ -81,6 +78,9 @@ function Router() {
       </Route>
       <Route path="/super/gyms">
         <RoleRoute role="SUPER_ADMIN"><AppShell><SuperGyms /></AppShell></RoleRoute>
+      </Route>
+      <Route path="/super/gyms/:id">
+        <RoleRoute role="SUPER_ADMIN"><AppShell><SuperGymDetail /></AppShell></RoleRoute>
       </Route>
 
       <Route component={NotFound} />

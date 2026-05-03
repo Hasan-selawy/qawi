@@ -2,6 +2,7 @@ package com.qawi.service;
 
 import com.qawi.dto.AddExerciseRequest;
 import com.qawi.entity.ExerciseCategory;
+import com.qawi.entity.ExerciseScope;
 import com.qawi.entity.ExerciseTemplate;
 import com.qawi.entity.Role;
 import com.qawi.entity.User;
@@ -33,38 +34,67 @@ public class ExerciseService {
         return categoryRepository.findAll();
     }
 
+    // ── Library reads (scope-aware) ─────────────────────────────────────────
+
     public List<ExerciseTemplate> getAllExercises(String userEmail) {
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new AppException("User not found", "المستخدم غير موجود", HttpStatus.NOT_FOUND));
-        if (user.getRole() == Role.COACH) {
-            return templateRepository.findByIsCustomFalseOrCreatedByCoachId(user.getId());
-        }
-        return templateRepository.findByIsCustomFalse();
+        User user = requireUser(userEmail);
+        return switch (user.getRole()) {
+            case SUPER_ADMIN -> templateRepository.findAll();
+            case GYM_ADMIN   -> templateRepository.findVisibleForGymAdmin(user.getGymId());
+            case COACH       -> templateRepository.findVisibleForCoach(user.getGymId(), user.getId());
+            default          -> templateRepository.findByIsCustomFalse();
+        };
     }
 
     public List<ExerciseTemplate> getExercisesByCategory(UUID categoryId, String userEmail) {
         categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new AppException("Category not found", "التصنيف غير موجود", HttpStatus.NOT_FOUND));
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new AppException("User not found", "المستخدم غير موجود", HttpStatus.NOT_FOUND));
-        if (user.getRole() == Role.COACH) {
-            return templateRepository.findByCategoryIdAndIsCustomFalseOrCategoryIdAndCreatedByCoachId(
-                    categoryId, categoryId, user.getId());
-        }
-        return templateRepository.findByCategoryIdAndIsCustomFalse(categoryId);
+        return getAllExercises(userEmail).stream()
+                .filter(e -> categoryId.equals(e.getCategoryId()))
+                .toList();
     }
 
-    @Transactional
-    public ExerciseTemplate addCustomExercise(AddExerciseRequest req, String coachEmail) {
-        User coach = userRepository.findByEmail(coachEmail)
-                .orElseThrow(() -> new AppException("User not found", "المستخدم غير موجود", HttpStatus.NOT_FOUND));
+    // ── Library writes (scope routed by role) ───────────────────────────────
 
-        if (coach.getRole() != Role.COACH) {
-            throw new AppException("Only coaches can add exercises", "فقط المدربون يمكنهم إضافة تمارين", HttpStatus.FORBIDDEN);
-        }
+    @Transactional
+    public ExerciseTemplate addCustomExercise(AddExerciseRequest req, String userEmail) {
+        User user = requireUser(userEmail);
 
         categoryRepository.findById(req.getCategoryId())
                 .orElseThrow(() -> new AppException("Category not found", "التصنيف غير موجود", HttpStatus.NOT_FOUND));
+
+        ExerciseScope scope;
+        UUID gymId;
+        UUID createdByCoach;
+        boolean isCustomFlag;
+
+        switch (user.getRole()) {
+            case SUPER_ADMIN -> {
+                scope = ExerciseScope.GLOBAL;
+                gymId = null;
+                createdByCoach = null;
+                isCustomFlag = false; // GLOBAL rows behave like built-ins
+            }
+            case GYM_ADMIN -> {
+                if (user.getGymId() == null) {
+                    throw new AppException("Admin has no gym assigned", "المدير غير مرتبط بصالة", HttpStatus.BAD_REQUEST);
+                }
+                scope = ExerciseScope.GYM;
+                gymId = user.getGymId();
+                createdByCoach = null;
+                isCustomFlag = true;
+            }
+            case COACH -> {
+                scope = ExerciseScope.COACH;
+                gymId = user.getGymId(); // informational, helps gym-admin visibility
+                createdByCoach = user.getId();
+                isCustomFlag = true;
+            }
+            default -> throw new AppException(
+                    "Members cannot add exercises",
+                    "الأعضاء لا يمكنهم إضافة تمارين",
+                    HttpStatus.FORBIDDEN);
+        }
 
         return templateRepository.save(ExerciseTemplate.builder()
                 .categoryId(req.getCategoryId())
@@ -74,29 +104,49 @@ public class ExerciseService {
                 .defaultReps(req.getDefaultReps())
                 .defaultWeight(req.getDefaultWeight())
                 .videoUrl(req.getVideoUrl())
-                .isCustom(true)
-                .createdByCoachId(coach.getId())
+                .isCustom(isCustomFlag)
+                .createdByCoachId(createdByCoach)
+                .scope(scope)
+                .gymId(gymId)
                 .build());
     }
 
     @Transactional
-    public void deleteCustomExercise(UUID exerciseId, String coachEmail) {
-        User coach = userRepository.findByEmail(coachEmail)
-                .orElseThrow(() -> new AppException("User not found", "المستخدم غير موجود", HttpStatus.NOT_FOUND));
-
-        if (coach.getRole() != Role.COACH) {
-            throw new AppException("Only coaches can delete exercises", "فقط المدربون يمكنهم حذف التمارين", HttpStatus.FORBIDDEN);
-        }
+    public void deleteCustomExercise(UUID exerciseId, String userEmail) {
+        User user = requireUser(userEmail);
 
         ExerciseTemplate ex = templateRepository.findById(exerciseId)
                 .orElseThrow(() -> new AppException("Exercise not found", "التمرين غير موجود", HttpStatus.NOT_FOUND));
 
-        if (!ex.isCustom()) {
-            throw new AppException("Cannot delete built-in exercises", "لا يمكن حذف التمارين الأساسية", HttpStatus.FORBIDDEN);
-        }
-
-        if (ex.getCreatedByCoachId() == null || !ex.getCreatedByCoachId().equals(coach.getId())) {
-            throw new AppException("You can only delete your own custom exercises", "يمكنك حذف تمارينك المخصصة فقط", HttpStatus.FORBIDDEN);
+        // Ownership check by role/scope
+        switch (user.getRole()) {
+            case SUPER_ADMIN -> {
+                // can delete anything except in-use rows (handled below)
+            }
+            case GYM_ADMIN -> {
+                if (ex.getScope() != ExerciseScope.GYM
+                        || ex.getGymId() == null
+                        || !ex.getGymId().equals(user.getGymId())) {
+                    throw new AppException(
+                            "You can only delete exercises owned by your gym",
+                            "يمكنك حذف تمارين صالتك فقط",
+                            HttpStatus.FORBIDDEN);
+                }
+            }
+            case COACH -> {
+                if (ex.getScope() != ExerciseScope.COACH
+                        || ex.getCreatedByCoachId() == null
+                        || !ex.getCreatedByCoachId().equals(user.getId())) {
+                    throw new AppException(
+                            "You can only delete your own custom exercises",
+                            "يمكنك حذف تمارينك المخصصة فقط",
+                            HttpStatus.FORBIDDEN);
+                }
+            }
+            default -> throw new AppException(
+                    "Not allowed",
+                    "غير مسموح",
+                    HttpStatus.FORBIDDEN);
         }
 
         if (planExerciseRepository.existsByExerciseTemplateId(exerciseId)
@@ -108,5 +158,10 @@ public class ExerciseService {
         }
 
         templateRepository.delete(ex);
+    }
+
+    private User requireUser(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException("User not found", "المستخدم غير موجود", HttpStatus.NOT_FOUND));
     }
 }
