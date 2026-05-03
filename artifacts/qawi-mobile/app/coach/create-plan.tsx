@@ -112,11 +112,12 @@ export default function CreatePlan() {
   const canSave = canStep1 && days.length > 0;
 
   const addDay = (dateISO: string) => {
-    if (days.find((d) => d.dayDate === dateISO)) return;
-    setDays((arr) =>
-      [...arr, { tempId: tempId(), dayName: `Day ${arr.length + 1}`, dayDate: dateISO, restDay: false, exercises: [] }]
-        .sort((a, b) => a.dayDate.localeCompare(b.dayDate))
-    );
+    setDays((arr) => {
+      const existing = arr.find((d) => d.dayDate === dateISO);
+      if (existing) return arr.filter((d) => d.dayDate !== dateISO);
+      return [...arr, { tempId: tempId(), dayName: `Day ${arr.length + 1}`, dayDate: dateISO, restDay: false, exercises: [] }]
+        .sort((a, b) => a.dayDate.localeCompare(b.dayDate));
+    });
   };
 
   return (
