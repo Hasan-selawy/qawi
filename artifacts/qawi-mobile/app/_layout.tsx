@@ -1,3 +1,4 @@
+import { Cairo_700Bold, Cairo_900Black } from "@expo-google-fonts/cairo";
 import {
   Inter_400Regular,
   Inter_500Medium,
@@ -42,6 +43,8 @@ export default function RootLayout() {
     Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
+    Cairo_700Bold,
+    Cairo_900Black,
   });
 
   useEffect(() => {
