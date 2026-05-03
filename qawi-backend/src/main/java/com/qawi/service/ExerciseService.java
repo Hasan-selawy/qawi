@@ -29,14 +29,25 @@ public class ExerciseService {
         return categoryRepository.findAll();
     }
 
-    public List<ExerciseTemplate> getAllExercises() {
-        return templateRepository.findAll();
+    public List<ExerciseTemplate> getAllExercises(String userEmail) {
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new AppException("User not found", "المستخدم غير موجود", HttpStatus.NOT_FOUND));
+        if (user.getRole() == Role.COACH) {
+            return templateRepository.findByIsCustomFalseOrCreatedByCoachId(user.getId());
+        }
+        return templateRepository.findByIsCustomFalse();
     }
 
-    public List<ExerciseTemplate> getExercisesByCategory(UUID categoryId) {
+    public List<ExerciseTemplate> getExercisesByCategory(UUID categoryId, String userEmail) {
         categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new AppException("Category not found", "التصنيف غير موجود", HttpStatus.NOT_FOUND));
-        return templateRepository.findByCategoryId(categoryId);
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new AppException("User not found", "المستخدم غير موجود", HttpStatus.NOT_FOUND));
+        if (user.getRole() == Role.COACH) {
+            return templateRepository.findByCategoryIdAndIsCustomFalseOrCategoryIdAndCreatedByCoachId(
+                    categoryId, categoryId, user.getId());
+        }
+        return templateRepository.findByCategoryIdAndIsCustomFalse(categoryId);
     }
 
     @Transactional

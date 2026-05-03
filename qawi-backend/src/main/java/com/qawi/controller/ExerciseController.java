@@ -29,13 +29,16 @@ public class ExerciseController {
     }
 
     @GetMapping("/library")
-    public ResponseEntity<List<ExerciseTemplate>> getAllExercises() {
-        return ResponseEntity.ok(exerciseService.getAllExercises());
+    public ResponseEntity<List<ExerciseTemplate>> getAllExercises(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(exerciseService.getAllExercises(userDetails.getUsername()));
     }
 
     @GetMapping("/library/{categoryId}")
-    public ResponseEntity<List<ExerciseTemplate>> getByCategory(@PathVariable UUID categoryId) {
-        return ResponseEntity.ok(exerciseService.getExercisesByCategory(categoryId));
+    public ResponseEntity<List<ExerciseTemplate>> getByCategory(
+            @PathVariable UUID categoryId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(exerciseService.getExercisesByCategory(categoryId, userDetails.getUsername()));
     }
 
     @PostMapping("/library")
