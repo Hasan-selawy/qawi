@@ -1,0 +1,410 @@
+Build Phase 6 — Qawi mobile app using Expo + React Native.
+App name: "Qawi - قوي"
+
+TECH STACK:
+- Expo SDK 51
+- React Native
+- TypeScript
+- Expo Router (file-based routing)
+- Axios
+- React Query (TanStack Query)
+- AsyncStorage (for token storage)
+- i18n-js + expo-localization (Arabic/English)
+- Expo Notifications
+- Expo Image Picker (progress photos)
+- React Native Reanimated (animations)
+- React Native Safe Area Context
+- @expo/vector-icons
+
+DESIGN SYSTEM:
+- Background: #0A0F1E
+- Surface: #111827
+- Card: #1E293B
+- Accent: #22C55E (green)
+- Danger: #EF4444
+- Warning: #F59E0B
+- Text Primary: #F8FAFC
+- Text Secondary: #94A3B8
+- Border: #1F2937
+- Font: Cairo (Arabic), Inter (English)
+- Border radius: 16px on cards
+- All screens dark theme
+
+API:
+- Base URL stored in .env as EXPO_PUBLIC_API_URL
+- Same backend at port 9000
+- Auth: Bearer token in every request header
+- Token stored in AsyncStorage
+
+═══════════════════════════════════
+LOGIN + ROUTING
+═══════════════════════════════════
+
+SPLASH SCREEN:
+- Dark background #0A0F1E
+- Centered green قوي logo with fade-in animation
+- Auto-navigate to login after 2 seconds
+
+LOGIN SCREEN:
+- Dark background
+- Glass card centered
+- قوي logo at top with green glow
+- Email + password inputs (styled, dark)
+- Show/hide password toggle
+- Green login button with loading spinner
+- Language toggle AR | EN at top right
+- Error message on wrong credentials (shake animation)
+- After login route by role:
+  MEMBER → member tab bar
+  COACH → coach tab bar
+  GYM_ADMIN → admin tab bar
+  SUPER_ADMIN → show error "Please use the web dashboard"
+
+═══════════════════════════════════
+MEMBER SCREENS
+═══════════════════════════════════
+
+MEMBER TAB BAR (5 tabs):
+🏠 Home | 💪 Workout | 📍 Check-in | 🥗 Nutrition | 📊 Progress
+
+TAB 1 — HOME (🏠):
+- Header: "مرحباً [Name] 👋" or "Welcome [Name] 👋"
+- Subscription alert banner if expiring soon (orange)
+- TODAY'S WORKOUT CARD:
+  - Plan name + day name
+  - Exercise count
+  - "Start Workout" button → workout screen
+  - If rest day → "Rest Day 😴"
+  - If no plan → "No plan assigned yet — ask your coach"
+- STREAK CARD: 🔥 X day streak
+- QUICK STATS: total workouts completed, current plan days
+- RECENT NOTIFICATIONS: last 2 previews with bell icon
+
+TAB 2 — TODAY'S WORKOUT (💪):
+- Day name + date at top
+- Exercise list — each card shows:
+  - Arabic name (large) + English name (small)
+  - Coach note if exists: 📌 "Use machine #1" (yellow info box)
+  - Target sets × reps
+  - Weight input (empty, placeholder "Enter weight used (kg)")
+  - Sets completed toggle per set
+  - YouTube video button (red play icon → opens link)
+- "Complete Workout" button at bottom:
+  → POST /api/v1/workouts/logs for each exercise
+  → PUT /api/v1/workouts/days/{dayId}/complete
+  → Green checkmark success animation + confetti
+  → Updates streak
+
+TAB 3 — CHECK-IN (📍):
+- Large green "Check In" button centered
+- POST /api/v1/attendance/checkin
+- On success: streak bounce animation 🔥
+- "🔥 X day streak!"
+- Last 10 checkins calendar heatmap
+- If already checked in today → "Already checked in today ✅"
+
+TAB 4 — NUTRITION (🥗):
+- Meal cards by type:
+  🌅 Breakfast | ☀️ Lunch | 🌙 Dinner | 🍎 Snack
+- Each card: description (AR or EN), calories, protein
+- If no plan → "No nutrition plan assigned yet"
+
+TAB 5 — PROGRESS (📊):
+- MEASUREMENTS section:
+  Grid: Weight, Height, Chest, Waist, Arms, Legs, Body Fat
+  Each shows value + delta from previous
+  "Add Measurement" button → form modal
+- PROGRESS PHOTOS:
+  Horizontal scroll with dates
+  "Add Photo" button → image picker
+- BODY CHART: weight over time line chart
+
+PROFILE SCREEN (accessible from home):
+- Avatar (gradient + initials)
+- Name, email, gym name
+- Subscription end date + status badge
+- Language toggle AR | EN
+- Notifications toggle
+- Logout button (red)
+
+═══════════════════════════════════
+COACH SCREENS
+═══════════════════════════════════
+
+COACH TAB BAR (5 tabs):
+👥 Members | 💪 Plans | 📋 Notes | 📚 Library | 👤 Profile
+
+TAB 1 — MEMBERS (👥):
+- Search bar at top
+- Filter tabs: All | Active | Inactive | Expiring
+- Member cards:
+  - Avatar (gradient + initials)
+  - Name + email
+  - Last checkin badge (green "Today", orange "X days ago", red "5+ days")
+  - Subscription status badge
+  - Workouts completed this week
+  - Current plan name
+  - "View" button
+- Calls GET /api/v1/coach/members
+
+MEMBER DETAIL PAGE (coach):
+Full screen with 5 tabs:
+
+  Tab 1 — TODAY:
+  - Today's workout day for this member
+  - Each exercise with sets/reps
+  - Whether member completed it (✅ if done)
+  - Actual weights the member logged
+  - Coach note field per exercise (editable inline)
+
+  Tab 2 — PLAN:
+  - Current plan name + date range
+  - Full calendar grid of all days
+  - Color coded: ✅ completed | 😴 rest | ⏳ pending | 🔵 today
+  - Tap day → see exercises list
+  - "Create New Plan" button → plan builder wizard
+
+  Tab 3 — NUTRITION:
+  - Member's meal plan
+  - Meal cards (Breakfast, Lunch, Dinner, Snack)
+  - "Create Nutrition Plan" button → form
+
+  Tab 4 — MEASUREMENTS:
+  - Latest body stats grid
+  - Weight trend chart
+  - "Add Measurement" button → form
+
+  Tab 5 — NOTES:
+  - Notes timeline (newest first)
+  - Add note textarea at top
+  - Edit/delete notes
+
+TAB 2 — PLANS (💪):
+- List of workout plans coach created
+- Each: member name, plan name, date range, days count
+- "Create New Plan" button → 3 step wizard:
+  Step 1: Select member + plan name + date range
+  Step 2: Calendar grid — tap any date to add day,
+          toggle rest day, day name EN + AR
+  Step 3: For each day → category grid → exercise list
+          → tap to add → set sets/reps/note inline
+- Save → success animation
+
+TAB 3 — NOTES (📋):
+- Member selector dropdown
+- Note textarea with character count
+- Save button
+- Notes timeline (newest first)
+- Edit/delete per note
+- Calls GET/POST/PUT/DELETE /api/v1/notes
+
+TAB 4 — LIBRARY (📚):
+- Category filter tabs with emoji icons:
+  💪 Chest | 🏋️ Back | 🦵 Legs | 🎯 Shoulders | 💪 Arms | 🔥 Core | 🏃 Cardio
+- Search bar
+- Exercise cards:
+  - Name (AR or EN based on language)
+  - Sets × reps defaults
+  - YouTube button (red play icon)
+- "Add Custom Exercise" button → modal
+
+TAB 5 — PROFILE (👤):
+- Avatar + name + email
+- Language toggle AR | EN
+- Logout button (red)
+
+═══════════════════════════════════
+GYM ADMIN SCREENS
+═══════════════════════════════════
+
+ADMIN TAB BAR (4 tabs):
+📊 Dashboard | 👥 Members | 🏋️ Coaches | 👤 Profile
+
+TAB 1 — DASHBOARD (📊):
+- Stats cards (animated count-up):
+  Total Members (blue)
+  Active This Week (green)
+  Expiring This Week (orange)
+  Total Coaches (purple)
+- Expiring subscriptions list:
+  Member name + days remaining (red < 3, orange < 7)
+  "Renew" button per member
+- Top performing members list
+- Calls GET /api/v1/admin/analytics
+
+TAB 2 — MEMBERS (👥):
+- Search bar + filter tabs: All | Active | Expiring | Expired
+- Member list:
+  Name + email + subscription status badge
+  Subscription end date
+  Assigned coach name
+  Tap member → detail modal with tabs:
+    Info | Subscription | Assign Coach
+- "Add Member" button → form modal:
+  Name, email, password, subscription end date
+- Subscription tab:
+  Show history + renew form (plan, start, end, price)
+- Assign Coach tab:
+  Coach dropdown from same gym
+- Calls GET/POST /api/v1/admin/members
+
+TAB 3 — COACHES (🏋️):
+- Coach cards:
+  Avatar + name + email + member count
+- "Add Coach" button → modal: name, email, password
+- Tap coach → their member list
+- Calls GET/POST /api/v1/admin/coaches
+
+TAB 4 — PROFILE (👤):
+- Avatar + name + email + gym name
+- Language toggle AR | EN
+- Logout button (red)
+
+═══════════════════════════════════
+SHARED FEATURES (ALL ROLES)
+═══════════════════════════════════
+
+NOTIFICATIONS:
+- Bell icon on home/dashboard screen with unread count badge
+- Notification list screen:
+  - Message in AR or EN based on language
+  - Time ago
+  - Mark as read on tap (opacity change)
+  - "Mark all read" button
+- Poll every 30 seconds
+- Calls GET /api/v1/notifications
+         PUT /api/v1/notifications/{id}/read
+         PUT /api/v1/notifications/read-all
+
+ARABIC + RTL:
+- Language toggle saved in AsyncStorage
+- Arabic → RTL layout, Cairo font
+- English → LTR layout, Inter font
+- All text from translation files (en.json + ar.json)
+- Every screen fully translated for all 3 roles
+
+ANIMATIONS:
+- Splash: fade in logo
+- Login: shake on error
+- Check-in: streak bounce animation
+- Workout complete: green checkmark + confetti
+- Tab switch: smooth fade
+- Cards: slide up on mount
+- Count-up on stat numbers
+- Button press: scale 0.97
+
+═══════════════════════════════════
+API ENDPOINTS
+═══════════════════════════════════
+
+AUTH:
+POST /api/v1/auth/login
+GET /api/v1/auth/me
+
+MEMBER:
+GET /api/v1/workouts/member/{memberId}
+PUT /api/v1/workouts/days/{dayId}/complete
+POST /api/v1/workouts/logs
+POST /api/v1/attendance/checkin
+GET /api/v1/attendance/member/{memberId}/streak
+GET /api/v1/nutrition/member/{memberId}
+GET /api/v1/measurements/member/{memberId}
+GET /api/v1/measurements/member/{memberId}/latest
+POST /api/v1/measurements
+GET /api/v1/photos/member/{memberId}
+POST /api/v1/photos
+
+COACH:
+GET /api/v1/coach/members
+GET /api/v1/coach/members/{id}/overview
+GET /api/v1/exercises/categories
+GET /api/v1/exercises/library
+POST /api/v1/workouts
+POST /api/v1/workouts/{planId}/days
+POST /api/v1/workouts/days/{dayId}/exercises
+GET /api/v1/nutrition/member/{memberId}
+POST /api/v1/nutrition
+POST /api/v1/nutrition/{planId}/meals
+GET /api/v1/notes/member/{memberId}
+POST /api/v1/notes
+PUT /api/v1/notes/{id}
+DELETE /api/v1/notes/{id}
+
+ADMIN:
+GET /api/v1/admin/analytics
+GET /api/v1/admin/members
+POST /api/v1/admin/members
+PUT /api/v1/admin/members/{id}/assign
+PUT /api/v1/admin/members/{id}/subscription
+GET /api/v1/admin/members/{id}/subscription-history
+GET /api/v1/admin/expiring-subscriptions
+GET /api/v1/admin/coaches
+POST /api/v1/admin/coaches
+
+SHARED:
+GET /api/v1/notifications
+PUT /api/v1/notifications/{id}/read
+PUT /api/v1/notifications/read-all
+
+═══════════════════════════════════
+FOLDER STRUCTURE
+═══════════════════════════════════
+
+/app
+  /(auth)
+    login.tsx
+    splash.tsx
+  /(member)
+    index.tsx (Home)
+    workout.tsx
+    checkin.tsx
+    nutrition.tsx
+    progress.tsx
+    profile.tsx
+    notifications.tsx
+  /(coach)
+    index.tsx (Members list)
+    member/[id].tsx (Member detail)
+    plans.tsx
+    notes.tsx
+    library.tsx
+    profile.tsx
+  /(admin)
+    index.tsx (Dashboard)
+    members.tsx
+    coaches.tsx
+    profile.tsx
+/components
+  /ui (Button, Card, Badge, Input, Modal, Avatar, Spinner, Toast)
+  /member (ExerciseCard, WorkoutComplete, MealCard, MeasurementCard)
+  /coach (MemberCard, PlanBuilder, ExercisePicker, NoteCard)
+  /admin (StatCard, MemberRow, CoachCard, RenewModal)
+  /shared (NotificationItem, LanguageToggle, ProfileCard)
+/services
+  api.ts
+  auth.service.ts
+  workout.service.ts
+  attendance.service.ts
+  nutrition.service.ts
+  measurements.service.ts
+  notifications.service.ts
+  coach.service.ts
+  admin.service.ts
+/hooks
+  useAuth.ts
+  useLanguage.ts
+  useToast.ts
+/context
+  AuthContext.tsx
+  LanguageContext.tsx
+/locales
+  en.json
+  ar.json
+/constants
+  colors.ts
+  theme.ts
+
+Make it feel like a premium fitness app — dark, sleek, smooth animations.
+This is what members, coaches, and gym admins will use every day on their phones.
+Make it fast, beautiful, and production ready.
+Tell me when Agent finishes!

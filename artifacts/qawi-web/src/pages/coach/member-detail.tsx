@@ -70,7 +70,6 @@ export default function MemberDetail({ id }: { id: string }) {
         <Tabs defaultValue="plan" className="w-full">
           <TabsList className="bg-black/20 w-full justify-start overflow-x-auto p-1 h-auto mb-6 flex-wrap">
             <TabsTrigger value="plan" className="py-2">Plan</TabsTrigger>
-            <TabsTrigger value="nutrition" className="py-2">Nutrition</TabsTrigger>
             <TabsTrigger value="measurements" className="py-2">Measurements</TabsTrigger>
             <TabsTrigger value="photos" className="py-2">Photos</TabsTrigger>
             <TabsTrigger value="attendance" className="py-2">Attendance</TabsTrigger>
@@ -78,7 +77,6 @@ export default function MemberDetail({ id }: { id: string }) {
           </TabsList>
 
           <TabsContent value="plan" className="m-0"><PlanTab plan={overview?.currentWorkoutPlan} memberId={id} lang={lang} /></TabsContent>
-          <TabsContent value="nutrition" className="m-0"><NutritionTab plan={overview?.nutritionPlan} lang={lang} memberId={id} /></TabsContent>
           <TabsContent value="measurements" className="m-0"><MeasurementsTab memberId={id} /></TabsContent>
           <TabsContent value="photos" className="m-0"><PhotosTab memberId={id} /></TabsContent>
           <TabsContent value="attendance" className="m-0"><AttendanceTab memberId={id} /></TabsContent>
@@ -355,92 +353,6 @@ function DayDetail({ day, lang, logsByExerciseId, categories, libraryExercises, 
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function NutritionTab({ plan, lang, memberId }: { plan: any; lang: string; memberId: string }) {
-  const queryClient = useQueryClient();
-  const addMeal = useMutation({
-    mutationFn: ({ planId, data }: { planId: string; data: any }) => apiFetch(`/nutrition/${planId}/meals`, { method: 'POST', data }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['coach', 'members', memberId, 'overview'] });
-      toast.success('Meal added');
-    },
-    onError: (err: any) => toast.error(err.error || 'Failed'),
-  });
-
-  if (!plan) {
-    return (
-      <div className="glass-card p-12 text-center border-dashed">
-        <p className="text-muted-foreground">No nutrition plan configured for this member yet.</p>
-      </div>
-    );
-  }
-
-  const mealTypes = [
-    { type: 'BREAKFAST', emoji: '🌅', label: 'Breakfast' },
-    { type: 'LUNCH', emoji: '☀️', label: 'Lunch' },
-    { type: 'SNACK', emoji: '🍎', label: 'Snack' },
-    { type: 'DINNER', emoji: '🌙', label: 'Dinner' },
-  ];
-
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {mealTypes.map(({ type, emoji, label }) => {
-        const meals = (plan.meals || []).filter((m: any) => m.mealType === type);
-        return (
-          <div key={type} className="glass-card p-6 border-white/5 flex flex-col">
-            <div className="flex justify-between items-center mb-4">
-              <h4 className="font-semibold text-lg flex items-center gap-2"><span>{emoji}</span> {label}</h4>
-              <Dialog>
-                <DialogTrigger asChild><Button variant="ghost" size="sm" className="h-8"><Plus className="mr-1 h-4 w-4" /> Add</Button></DialogTrigger>
-                <DialogContent className="glass-card border-white/10">
-                  <DialogHeader><DialogTitle>Add {label}</DialogTitle></DialogHeader>
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      const fd = new FormData(e.currentTarget);
-                      addMeal.mutate({
-                        planId: plan.id,
-                        data: {
-                          mealType: type,
-                          description: fd.get('description'),
-                          descriptionAr: fd.get('descriptionAr'),
-                          calories: Number(fd.get('calories')),
-                          protein: Number(fd.get('protein')),
-                        },
-                      });
-                    }}
-                    className="space-y-4"
-                  >
-                    <Input name="description" placeholder="Meal description" required className="bg-black/20" />
-                    <Input name="descriptionAr" placeholder="وصف الوجبة" className="bg-black/20" dir="rtl" />
-                    <div className="grid grid-cols-2 gap-4">
-                      <Input name="calories" type="number" placeholder="Calories (kcal)" required className="bg-black/20" />
-                      <Input name="protein" type="number" placeholder="Protein (g)" required className="bg-black/20" />
-                    </div>
-                    <Button type="submit" className="w-full" disabled={addMeal.isPending}>Save</Button>
-                  </form>
-                </DialogContent>
-              </Dialog>
-            </div>
-
-            <div className="space-y-3 flex-1">
-              {meals.map((meal: any) => (
-                <div key={meal.id} className="p-3 bg-black/20 rounded-lg border border-white/5">
-                  <p className="font-medium mb-2">{lang === 'ar' ? (meal.descriptionAr || meal.description) : meal.description}</p>
-                  <div className="flex gap-2">
-                    <span className="text-xs bg-orange-500/20 text-orange-500 px-2 py-1 rounded-md">{meal.calories} kcal</span>
-                    <span className="text-xs bg-blue-500/20 text-blue-500 px-2 py-1 rounded-md">{meal.protein}g protein</span>
-                  </div>
-                </div>
-              ))}
-              {meals.length === 0 && <p className="text-muted-foreground text-sm text-center py-4">No meals added</p>}
-            </div>
-          </div>
-        );
-      })}
     </div>
   );
 }

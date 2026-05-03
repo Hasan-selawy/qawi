@@ -3,7 +3,24 @@
 ## Overview
 
 pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
-Also contains a standalone Java Spring Boot 3 project for the Qawi gym management API.
+Also contains a standalone Java Spring Boot 3 project for the Qawi gym management API,
+a React/Vite web dashboard, and an Expo mobile app — all sharing the same backend.
+
+## Qawi Mobile (`artifacts/qawi-mobile/`)
+- **Stack**: Expo SDK 54, React Native, TypeScript, Expo Router, React Query, AsyncStorage
+- **Backend**: Consumes Spring Boot at `https://${EXPO_PUBLIC_DOMAIN}/api/v1` via custom axios-style fetch in `services/api.ts`. JWT stored in AsyncStorage and sent as Bearer.
+- **Auth**: `context/AuthContext.tsx` exposes `login/logout/user`, `useProtectedRoute()` redirects based on role.
+- **i18n**: `context/LanguageContext.tsx` (EN/AR) with `locales/en.json` + `locales/ar.json`. Uses `pickName(lang, obj)` to choose `name`/`nameAr`. RTL via `flexDirection: row-reverse` per-screen.
+- **Theme (Dark Elite)**: bg `#0A0F1E`, surface `#111827`, card `#1E293B`, accent `#22C55E`. Defined in `constants/colors.ts`, accessed via `useColors()`.
+- **Roles & navigation**:
+  - `app/(auth)/login.tsx` — login screen, language toggle.
+  - `app/(member)/` — 5 tabs: Home / Workout / Check-in / Nutrition / Progress.
+  - `app/(coach)/` — 5 tabs: Members / Plans / Notes / Library / Profile.
+  - `app/(admin)/` — 4 tabs: Dashboard / Members / Coaches / Profile.
+  - SUPER_ADMIN sees an alert directing to web dashboard, stays on login.
+  - `app/notifications.tsx` and `app/member/[id].tsx` are shared modal/detail routes.
+- **Shared components**: `components/ui.tsx` (Card/Button/Input/Badge/Avatar/EmptyState/Screen), `components/RoleHeader.tsx`, `components/RoleTabBar.tsx`.
+- **Workflow**: `artifacts/qawi-mobile: expo` — restart only on dependency changes.
 
 ## Stack
 
