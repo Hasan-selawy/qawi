@@ -1,0 +1,70 @@
+The login screen looks perfect on Web simulator but broken on iOS and Android.
+Make iOS and Android look IDENTICAL to the web version.
+
+The web version has:
+- Full screen dark gradient: #0A0F1E top → dark green tint bottom
+- Large green radial glow circle behind the قوي text (no circle border/background)
+- "قوي" text large, glowing green, NO box or circle around it
+- "QAWI" text below in spaced letters
+- Clean input fields with subtle border
+- Green Sign In button
+- Language toggle top right
+
+FIXES NEEDED FOR iOS AND ANDROID:
+
+1. FONTS — Load Cairo font before ANY screen renders:
+   - Install expo-font
+   - Use useFonts hook in _layout.tsx (root layout)
+   - Show nothing (or keep splash) until fonts are loaded
+   - Apply Cairo font to ALL Arabic text explicitly
+   - Apply Inter font to all English text
+   - This fixes the قوي rendering issue on iOS
+
+2. ICONS — Replace ALL icon usage with @expo/vector-icons Ionicons:
+   - Email field: Ionicons "mail-outline"
+   - Password field: Ionicons "lock-closed-outline"  
+   - Password show/hide: Ionicons "eye-outline" / "eye-off-outline"
+   - Sign In button: Ionicons "log-in-outline"
+   - Language toggle: Ionicons "globe-outline"
+   - This fixes the broken icon boxes on Android
+
+3. BACKGROUND GRADIENT:
+   - Use expo-linear-gradient for the background
+   - Colors: ['#0A0F1E', '#0A1A0A'] top to bottom
+   - Must work on iOS and Android (not just web CSS)
+
+4. GREEN GLOW EFFECT behind قوي:
+   - Use a View with:
+     position: absolute
+     width: 280, height: 280
+     borderRadius: 140
+     backgroundColor: 'rgba(34,197,94,0.12)'
+   - Behind the text, centered
+   - Add a second smaller View:
+     width: 180, height: 180
+     borderRadius: 90  
+     backgroundColor: 'rgba(34,197,94,0.08)'
+   - This recreates the glow effect on native platforms
+
+5. TEXT GLOW on قوي:
+   - On native, textShadow doesn't work the same way
+   - Use this approach:
+     Render the قوي text 3 times stacked with position absolute:
+     Bottom layer: color rgba(34,197,94,0.3), fontSize+4, blur effect
+     Middle layer: color rgba(34,197,94,0.6), fontSize+2
+     Top layer: color #22C55E, normal fontSize
+   - This creates a glow effect that works on iOS and Android
+
+6. REMOVE the "1.10" floating text on iOS — 
+   search entire codebase for "1.10" or "version" and remove it
+
+7. INPUT FIELDS:
+   - backgroundColor: 'rgba(255,255,255,0.05)'
+   - borderWidth: 1
+   - borderColor: 'rgba(255,255,255,0.1)'
+   - borderRadius: 12
+   - Use StyleSheet for all styles, no inline styles
+   - On focus: borderColor changes to '#22C55E'
+
+Goal: Web, iOS, and Android must look identical — 
+premium dark athletic design with green glow.

@@ -1,4 +1,4 @@
-import { Feather } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useRef, useState } from "react";
@@ -10,6 +10,7 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   View,
@@ -18,28 +19,36 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
-import { useColors } from "@/hooks/useColors";
+
+const C = {
+  bg: "#0A0F1E",
+  bgBottom: "#0A1A0A",
+  primary: "#22C55E",
+  primaryDark: "#16A34A",
+  text: "#F8FAFC",
+  muted: "#94A3B8",
+  glassBg: "rgba(255,255,255,0.05)",
+  glassBorder: "rgba(255,255,255,0.10)",
+  divider: "rgba(255,255,255,0.30)",
+};
 
 function FloatingInput({
   label,
   value,
   onChangeText,
-  icon,
+  iconName,
   secureTextEntry,
   keyboardType,
-  autoCapitalize,
   rightSlot,
 }: {
   label: string;
   value: string;
   onChangeText: (v: string) => void;
-  icon: React.ComponentProps<typeof Feather>["name"];
+  iconName: React.ComponentProps<typeof Ionicons>["name"];
   secureTextEntry?: boolean;
   keyboardType?: "default" | "email-address";
-  autoCapitalize?: "none" | "sentences";
   rightSlot?: React.ReactNode;
 }) {
-  const c = useColors();
   const [focused, setFocused] = useState(false);
   const anim = useRef(new Animated.Value(value ? 1 : 0)).current;
 
@@ -52,38 +61,23 @@ function FloatingInput({
     }).start();
   }, [focused, value, anim]);
 
-  const labelTop = anim.interpolate({ inputRange: [0, 1], outputRange: [18, 6] });
+  const labelTop = anim.interpolate({ inputRange: [0, 1], outputRange: [22, 8] });
   const labelSize = anim.interpolate({ inputRange: [0, 1], outputRange: [15, 11] });
-  const labelColor = focused ? c.primary : c.mutedForeground;
 
   return (
     <View
-      style={{
-        height: 64,
-        borderRadius: 12,
-        backgroundColor: "rgba(255,255,255,0.05)",
-        borderWidth: 1,
-        borderColor: focused ? c.primary : "rgba(255,255,255,0.1)",
-        flexDirection: "row",
-        alignItems: "center",
-        paddingHorizontal: 14,
-        gap: 12,
-        ...(focused
-          ? { shadowColor: c.primary, shadowOpacity: 0.4, shadowRadius: 10, shadowOffset: { width: 0, height: 0 } }
-          : {}),
-      }}
+      style={[
+        styles.input,
+        { borderColor: focused ? C.primary : C.glassBorder },
+      ]}
     >
-      <Feather name={icon} size={18} color={focused ? c.primary : c.mutedForeground} />
-      <View style={{ flex: 1, height: "100%", justifyContent: "center" }}>
+      <Ionicons name={iconName} size={20} color={focused ? C.primary : C.muted} />
+      <View style={styles.inputBody}>
         <Animated.Text
-          style={{
-            position: "absolute",
-            top: labelTop as any,
-            fontSize: labelSize as any,
-            color: labelColor,
-            fontFamily: "Inter_500Medium",
-            letterSpacing: 0.2,
-          }}
+          style={[
+            styles.inputLabel,
+            { top: labelTop as any, fontSize: labelSize as any, color: focused ? C.primary : C.muted },
+          ]}
         >
           {label}
         </Animated.Text>
@@ -94,16 +88,9 @@ function FloatingInput({
           onBlur={() => setFocused(false)}
           secureTextEntry={secureTextEntry}
           keyboardType={keyboardType}
-          autoCapitalize={autoCapitalize ?? "none"}
+          autoCapitalize="none"
           autoCorrect={false}
-          style={{
-            color: c.foreground,
-            fontFamily: "Inter_500Medium",
-            fontSize: 15,
-            paddingTop: 18,
-            paddingBottom: 0,
-            height: "100%",
-          }}
+          style={styles.inputField}
         />
       </View>
       {rightSlot}
@@ -111,8 +98,31 @@ function FloatingInput({
   );
 }
 
+function GlowingArabicLogo({ fontFamily }: { fontFamily: string }) {
+  return (
+    <View style={styles.logoStack}>
+      <Text
+        style={[
+          styles.logoText,
+          { fontFamily, fontSize: 108, color: "rgba(34,197,94,0.25)", top: -2 },
+        ]}
+      >
+        قوي
+      </Text>
+      <Text
+        style={[
+          styles.logoText,
+          { fontFamily, fontSize: 102, color: "rgba(34,197,94,0.55)", top: 1 },
+        ]}
+      >
+        قوي
+      </Text>
+      <Text style={[styles.logoText, { fontFamily, fontSize: 100, color: C.primary, top: 2 }]}>قوي</Text>
+    </View>
+  );
+}
+
 export default function LoginScreen() {
-  const c = useColors();
   const { t, lang, setLang } = useLanguage();
   const { login } = useAuth();
   const insets = useSafeAreaInsets();
@@ -152,220 +162,152 @@ export default function LoginScreen() {
 
   const tagline = lang === "ar" ? "تدرب بذكاء. كن أقوى." : "Train Smarter. Get Stronger.";
   const arabicFont = "Cairo_900Black";
+  const arabicBold = "Cairo_700Bold";
+  const englishMedium = "Inter_500Medium";
+  const englishBold = "Inter_700Bold";
 
   const shimmerTranslate = shimmer.interpolate({ inputRange: [-1, 1], outputRange: [-220, 320] });
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#0A0F1E" }}>
+    <View style={styles.root}>
       <LinearGradient
-        colors={["#0A0F1E", "#0A1814", "#0D1F0D"]}
+        colors={[C.bg, "#0A1814", C.bgBottom]}
         locations={[0, 0.6, 1]}
-        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+        style={StyleSheet.absoluteFillObject}
       />
 
-      {/* Radial green glow behind logo */}
+      {/* Radial green glow circles behind logo */}
       <View
         pointerEvents="none"
-        style={{
-          position: "absolute",
-          top: insets.top + 60,
-          left: "50%",
-          marginLeft: -150,
-          width: 300,
-          height: 300,
-          borderRadius: 150,
-          backgroundColor: "rgba(34,197,94,0.15)",
-          shadowColor: "#22C55E",
-          shadowOpacity: 0.4,
-          shadowRadius: 80,
-          shadowOffset: { width: 0, height: 0 },
-          ...(Platform.OS === "web" ? { filter: "blur(60px)" as any } : {}),
-        }}
+        style={[
+          styles.glowOuter,
+          { top: insets.top + 90 },
+        ]}
       />
       <View
         pointerEvents="none"
-        style={{
-          position: "absolute",
-          top: insets.top + 100,
-          left: "50%",
-          marginLeft: -100,
-          width: 200,
-          height: 200,
-          borderRadius: 100,
-          backgroundColor: "rgba(34,197,94,0.18)",
-          ...(Platform.OS === "web" ? { filter: "blur(40px)" as any } : {}),
-        }}
+        style={[
+          styles.glowInner,
+          { top: insets.top + 140 },
+        ]}
       />
 
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <KeyboardAvoidingView style={styles.kav} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <ScrollView
-          contentContainerStyle={{
-            flexGrow: 1,
-            paddingHorizontal: 28,
-            paddingTop: insets.top + 20,
-            paddingBottom: insets.bottom + 24,
-          }}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 24 },
+          ]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
           {/* Top right language pill */}
-          <View style={{ flexDirection: "row", justifyContent: "flex-end", marginBottom: 60 }}>
+          <View style={styles.topRow}>
             <Pressable
               onPress={() => setLang(lang === "en" ? "ar" : "en")}
-              style={({ pressed }) => ({
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 8,
-                paddingHorizontal: 14,
-                paddingVertical: 8,
-                borderRadius: 999,
-                borderWidth: 1,
-                borderColor: "rgba(255,255,255,0.12)",
-                backgroundColor: "rgba(255,255,255,0.04)",
-                opacity: pressed ? 0.7 : 1,
-              })}
+              style={({ pressed }) => [styles.langPill, { opacity: pressed ? 0.7 : 1 }]}
             >
-              <Feather name="globe" size={13} color="#94A3B8" />
-              <Text style={{ color: "#F8FAFC", fontSize: 12, fontFamily: "Inter_600SemiBold", letterSpacing: 1 }}>
-                {lang === "en" ? "EN" : "AR"}
-              </Text>
-              <Text style={{ color: "rgba(255,255,255,0.3)", fontSize: 12 }}>|</Text>
-              <Text style={{ color: "#94A3B8", fontSize: 12, fontFamily: "Cairo_700Bold" }}>
+              <Ionicons name="globe-outline" size={14} color={C.muted} />
+              <Text style={[styles.langText, { fontFamily: englishBold }]}>{lang === "en" ? "EN" : "AR"}</Text>
+              <Text style={styles.langDivider}>|</Text>
+              <Text style={[styles.langText, { color: C.muted, fontFamily: arabicBold }]}>
                 {lang === "en" ? "عر" : "EN"}
               </Text>
             </Pressable>
           </View>
 
           {/* Logo block */}
-          <View style={{ alignItems: "center", marginBottom: 48 }}>
+          <View style={styles.logoBlock}>
+            <GlowingArabicLogo fontFamily={arabicFont} />
+            <Text style={[styles.brand, { fontFamily: englishBold }]}>QAWI</Text>
+            <View style={styles.divider} />
             <Text
-              style={{
-                fontSize: 96,
-                color: "#22C55E",
-                fontFamily: arabicFont,
-                lineHeight: 110,
-                textShadowColor: "rgba(34,197,94,0.7)",
-                textShadowOffset: { width: 0, height: 0 },
-                textShadowRadius: 30,
-                ...(Platform.OS === "web"
-                  ? ({ textShadow: "0 0 30px rgba(34,197,94,0.7), 0 0 60px rgba(34,197,94,0.4)" } as any)
-                  : {}),
-              }}
-            >
-              قوي
-            </Text>
-            <Text
-              style={{
-                color: "#FFFFFF",
-                fontSize: 18,
-                letterSpacing: 8,
-                fontFamily: "Inter_700Bold",
-                marginTop: 6,
-                marginLeft: 8,
-              }}
-            >
-              QAWI
-            </Text>
-            <View
-              style={{
-                width: 60,
-                height: 2,
-                backgroundColor: "#22C55E",
-                marginTop: 18,
-                marginBottom: 14,
-                borderRadius: 1,
-              }}
-            />
-            <Text
-              style={{
-                color: "#94A3B8",
-                fontSize: 13,
-                fontFamily: lang === "ar" ? "Cairo_700Bold" : "Inter_500Medium",
-                letterSpacing: lang === "ar" ? 0 : 0.5,
-              }}
+              style={[
+                styles.tagline,
+                { fontFamily: lang === "ar" ? arabicBold : englishMedium },
+              ]}
             >
               {tagline}
             </Text>
           </View>
 
           {/* Inputs */}
-          <View style={{ gap: 14 }}>
+          <View style={styles.inputs}>
             <FloatingInput
               label={t("common.email")}
               value={email}
               onChangeText={setEmail}
-              icon="mail"
+              iconName="mail-outline"
               keyboardType="email-address"
             />
             <FloatingInput
               label={t("common.password")}
               value={password}
               onChangeText={setPassword}
-              icon="lock"
+              iconName="lock-closed-outline"
               secureTextEntry={!showPwd}
               rightSlot={
                 <Pressable hitSlop={10} onPress={() => setShowPwd((s) => !s)}>
-                  <Feather name={showPwd ? "eye-off" : "eye"} size={18} color="#94A3B8" />
+                  <Ionicons name={showPwd ? "eye-off-outline" : "eye-outline"} size={20} color={C.muted} />
                 </Pressable>
               }
             />
           </View>
 
           {/* Sign in button */}
-          <Animated.View style={{ marginTop: 28, transform: [{ scale: pressScale }] }}>
+          <Animated.View style={[styles.signinWrap, { transform: [{ scale: pressScale }] }]}>
             <Pressable
               onPressIn={() => Animated.spring(pressScale, { toValue: 0.97, useNativeDriver: true }).start()}
               onPressOut={() => Animated.spring(pressScale, { toValue: 1, useNativeDriver: true, friction: 4 }).start()}
               onPress={onSubmit}
               disabled={submitting}
-              style={{ borderRadius: 14, overflow: "hidden", height: 56 }}
+              style={styles.signin}
             >
               <LinearGradient
-                colors={submitting ? ["#16A34A", "#15803D"] : ["#22C55E", "#16A34A"]}
+                colors={submitting ? [C.primaryDark, "#15803D"] : [C.primary, C.primaryDark]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
-                style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
+                style={styles.signinGradient}
               >
-                <Text
-                  style={{
-                    color: "#FFFFFF",
-                    fontSize: 16,
-                    fontFamily: lang === "ar" ? "Cairo_700Bold" : "Inter_700Bold",
-                    letterSpacing: 0.5,
-                  }}
-                >
-                  {submitting ? "…" : t("auth.loginButton")}
-                </Text>
-                {/* shimmer */}
+                <View style={styles.signinInner}>
+                  <Ionicons name="log-in-outline" size={20} color="#FFFFFF" />
+                  <Text
+                    style={[
+                      styles.signinText,
+                      { fontFamily: lang === "ar" ? arabicBold : englishBold },
+                    ]}
+                  >
+                    {submitting ? "..." : t("auth.loginButton")}
+                  </Text>
+                </View>
                 <Animated.View
                   pointerEvents="none"
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    bottom: 0,
-                    width: 80,
-                    transform: [{ translateX: shimmerTranslate }, { skewX: "-20deg" }],
-                    backgroundColor: "rgba(255,255,255,0.18)",
-                  }}
+                  style={[
+                    styles.shimmer,
+                    { transform: [{ translateX: shimmerTranslate }, { skewX: "-20deg" }] },
+                  ]}
                 />
               </LinearGradient>
             </Pressable>
           </Animated.View>
 
           {/* Bottom register prompt */}
-          <View style={{ flex: 1 }} />
-          <View style={{ alignItems: "center", marginTop: 40 }}>
-            <Pressable hitSlop={10} style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+          <View style={styles.spacer} />
+          <View style={styles.registerRow}>
+            <Pressable hitSlop={10} style={styles.registerInner}>
               <Text
-                style={{
-                  color: "#94A3B8",
-                  fontSize: 13,
-                  fontFamily: lang === "ar" ? "Cairo_700Bold" : "Inter_500Medium",
-                }}
+                style={[
+                  styles.registerText,
+                  { fontFamily: lang === "ar" ? arabicBold : englishMedium },
+                ]}
               >
                 {lang === "ar" ? "ليس لديك حساب؟ سجّل صالتك" : "Don't have an account? Register your gym"}
               </Text>
-              <Feather name={lang === "ar" ? "arrow-left" : "arrow-right"} size={14} color={c.primary} />
+              <Ionicons
+                name={lang === "ar" ? "arrow-back" : "arrow-forward"}
+                size={14}
+                color={C.primary}
+              />
             </Pressable>
           </View>
         </ScrollView>
@@ -373,3 +315,76 @@ export default function LoginScreen() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: C.bg },
+  kav: { flex: 1 },
+  scrollContent: { flexGrow: 1, paddingHorizontal: 28 },
+  topRow: { flexDirection: "row", justifyContent: "flex-end", marginBottom: 60 },
+  langPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: C.glassBorder,
+    backgroundColor: "rgba(255,255,255,0.04)",
+  },
+  langText: { color: C.text, fontSize: 12, letterSpacing: 1 },
+  langDivider: { color: C.divider, fontSize: 12 },
+  glowOuter: {
+    position: "absolute",
+    alignSelf: "center",
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    backgroundColor: "rgba(34,197,94,0.12)",
+  },
+  glowInner: {
+    position: "absolute",
+    alignSelf: "center",
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: "rgba(34,197,94,0.08)",
+  },
+  logoBlock: { alignItems: "center", marginBottom: 48 },
+  logoStack: { width: 200, height: 130, alignItems: "center", justifyContent: "center" },
+  logoText: { position: "absolute", textAlign: "center", lineHeight: 120 },
+  brand: { color: C.text, fontSize: 18, letterSpacing: 8, marginTop: 6, marginLeft: 8 },
+  divider: { width: 60, height: 2, backgroundColor: C.primary, marginTop: 18, marginBottom: 14, borderRadius: 1 },
+  tagline: { color: C.muted, fontSize: 13, letterSpacing: 0.4 },
+  inputs: { gap: 14 },
+  input: {
+    height: 64,
+    borderRadius: 12,
+    backgroundColor: C.glassBg,
+    borderWidth: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    gap: 12,
+  },
+  inputBody: { flex: 1, height: "100%", justifyContent: "center" },
+  inputLabel: { position: "absolute", fontFamily: "Inter_500Medium", letterSpacing: 0.2 },
+  inputField: {
+    color: C.text,
+    fontFamily: "Inter_500Medium",
+    fontSize: 15,
+    paddingTop: 18,
+    paddingBottom: 0,
+    height: "100%",
+  },
+  signinWrap: { marginTop: 28 },
+  signin: { borderRadius: 14, overflow: "hidden", height: 56 },
+  signinGradient: { flex: 1, alignItems: "center", justifyContent: "center" },
+  signinInner: { flexDirection: "row", alignItems: "center", gap: 8 },
+  signinText: { color: "#FFFFFF", fontSize: 16, letterSpacing: 0.5 },
+  shimmer: { position: "absolute", top: 0, bottom: 0, width: 80, backgroundColor: "rgba(255,255,255,0.18)" },
+  spacer: { flex: 1, minHeight: 20 },
+  registerRow: { alignItems: "center", marginTop: 40 },
+  registerInner: { flexDirection: "row", alignItems: "center", gap: 6 },
+  registerText: { color: C.muted, fontSize: 13 },
+});
