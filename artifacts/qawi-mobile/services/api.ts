@@ -45,10 +45,16 @@ export async function apiFetch<T = any>(
   let { res, text } = await doFetch(path, options);
 
   // Replit dev domains return an HTML wakeup interstitial on the first request
-  // when the workspace is asleep. Wait briefly and retry once before failing.
+  // when the workspace is asleep. The wakeup can take several seconds on a real
+  // device (cold container + TLS handshake + JVM warmup), so retry with backoff
+  // up to ~12s total before giving up.
   if (text && isHtmlBody(text)) {
-    await new Promise((r) => setTimeout(r, 1500));
-    ({ res, text } = await doFetch(path, options));
+    const delays = [1000, 1500, 2500, 3500, 4000];
+    for (const delay of delays) {
+      await new Promise((r) => setTimeout(r, delay));
+      ({ res, text } = await doFetch(path, options));
+      if (!text || !isHtmlBody(text)) break;
+    }
   }
 
   let body: any = text;
