@@ -6,6 +6,7 @@ import com.qawi.exception.AppException;
 import com.qawi.repository.*;
 import com.qawi.service.MeasurementService;
 import com.qawi.service.NutritionService;
+import com.qawi.service.WorkoutPlanService;
 import java.time.temporal.ChronoUnit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

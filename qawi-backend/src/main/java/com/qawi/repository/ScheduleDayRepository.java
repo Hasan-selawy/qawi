@@ -11,4 +11,5 @@ import java.util.UUID;
 public interface ScheduleDayRepository extends JpaRepository<ScheduleDay, UUID> {
     List<ScheduleDay> findByWorkoutPlanIdOrderByDayDate(UUID workoutPlanId);
     void deleteByWorkoutPlanId(UUID workoutPlanId);
+    List<ScheduleDay> findByWorkoutPlanIdInAndIsCompletedTrueOrderByCompletedAtDesc(List<UUID> workoutPlanIds);
 }

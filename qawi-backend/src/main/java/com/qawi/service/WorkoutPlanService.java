@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +25,7 @@ public class WorkoutPlanService {
     private final WorkoutTemplateRepository templateRepository;
     private final WorkoutTemplateDayRepository templateDayRepository;
     private final WorkoutTemplateDayExerciseRepository templateDayExerciseRepository;
+    private final ExerciseTemplateRepository exerciseTemplateRepository;
     private final NotificationService notificationService;
     private final AccessGuard accessGuard;
 
@@ -244,6 +246,122 @@ public class WorkoutPlanService {
         }
         scheduleDayRepository.deleteByWorkoutPlanId(planId);
         planRepository.deleteById(planId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getMemberHistory(UUID memberId, String callerEmail) {
+        accessGuard.assertCanAccessMember(callerEmail, memberId);
+        return buildMemberHistory(memberId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getMemberHistoryAsSelf(UUID memberId) {
+        return buildMemberHistory(memberId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getExerciseHistory(UUID exerciseTemplateId, UUID memberId, String callerEmail) {
+        accessGuard.assertCanAccessMember(callerEmail, memberId);
+        return buildExerciseHistory(exerciseTemplateId, memberId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getExerciseHistoryAsSelf(UUID exerciseTemplateId, UUID memberId) {
+        return buildExerciseHistory(exerciseTemplateId, memberId);
+    }
+
+    private List<Map<String, Object>> buildMemberHistory(UUID memberId) {
+        List<UUID> planIds = planRepository.findByMemberId(memberId)
+                .stream().map(WorkoutPlan::getId).toList();
+        if (planIds.isEmpty()) return List.of();
+
+        List<ScheduleDay> completedDays =
+                scheduleDayRepository.findByWorkoutPlanIdInAndIsCompletedTrueOrderByCompletedAtDesc(planIds);
+        if (completedDays.isEmpty()) return List.of();
+
+        List<WorkoutLog> allLogs = logRepository.findByMemberIdOrderByLoggedAtDesc(memberId);
+        Map<UUID, WorkoutLog> latestLogByPlanExercise = new LinkedHashMap<>();
+        allLogs.forEach(l -> latestLogByPlanExercise.putIfAbsent(l.getPlanExerciseId(), l));
+
+        Map<UUID, Double> bestWeightByTemplate = new HashMap<>();
+        allLogs.forEach(l -> {
+            PlanExercise pe = planExerciseRepository.findById(l.getPlanExerciseId()).orElse(null);
+            if (pe != null && pe.getExerciseTemplateId() != null) {
+                bestWeightByTemplate.merge(pe.getExerciseTemplateId(), l.getActualWeight(), Math::max);
+            }
+        });
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (ScheduleDay day : completedDays) {
+            List<PlanExercise> exercises = planExerciseRepository.findByScheduleDayIdOrderByOrderIndex(day.getId());
+
+            Set<UUID> templateIds = exercises.stream()
+                    .filter(e -> e.getExerciseTemplateId() != null)
+                    .map(PlanExercise::getExerciseTemplateId)
+                    .collect(Collectors.toSet());
+            Map<UUID, ExerciseTemplate> templateMap = exerciseTemplateRepository.findAllById(templateIds)
+                    .stream().collect(Collectors.toMap(ExerciseTemplate::getId, t -> t));
+
+            List<Map<String, Object>> exList = new ArrayList<>();
+            for (PlanExercise pe : exercises) {
+                Map<String, Object> em = new LinkedHashMap<>();
+                em.put("planExerciseId", pe.getId());
+                em.put("exerciseTemplateId", pe.getExerciseTemplateId());
+
+                String name = pe.getCustomName();
+                String nameAr = pe.getCustomNameAr();
+                ExerciseTemplate tmpl = pe.getExerciseTemplateId() != null ? templateMap.get(pe.getExerciseTemplateId()) : null;
+                if (name == null && tmpl != null) name = tmpl.getName();
+                if (nameAr == null && tmpl != null) nameAr = tmpl.getNameAr();
+
+                em.put("exerciseName", name);
+                em.put("exerciseNameAr", nameAr);
+                em.put("targetSets", pe.getSets());
+                em.put("targetReps", pe.getReps());
+                em.put("targetWeight", pe.getTargetWeight());
+
+                WorkoutLog log = latestLogByPlanExercise.get(pe.getId());
+                if (log != null) {
+                    em.put("actualSets", log.getActualSets());
+                    em.put("actualReps", log.getActualReps());
+                    em.put("actualWeight", log.getActualWeight());
+                    em.put("loggedAt", log.getLoggedAt());
+                    boolean isPR = pe.getExerciseTemplateId() != null
+                            && bestWeightByTemplate.getOrDefault(pe.getExerciseTemplateId(), 0.0) <= log.getActualWeight();
+                    em.put("isPersonalBest", isPR);
+                } else {
+                    em.put("isPersonalBest", false);
+                }
+                exList.add(em);
+            }
+
+            Map<String, Object> dm = new LinkedHashMap<>();
+            dm.put("dayId", day.getId());
+            dm.put("dayName", day.getDayName());
+            dm.put("dayNameAr", day.getDayNameAr());
+            dm.put("date", day.getDayDate());
+            dm.put("completedAt", day.getCompletedAt());
+            dm.put("exercises", exList);
+            result.add(dm);
+        }
+        return result;
+    }
+
+    private List<Map<String, Object>> buildExerciseHistory(UUID exerciseTemplateId, UUID memberId) {
+        List<UUID> planExerciseIds = planExerciseRepository.findByExerciseTemplateId(exerciseTemplateId)
+                .stream().map(PlanExercise::getId).toList();
+        if (planExerciseIds.isEmpty()) return List.of();
+
+        return logRepository.findByMemberIdAndPlanExerciseIdInOrderByLoggedAtDesc(memberId, planExerciseIds)
+                .stream().map(log -> {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("date", log.getLoggedAt().toLocalDate());
+                    m.put("actualWeight", log.getActualWeight());
+                    m.put("actualSets", log.getActualSets());
+                    m.put("actualReps", log.getActualReps());
+                    m.put("loggedAt", log.getLoggedAt());
+                    return (Map<String, Object>) m;
+                }).toList();
     }
 
     private WorkoutPlan assertCoachOwnsPlan(UUID planId, String coachEmail) {

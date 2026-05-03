@@ -117,4 +117,19 @@ public class WorkoutPlanController {
             @AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(workoutPlanService.getLogsByMember(memberId, userDetails.getUsername()));
     }
+
+    @GetMapping("/member/{memberId}/history")
+    public ResponseEntity<List<Map<String, Object>>> getMemberHistory(
+            @PathVariable UUID memberId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(workoutPlanService.getMemberHistory(memberId, userDetails.getUsername()));
+    }
+
+    @GetMapping("/exercise/{exerciseTemplateId}/history/{memberId}")
+    public ResponseEntity<List<Map<String, Object>>> getExerciseHistory(
+            @PathVariable UUID exerciseTemplateId,
+            @PathVariable UUID memberId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(workoutPlanService.getExerciseHistory(exerciseTemplateId, memberId, userDetails.getUsername()));
+    }
 }

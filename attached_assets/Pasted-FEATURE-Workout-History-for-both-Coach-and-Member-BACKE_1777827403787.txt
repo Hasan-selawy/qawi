@@ -1,0 +1,124 @@
+FEATURE — Workout History for both Coach and Member.
+
+BACKEND:
+Add these endpoints if they don't exist:
+
+GET /api/v1/workouts/member/{memberId}/history
+Returns all completed workout days with logged exercises:
+[
+  {
+    "dayId": "...",
+    "dayName": "Monday - Chest Day",
+    "dayNameAr": "الاثنين - يوم الصدر",
+    "date": "2026-05-02",
+    "completedAt": "2026-05-02T18:30:00",
+    "exercises": [
+      {
+        "exerciseName": "Bench Press",
+        "exerciseNameAr": "بنش برس",
+        "targetSets": 4,
+        "targetReps": 10,
+        "actualSets": 4,
+        "actualReps": 10,
+        "actualWeight": 65.0,
+        "loggedAt": "2026-05-02T18:35:00"
+      }
+    ]
+  }
+]
+
+GET /api/v1/workouts/exercise/{exerciseTemplateId}/history/{memberId}
+Returns history for ONE specific exercise for a member:
+[
+  {
+    "date": "2026-05-02",
+    "actualWeight": 65.0,
+    "actualSets": 4,
+    "actualReps": 10
+  },
+  {
+    "date": "2026-04-28",
+    "actualWeight": 60.0,
+    "actualSets": 4,
+    "actualReps": 10
+  }
+]
+This shows progression over time for one exercise.
+
+WEB DASHBOARD (Coach):
+
+1. MEMBER DETAIL → PLAN TAB:
+When coach clicks a completed day (✅):
+Show a modal with:
+- Day name + date
+- List of exercises with:
+  Exercise name | Target: 4×10 | Actual: 4×10 @ 65kg
+  Green if hit target, orange if below target
+- "Personal Best" badge if weight is highest ever
+
+2. New tab in Member Detail: "HISTORY"
+- Timeline of all completed workout days (newest first)
+- Each row: date, day name, exercises count, 
+  completion status
+- Click any row → expand to see all exercises + weights
+- Filter by: This Week | This Month | All Time
+- At top: Personal Records section showing
+  highest weight ever lifted per exercise
+
+3. EXERCISE HISTORY MODAL:
+When coach clicks any exercise name (anywhere in the app):
+Show a small chart/list:
+"Bench Press — Sam's History"
+Date        | Weight | Sets | Reps
+2026-05-02  | 65kg   | 4    | 10  ↑
+2026-04-28  | 60kg   | 4    | 10  ↑
+2026-04-21  | 55kg   | 4    | 10
+Shows progression with up arrow if weight increased.
+
+MOBILE APP (Member):
+
+1. HOME SCREEN:
+Add "Last Workout" card below today's workout:
+- Shows yesterday's or last completed workout
+- Exercise names + weights used
+- "You lifted Xkg total last session 💪"
+
+2. TODAY'S WORKOUT SCREEN:
+Under each exercise show:
+"Last time: 65kg" in gray small text
+So member knows what weight they used before
+and can try to beat it.
+
+3. New HISTORY tab or section in Progress screen:
+- List of all completed workouts (newest first)
+- Each: date, workout name, exercises count
+- Tap any workout → see full details with weights
+- PERSONAL RECORDS section:
+  🏆 Bench Press: 65kg (May 2)
+  🏆 Squat: 80kg (Apr 28)
+  🏆 Deadlift: 100kg (Apr 21)
+
+MOBILE APP (Coach):
+
+1. MEMBER DETAIL → TODAY tab:
+Already shows today — add "Yesterday" button:
+Toggle between TODAY and YESTERDAY view
+Shows what the member did yesterday + weights.
+
+2. MEMBER DETAIL → New HISTORY tab:
+Same as web — timeline of completed workouts
+with weights per exercise.
+Filter: This Week | This Month | All Time.
+
+3. When coach creates a new workout plan,
+show last weight used for each exercise:
+"Sam last lifted 65kg on Bench Press"
+So coach can set appropriate target weight.
+
+DESIGN:
+- Weight increases: green arrow ↑
+- Weight decreases: red arrow ↓  
+- Same weight: gray → 
+- Personal best: 🏆 gold badge
+- Progress chart per exercise (line chart)
+  showing weight over last 8 sessions
