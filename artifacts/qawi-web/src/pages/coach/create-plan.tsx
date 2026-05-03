@@ -237,7 +237,7 @@ export default function CreatePlan() {
                   className={cn(
                     'text-left p-3 rounded-xl border transition-all hover:-translate-y-0.5',
                     today ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-background' : '',
-                    d?.isRestDay ? 'bg-orange-500/10 border-orange-500/30' :
+                    d?.isRestDay ? 'bg-white/5 border-white/10 opacity-70' :
                       d && d.exercises.length > 0 ? 'bg-primary/15 border-primary/40' :
                       'bg-black/20 border-white/5 hover:border-white/20',
                   )}
@@ -246,7 +246,7 @@ export default function CreatePlan() {
                   <p className="font-bold text-lg leading-tight">{format(date, 'd')}</p>
                   <p className="text-[10px] text-muted-foreground">{format(date, 'MMM')}</p>
                   <div className="mt-2 text-[10px] font-medium">
-                    {d?.isRestDay ? <span className="text-orange-400">Rest</span> :
+                    {d?.isRestDay ? <span className="text-muted-foreground">😴 Rest</span> :
                       d?.exercises.length ? <span className="text-primary">{d.exercises.length} ex</span> :
                       <span className="text-muted-foreground/60">—</span>}
                   </div>

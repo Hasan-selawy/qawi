@@ -1,8 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import * as ImagePicker from "expo-image-picker";
 import React, { useState } from "react";
-import { Alert, FlatList, Modal, Pressable, ScrollView, Text, View } from "react-native";
+import { Alert, Modal, Pressable, ScrollView, Text, View } from "react-native";
 
 import { RoleHeader } from "@/components/RoleHeader";
 import { Button, Card, EmptyState, Input, Screen, SectionTitle } from "@/components/ui";
@@ -30,10 +29,6 @@ export default function ProgressScreen() {
     queryKey: ["member", "measurements"],
     queryFn: () => apiFetch<any[]>("/member/measurements").catch(() => []),
   });
-  const photos = useQuery({
-    queryKey: ["member", "photos"],
-    queryFn: () => apiFetch<any[]>("/member/photos").catch(() => []),
-  });
 
   const addMeasurement = useMutation({
     mutationFn: (data: any) => apiFetch("/member/measurements", { method: "POST", data }),
@@ -44,22 +39,6 @@ export default function ProgressScreen() {
     },
     onError: () => Alert.alert("Qawi", "Could not save"),
   });
-
-  const pickPhoto = async () => {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) return;
-    const r = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.7, base64: true });
-    if (r.canceled || !r.assets[0]) return;
-    try {
-      await apiFetch("/member/photos", {
-        method: "POST",
-        data: { imageBase64: `data:image/jpeg;base64,${r.assets[0].base64}`, takenAt: new Date().toISOString() },
-      });
-      qc.invalidateQueries({ queryKey: ["member", "photos"] });
-    } catch {
-      Alert.alert("Qawi", "Could not upload");
-    }
-  };
 
   const submit = () => {
     const data: Record<string, number> = {};
@@ -98,31 +77,6 @@ export default function ProgressScreen() {
           ))
         ) : (
           <Card><EmptyState icon="bar-chart" text={t("common.noData")} /></Card>
-        )}
-
-        <View style={{ flexDirection: isRTL ? "row-reverse" : "row", justifyContent: "space-between", alignItems: "center" }}>
-          <SectionTitle>{t("member.photos")}</SectionTitle>
-          <Pressable onPress={pickPhoto}>
-            <Feather name="camera" size={24} color={c.primary} />
-          </Pressable>
-        </View>
-        {photos.data?.length ? (
-          <FlatList
-            data={photos.data}
-            horizontal
-            scrollEnabled={!!photos.data.length}
-            showsHorizontalScrollIndicator={false}
-            keyExtractor={(i: any) => i.id}
-            ItemSeparatorComponent={() => <View style={{ width: 10 }} />}
-            renderItem={({ item }) => (
-              <View style={{ width: 120, height: 160, backgroundColor: c.card, borderRadius: c.radius, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: c.border }}>
-                <Feather name="image" size={28} color={c.mutedForeground} />
-                <Text style={{ color: c.mutedForeground, marginTop: 6, fontSize: 11 }}>{(item.takenAt ?? "").slice(0, 10)}</Text>
-              </View>
-            )}
-          />
-        ) : (
-          <Card><EmptyState icon="image" text={t("common.noData")} /></Card>
         )}
       </ScrollView>
 

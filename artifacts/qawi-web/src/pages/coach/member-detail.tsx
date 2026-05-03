@@ -71,14 +71,12 @@ export default function MemberDetail({ id }: { id: string }) {
           <TabsList className="bg-black/20 w-full justify-start overflow-x-auto p-1 h-auto mb-6 flex-wrap">
             <TabsTrigger value="plan" className="py-2">Plan</TabsTrigger>
             <TabsTrigger value="measurements" className="py-2">Measurements</TabsTrigger>
-            <TabsTrigger value="photos" className="py-2">Photos</TabsTrigger>
             <TabsTrigger value="attendance" className="py-2">Attendance</TabsTrigger>
             <TabsTrigger value="notes" className="py-2">Notes</TabsTrigger>
           </TabsList>
 
           <TabsContent value="plan" className="m-0"><PlanTab plan={overview?.currentWorkoutPlan} memberId={id} lang={lang} /></TabsContent>
           <TabsContent value="measurements" className="m-0"><MeasurementsTab memberId={id} /></TabsContent>
-          <TabsContent value="photos" className="m-0"><PhotosTab memberId={id} /></TabsContent>
           <TabsContent value="attendance" className="m-0"><AttendanceTab memberId={id} /></TabsContent>
           <TabsContent value="notes" className="m-0"><NotesTab memberId={id} /></TabsContent>
         </Tabs>
@@ -158,6 +156,16 @@ function PlanTab({ plan, memberId, lang }: { plan: any; memberId: string; lang: 
     onError: (err: any) => toast.error(err?.error || 'Failed'),
   });
 
+  const deleteExMut = useMutation({
+    mutationFn: ({ dayId, exerciseId }: { dayId: string; exerciseId: string }) =>
+      apiFetch(`/workouts/days/${dayId}/exercises/${exerciseId}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['coach', 'members', memberId, 'overview'] });
+      toast.success('Exercise removed');
+    },
+    onError: (err: any) => toast.error(err?.error || 'Failed'),
+  });
+
   if (!plan) {
     return (
       <div className="glass-card p-12 text-center border-dashed">
@@ -203,7 +211,7 @@ function PlanTab({ plan, memberId, lang }: { plan: any; memberId: string; lang: 
                   'text-left p-3 rounded-xl border transition-all hover:-translate-y-0.5 relative',
                   today ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-background' : '',
                   day?.isCompleted ? 'bg-primary/15 border-primary/40' :
-                    day?.isRestDay ? 'bg-orange-500/10 border-orange-500/30' :
+                    day?.isRestDay ? 'bg-white/5 border-white/10 opacity-70' :
                     day && exCount > 0 ? 'bg-blue-500/10 border-blue-500/30' :
                     'bg-black/20 border-white/5 hover:border-white/20',
                 )}
@@ -214,7 +222,7 @@ function PlanTab({ plan, memberId, lang }: { plan: any; memberId: string; lang: 
                 <p className="text-[10px] text-muted-foreground">{format(date, 'MMM')}</p>
                 <div className="mt-2 text-[10px] font-medium flex items-center gap-1">
                   {!day ? <span className="text-muted-foreground/60">+ Add</span> :
-                    day.isRestDay ? <span className="text-orange-400">Rest</span> :
+                    day.isRestDay ? <span className="text-muted-foreground">😴 Rest</span> :
                     <span className="text-blue-400">{exCount} ex</span>}
                   {day?.isCompleted && <CheckCircle2 size={10} className="text-primary" />}
                 </div>
@@ -260,7 +268,13 @@ function PlanTab({ plan, memberId, lang }: { plan: any; memberId: string; lang: 
               categories={categories || []}
               libraryExercises={libraryExercises || []}
               onAddExercise={(data) => addExMut.mutate({ dayId: activeDay.id, data })}
+              onDeleteExercise={(exerciseId) => {
+                if (window.confirm('Remove this exercise?')) {
+                  deleteExMut.mutate({ dayId: activeDay.id, exerciseId });
+                }
+              }}
               addPending={addExMut.isPending}
+              deletePending={deleteExMut.isPending}
             />
           )}
         </DialogContent>
@@ -269,10 +283,13 @@ function PlanTab({ plan, memberId, lang }: { plan: any; memberId: string; lang: 
   );
 }
 
-function DayDetail({ day, lang, logsByExerciseId, categories, libraryExercises, onAddExercise, addPending }: {
+function DayDetail({ day, lang, logsByExerciseId, categories, libraryExercises, onAddExercise, onDeleteExercise, addPending, deletePending }: {
   day: any; lang: 'en' | 'ar'; logsByExerciseId: Record<string, any[]>;
   categories: any[]; libraryExercises: any[];
-  onAddExercise: (data: any) => void; addPending: boolean;
+  onAddExercise: (data: any) => void;
+  onDeleteExercise: (exerciseId: string) => void;
+  addPending: boolean;
+  deletePending: boolean;
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [catFilter, setCatFilter] = useState('');
@@ -299,18 +316,29 @@ function DayDetail({ day, lang, logsByExerciseId, categories, libraryExercises, 
           const template = ex.exerciseTemplateId ? libraryExercises.find((t: any) => t.id === ex.exerciseTemplateId) : null;
           const displayName = pickName(lang, ex) || pickName(lang, template) || '(unnamed exercise)';
           return (
-            <div key={ex.id} className="p-3 bg-black/30 rounded-lg border border-white/5">
-              <p className="font-medium text-sm">{displayName}</p>
-              <p className="text-xs text-muted-foreground mt-1">Target: {ex.sets} × {ex.reps}</p>
-              {latestLog ? (
-                <div className="mt-2 pt-2 border-t border-white/5 text-xs flex items-center gap-2">
-                  <CheckCircle2 size={12} className="text-primary" />
-                  <span className="text-primary font-medium">Logged:</span>
-                  <span>{latestLog.actualSets} × {latestLog.actualReps} @ {latestLog.actualWeight}kg</span>
-                </div>
-              ) : (
-                <p className="mt-2 pt-2 border-t border-white/5 text-xs text-muted-foreground">Not logged yet</p>
-              )}
+            <div key={ex.id} className="p-3 bg-black/30 rounded-lg border border-white/5 flex items-start gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-sm">{displayName}</p>
+                <p className="text-xs text-muted-foreground mt-1">Target: {ex.sets} × {ex.reps}</p>
+                {latestLog ? (
+                  <div className="mt-2 pt-2 border-t border-white/5 text-xs flex items-center gap-2">
+                    <CheckCircle2 size={12} className="text-primary" />
+                    <span className="text-primary font-medium">Logged:</span>
+                    <span>{latestLog.actualSets} × {latestLog.actualReps} @ {latestLog.actualWeight}kg</span>
+                  </div>
+                ) : (
+                  <p className="mt-2 pt-2 border-t border-white/5 text-xs text-muted-foreground">Not logged yet</p>
+                )}
+              </div>
+              <button
+                onClick={() => onDeleteExercise(ex.id)}
+                disabled={deletePending}
+                className="p-1.5 rounded hover:bg-red-500/15 text-red-400 hover:text-red-300 disabled:opacity-50 shrink-0"
+                aria-label="Remove exercise"
+                title="Remove exercise"
+              >
+                <Trash2 size={14} />
+              </button>
             </div>
           );
         })}
@@ -441,33 +469,6 @@ function MeasurementsTab({ memberId }: { memberId: string }) {
         <h3 className="font-semibold mb-6">Weight Progress</h3>
         <WeightChart data={chartData} />
       </div>
-    </div>
-  );
-}
-
-function PhotosTab({ memberId }: { memberId: string }) {
-  const { data: photos, isLoading } = useQuery<any[]>({
-    queryKey: ['photos', 'member', memberId],
-    queryFn: () => apiFetch(`/photos/member/${memberId}`),
-  });
-
-  if (isLoading) return <Loader2 className="animate-spin text-primary" />;
-
-  return (
-    <div className="space-y-6">
-      <div className="bg-black/20 p-4 rounded-xl border border-white/5">
-        <h3 className="font-medium">Progress Photos</h3>
-      </div>
-      <div className="columns-1 md:columns-2 lg:columns-3 gap-4 space-y-4">
-        {photos?.map((photo: any) => (
-          <div key={photo.id} className="break-inside-avoid relative group rounded-xl overflow-hidden border border-white/10">
-            <img src={photo.url || photo.imageUrl} alt="Progress" className="w-full h-auto object-cover" loading="lazy" />
-          </div>
-        ))}
-      </div>
-      {(!photos || photos.length === 0) && (
-        <div className="text-center py-16 text-muted-foreground glass-card border-dashed">No progress photos yet</div>
-      )}
     </div>
   );
 }

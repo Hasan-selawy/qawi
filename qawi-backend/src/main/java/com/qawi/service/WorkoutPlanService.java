@@ -144,6 +144,20 @@ public class WorkoutPlanService {
     }
 
     @Transactional
+    public void removeExerciseFromDay(UUID dayId, UUID planExerciseId, String coachEmail) {
+        ScheduleDay day = scheduleDayRepository.findById(dayId)
+                .orElseThrow(() -> new AppException("Day not found", "اليوم غير موجود", HttpStatus.NOT_FOUND));
+        assertCoachOwnsPlan(day.getWorkoutPlanId(), coachEmail);
+        PlanExercise ex = planExerciseRepository.findById(planExerciseId)
+                .orElseThrow(() -> new AppException("Exercise not found", "التمرين غير موجود", HttpStatus.NOT_FOUND));
+        if (!ex.getScheduleDayId().equals(dayId)) {
+            throw new AppException("Exercise does not belong to this day", "التمرين لا ينتمي لهذا اليوم", HttpStatus.BAD_REQUEST);
+        }
+        logRepository.deleteByPlanExerciseIdIn(java.util.List.of(planExerciseId));
+        planExerciseRepository.deleteById(planExerciseId);
+    }
+
+    @Transactional
     public ScheduleDay completeDay(UUID dayId, String memberEmail) {
         User member = accessGuard.loadUserByEmail(memberEmail);
         ScheduleDay day = scheduleDayRepository.findById(dayId)

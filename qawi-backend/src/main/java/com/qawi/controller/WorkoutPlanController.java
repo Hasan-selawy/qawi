@@ -75,6 +75,16 @@ public class WorkoutPlanController {
                 .body(workoutPlanService.addExerciseToDay(dayId, request, userDetails.getUsername()));
     }
 
+    @DeleteMapping("/days/{dayId}/exercises/{exerciseId}")
+    @PreAuthorize("hasRole('COACH')")
+    public ResponseEntity<Void> removeExerciseFromDay(
+            @PathVariable UUID dayId,
+            @PathVariable UUID exerciseId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        workoutPlanService.removeExerciseFromDay(dayId, exerciseId, userDetails.getUsername());
+        return ResponseEntity.noContent().build();
+    }
+
     @PutMapping("/days/{dayId}/complete")
     @PreAuthorize("hasRole('MEMBER')")
     public ResponseEntity<ScheduleDay> completeDay(
