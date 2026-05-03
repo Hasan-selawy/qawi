@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Plus, Play, Search, Trash2 } from 'lucide-react';
+import { Loader2, Plus, Play, Search, Trash2, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
@@ -44,14 +44,39 @@ export default function Library() {
     );
   }, [rawExercises, search]);
 
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState<any | null>(null);
+
   const addExercise = useMutation({
     mutationFn: (data: any) => apiFetch('/exercises/library', { method: 'POST', data }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['exercises', 'library'] });
       toast.success('Exercise added to library');
+      setDialogOpen(false);
+      setEditing(null);
     },
     onError: (err: any) => toast.error(err.error || 'Failed'),
   });
+
+  const updateExercise = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      apiFetch(`/exercises/library/${id}`, { method: 'PUT', data }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['exercises', 'library'] });
+      toast.success('Exercise updated');
+      setDialogOpen(false);
+      setEditing(null);
+    },
+    onError: (err: any) => toast.error(err.error || 'Failed to update'),
+  });
+
+  const canModify = (ex: any) => {
+    if (!user) return false;
+    if (user.role === 'SUPER_ADMIN') return ex.scope === 'GLOBAL';
+    if (user.role === 'GYM_ADMIN') return ex.scope === 'GYM' && ex.gymId === user.gymId;
+    if (user.role === 'COACH') return ex.scope === 'COACH' && ex.createdByCoachId === user.id;
+    return false;
+  };
 
   const deleteExercise = useMutation({
     mutationFn: (id: string) => apiFetch(`/exercises/library/${id}`, { method: 'DELETE' }),
@@ -81,46 +106,51 @@ export default function Library() {
       <PageHeader
         title={t('common.library')}
         actions={
-          <Dialog>
-            <DialogTrigger asChild><Button className="glow-hover"><Plus className="mr-2 h-4 w-4" /> Add Custom Exercise</Button></DialogTrigger>
-            <DialogContent className="glass-card border-white/10 sm:max-w-md">
-              <DialogHeader><DialogTitle>New Exercise</DialogTitle></DialogHeader>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const fd = new FormData(e.currentTarget);
-                  addExercise.mutate({
-                    name: fd.get('name'),
-                    nameAr: fd.get('nameAr'),
-                    categoryId: fd.get('categoryId'),
-                    defaultSets: Number(fd.get('defaultSets')),
-                    defaultReps: Number(fd.get('defaultReps')),
-                    videoUrl: fd.get('videoUrl'),
-                  });
-                }}
-                className="space-y-4"
-              >
-                <Input name="name" placeholder="English Name" required className="bg-black/20" />
-                <Input name="nameAr" placeholder="Arabic Name" className="bg-black/20" dir="rtl" />
-                <Select name="categoryId" required>
-                  <SelectTrigger className="bg-black/20"><SelectValue placeholder="Category" /></SelectTrigger>
-                  <SelectContent>
-                    {categories?.map((c: any) => <SelectItem key={c.id} value={c.id}>{pickName(lang, c)}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                <div className="grid grid-cols-2 gap-4">
-                  <Input name="defaultSets" type="number" placeholder="Default Sets" defaultValue={3} required className="bg-black/20" />
-                  <Input name="defaultReps" type="number" placeholder="Default Reps" defaultValue={10} required className="bg-black/20" />
-                </div>
-                <Input name="videoUrl" placeholder="Video URL (optional)" className="bg-black/20" />
-                <Button type="submit" className="w-full" disabled={addExercise.isPending}>
-                  {addExercise.isPending ? <Loader2 className="animate-spin" /> : 'Save Exercise'}
-                </Button>
-              </form>
-            </DialogContent>
-          </Dialog>
+          <Button className="glow-hover" onClick={() => { setEditing(null); setDialogOpen(true); }}>
+            <Plus className="mr-2 h-4 w-4" /> Add Custom Exercise
+          </Button>
         }
       />
+
+      <Dialog open={dialogOpen} onOpenChange={(v) => { setDialogOpen(v); if (!v) setEditing(null); }}>
+        <DialogContent className="glass-card border-white/10 sm:max-w-md">
+          <DialogHeader><DialogTitle>{editing ? 'Edit Exercise' : 'New Exercise'}</DialogTitle></DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const fd = new FormData(e.currentTarget);
+              const data = {
+                name: fd.get('name'),
+                nameAr: fd.get('nameAr'),
+                categoryId: fd.get('categoryId'),
+                defaultSets: Number(fd.get('defaultSets')),
+                defaultReps: Number(fd.get('defaultReps')),
+                videoUrl: fd.get('videoUrl'),
+              };
+              if (editing) updateExercise.mutate({ id: editing.id, data });
+              else addExercise.mutate(data);
+            }}
+            className="space-y-4"
+          >
+            <Input name="name" placeholder="English Name" required className="bg-black/20" defaultValue={editing?.name || ''} />
+            <Input name="nameAr" placeholder="Arabic Name" className="bg-black/20" dir="rtl" defaultValue={editing?.nameAr || ''} />
+            <Select name="categoryId" required defaultValue={editing?.categoryId || undefined}>
+              <SelectTrigger className="bg-black/20"><SelectValue placeholder="Category" /></SelectTrigger>
+              <SelectContent>
+                {categories?.map((c: any) => <SelectItem key={c.id} value={c.id}>{pickName(lang, c)}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <div className="grid grid-cols-2 gap-4">
+              <Input name="defaultSets" type="number" placeholder="Default Sets" defaultValue={editing?.defaultSets ?? 3} required className="bg-black/20" />
+              <Input name="defaultReps" type="number" placeholder="Default Reps" defaultValue={editing?.defaultReps ?? 10} required className="bg-black/20" />
+            </div>
+            <Input name="videoUrl" placeholder="Video URL (optional)" className="bg-black/20" defaultValue={editing?.videoUrl || ''} />
+            <Button type="submit" className="w-full" disabled={addExercise.isPending || updateExercise.isPending}>
+              {(addExercise.isPending || updateExercise.isPending) ? <Loader2 className="animate-spin" /> : (editing ? 'Update Exercise' : 'Save Exercise')}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <div className="mb-8 flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
         <button
@@ -175,21 +205,30 @@ export default function Library() {
                         <Play size={20} className="fill-current" />
                       </a>
                     )}
-                    {ex.isCustom && user?.id && ex.createdByCoachId === user.id && (
-                      <button
-                        onClick={() => {
-                          const name = pickName(lang, ex);
-                          const msg = t('coach.delete_exercise_confirm').replace('{name}', name);
-                          if (confirm(msg)) {
-                            deleteExercise.mutate(ex.id);
-                          }
-                        }}
-                        disabled={deleteExercise.isPending}
-                        title={t('coach.delete_exercise_title')}
-                        className="text-red-500 hover:text-red-400 transition-colors p-1.5 bg-red-500/10 rounded-full hover:bg-red-500/20 disabled:opacity-50"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                    {canModify(ex) && (
+                      <>
+                        <button
+                          onClick={() => { setEditing(ex); setDialogOpen(true); }}
+                          title="Edit exercise"
+                          className="text-primary hover:text-primary/80 transition-colors p-1.5 bg-primary/10 rounded-full hover:bg-primary/20"
+                        >
+                          <Pencil size={16} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            const name = pickName(lang, ex);
+                            const msg = t('coach.delete_exercise_confirm').replace('{name}', name);
+                            if (confirm(msg)) {
+                              deleteExercise.mutate(ex.id);
+                            }
+                          }}
+                          disabled={deleteExercise.isPending}
+                          title={t('coach.delete_exercise_title')}
+                          className="text-red-500 hover:text-red-400 transition-colors p-1.5 bg-red-500/10 rounded-full hover:bg-red-500/20 disabled:opacity-50"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>

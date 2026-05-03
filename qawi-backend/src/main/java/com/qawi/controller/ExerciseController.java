@@ -51,6 +51,15 @@ public class ExerciseController {
                 .body(exerciseService.addCustomExercise(request, userDetails.getUsername()));
     }
 
+    @PutMapping("/library/{id}")
+    @PreAuthorize("hasAnyRole('COACH','GYM_ADMIN','SUPER_ADMIN')")
+    public ResponseEntity<ExerciseTemplate> updateExercise(
+            @PathVariable UUID id,
+            @Valid @RequestBody AddExerciseRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(exerciseService.updateCustomExercise(id, request, userDetails.getUsername()));
+    }
+
     @DeleteMapping("/library/{id}")
     @PreAuthorize("hasAnyRole('COACH','GYM_ADMIN','SUPER_ADMIN')")
     public ResponseEntity<Void> deleteExercise(

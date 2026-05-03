@@ -112,6 +112,57 @@ public class ExerciseService {
     }
 
     @Transactional
+    public ExerciseTemplate updateCustomExercise(UUID exerciseId, AddExerciseRequest req, String userEmail) {
+        User user = requireUser(userEmail);
+
+        ExerciseTemplate ex = templateRepository.findById(exerciseId)
+                .orElseThrow(() -> new AppException("Exercise not found", "التمرين غير موجود", HttpStatus.NOT_FOUND));
+
+        assertCanModify(user, ex);
+
+        categoryRepository.findById(req.getCategoryId())
+                .orElseThrow(() -> new AppException("Category not found", "التصنيف غير موجود", HttpStatus.NOT_FOUND));
+
+        ex.setCategoryId(req.getCategoryId());
+        ex.setName(req.getName());
+        ex.setNameAr(req.getNameAr());
+        ex.setDefaultSets(req.getDefaultSets());
+        ex.setDefaultReps(req.getDefaultReps());
+        ex.setDefaultWeight(req.getDefaultWeight());
+        ex.setVideoUrl(req.getVideoUrl());
+        return templateRepository.save(ex);
+    }
+
+    private void assertCanModify(User user, ExerciseTemplate ex) {
+        switch (user.getRole()) {
+            case SUPER_ADMIN -> {
+                // can modify anything
+            }
+            case GYM_ADMIN -> {
+                if (ex.getScope() != ExerciseScope.GYM
+                        || ex.getGymId() == null
+                        || !ex.getGymId().equals(user.getGymId())) {
+                    throw new AppException(
+                            "You can only modify exercises owned by your gym",
+                            "يمكنك تعديل تمارين صالتك فقط",
+                            HttpStatus.FORBIDDEN);
+                }
+            }
+            case COACH -> {
+                if (ex.getScope() != ExerciseScope.COACH
+                        || ex.getCreatedByCoachId() == null
+                        || !ex.getCreatedByCoachId().equals(user.getId())) {
+                    throw new AppException(
+                            "You can only modify your own custom exercises",
+                            "يمكنك تعديل تمارينك المخصصة فقط",
+                            HttpStatus.FORBIDDEN);
+                }
+            }
+            default -> throw new AppException("Not allowed", "غير مسموح", HttpStatus.FORBIDDEN);
+        }
+    }
+
+    @Transactional
     public void deleteCustomExercise(UUID exerciseId, String userEmail) {
         User user = requireUser(userEmail);
 
