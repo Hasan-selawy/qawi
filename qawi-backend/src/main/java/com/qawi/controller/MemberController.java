@@ -144,8 +144,12 @@ public class MemberController {
             return ResponseEntity.ok(out);
         }
 
-        List<PlanExercise> exs = planExerciseRepository.findByScheduleDayIdOrderByOrderIndex(day.getId());
-        List<Map<String, Object>> exList = exs.stream().map(ex -> {
+        out.put("exercises", buildExerciseList(day.getId()));
+        return ResponseEntity.ok(out);
+    }
+
+    private List<Map<String, Object>> buildExerciseList(UUID scheduleDayId) {
+        return planExerciseRepository.findByScheduleDayIdOrderByOrderIndex(scheduleDayId).stream().map(ex -> {
             Map<String, Object> m = new LinkedHashMap<>();
             m.put("id", ex.getId());
             String name = ex.getCustomName();
@@ -165,8 +169,6 @@ public class MemberController {
             m.put("videoUrl", ex.getVideoUrl());
             return m;
         }).toList();
-        out.put("exercises", exList);
-        return ResponseEntity.ok(out);
     }
 
     @GetMapping("/workouts/upcoming")
@@ -175,25 +177,34 @@ public class MemberController {
         LocalDate today = LocalDate.now();
         List<WorkoutPlan> plans = workoutPlanRepository.findByMemberId(me.getId());
 
-        List<Map<String, Object>> out = new ArrayList<>();
+        record DayRef(WorkoutPlan plan, ScheduleDay day) {}
+        List<DayRef> futureDays = new ArrayList<>();
         for (WorkoutPlan plan : plans) {
             for (ScheduleDay d : scheduleDayRepository.findByWorkoutPlanIdOrderByDayDate(plan.getId())) {
                 if (d.getDayDate() == null || !d.getDayDate().isAfter(today)) continue;
-                Map<String, Object> m = new LinkedHashMap<>();
-                m.put("dayId", d.getId());
-                m.put("planId", plan.getId());
-                m.put("planName", plan.getName());
-                m.put("date", d.getDayDate());
-                m.put("dayName", d.getDayName());
-                m.put("dayNameAr", d.getDayNameAr());
-                m.put("restDay", d.isRestDay());
-                m.put("isCompleted", d.isCompleted());
-                m.put("exerciseCount", planExerciseRepository.findByScheduleDayIdOrderByOrderIndex(d.getId()).size());
-                out.add(m);
+                futureDays.add(new DayRef(plan, d));
             }
         }
-        out.sort(Comparator.comparing(x -> (LocalDate) x.get("date")));
-        return ResponseEntity.ok(out.stream().limit(10).toList());
+        futureDays.sort(Comparator.comparing(r -> r.day().getDayDate()));
+
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (DayRef ref : futureDays.stream().limit(10).toList()) {
+            ScheduleDay d = ref.day();
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("dayId", d.getId());
+            m.put("planId", ref.plan().getId());
+            m.put("planName", ref.plan().getName());
+            m.put("date", d.getDayDate());
+            m.put("dayName", d.getDayName());
+            m.put("dayNameAr", d.getDayNameAr());
+            m.put("restDay", d.isRestDay());
+            m.put("isCompleted", d.isCompleted());
+            List<Map<String, Object>> exList = d.isRestDay() ? List.of() : buildExerciseList(d.getId());
+            m.put("exerciseCount", exList.size());
+            m.put("exercises", exList);
+            out.add(m);
+        }
+        return ResponseEntity.ok(out);
     }
 
     // ───────────────────────── MEALS ─────────────────────────

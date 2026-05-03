@@ -1,8 +1,8 @@
 import { Feather } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import React from "react";
-import { ActivityIndicator, RefreshControl, ScrollView, Text, View } from "react-native";
+import React, { useState } from "react";
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 
 import { RoleHeader } from "@/components/RoleHeader";
 import { Badge, Button, Card, EmptyState, Screen, SectionTitle } from "@/components/ui";
@@ -10,6 +10,83 @@ import { useAuth } from "@/context/AuthContext";
 import { useLanguage, pickName } from "@/context/LanguageContext";
 import { useColors } from "@/hooks/useColors";
 import { apiFetch } from "@/services/api";
+
+function UpcomingDayCard({ day }: { day: any }) {
+  const c = useColors();
+  const { t, lang, isRTL } = useLanguage();
+  const [open, setOpen] = useState(false);
+  const dateStr = (day.date ?? "").slice(0, 10);
+  const label = lang === "ar" ? (day.dayNameAr ?? day.dayName) : day.dayName;
+  const exercises: any[] = day.exercises ?? [];
+  const canExpand = !day.restDay && exercises.length > 0;
+
+  return (
+    <Card>
+      <Pressable
+        onPress={() => canExpand && setOpen((o) => !o)}
+        style={{ flexDirection: isRTL ? "row-reverse" : "row", justifyContent: "space-between", alignItems: "center" }}
+      >
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: c.foreground, fontWeight: "700", fontSize: 15 }}>{label || dateStr}</Text>
+          <Text style={{ color: c.mutedForeground, fontSize: 12, marginTop: 2 }}>{dateStr}</Text>
+        </View>
+        <View style={{ flexDirection: isRTL ? "row-reverse" : "row", alignItems: "center", gap: 8 }}>
+          {day.restDay ? (
+            <Badge tone="neutral">{t("member.restDay")}</Badge>
+          ) : (
+            <Badge tone="primary">{day.exerciseCount ?? 0} ex</Badge>
+          )}
+          {canExpand && (
+            <Feather name={open ? "chevron-up" : "chevron-down"} size={18} color={c.mutedForeground} />
+          )}
+        </View>
+      </Pressable>
+
+      {open && canExpand && (
+        <View style={{ marginTop: 12, gap: 8 }}>
+          {exercises.map((ex: any, idx: number) => {
+            const exName = (lang === "ar" ? ex.nameAr : ex.name) || ex.name || ex.nameAr || "—";
+            const detail = [
+              ex.sets != null && ex.reps != null ? `${ex.sets} × ${ex.reps}` : null,
+              ex.weight != null ? `${ex.weight} kg` : null,
+            ].filter(Boolean).join("  •  ");
+            return (
+              <View
+                key={ex.id ?? idx}
+                style={{
+                  flexDirection: isRTL ? "row-reverse" : "row",
+                  alignItems: "center",
+                  paddingVertical: 8,
+                  borderTopWidth: idx === 0 ? 1 : 0,
+                  borderTopColor: c.border,
+                }}
+              >
+                <View
+                  style={{
+                    width: 24, height: 24, borderRadius: 12,
+                    backgroundColor: c.primary + "22",
+                    alignItems: "center", justifyContent: "center",
+                    marginEnd: isRTL ? 0 : 10, marginStart: isRTL ? 10 : 0,
+                  }}
+                >
+                  <Text style={{ color: c.primary, fontSize: 11, fontWeight: "700" }}>{idx + 1}</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: c.foreground, fontSize: 14, fontWeight: "600" }} numberOfLines={1}>
+                    {exName}
+                  </Text>
+                  {detail ? (
+                    <Text style={{ color: c.mutedForeground, fontSize: 12, marginTop: 2 }}>{detail}</Text>
+                  ) : null}
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      )}
+    </Card>
+  );
+}
 
 export default function MemberHome() {
   const c = useColors();
@@ -95,25 +172,9 @@ export default function MemberHome() {
         {(upcoming.data ?? []).length === 0 ? (
           <Card><EmptyState icon="calendar" text={t("member.noUpcoming")} /></Card>
         ) : (
-          (upcoming.data ?? []).slice(0, 5).map((d: any) => {
-            const dateStr = (d.date ?? "").slice(0, 10);
-            const label = lang === "ar" ? (d.dayNameAr ?? d.dayName) : d.dayName;
-            return (
-              <Card key={d.dayId}>
-                <View style={{ flexDirection: isRTL ? "row-reverse" : "row", justifyContent: "space-between", alignItems: "center" }}>
-                  <View>
-                    <Text style={{ color: c.foreground, fontWeight: "700", fontSize: 15 }}>{label || dateStr}</Text>
-                    <Text style={{ color: c.mutedForeground, fontSize: 12, marginTop: 2 }}>{dateStr}</Text>
-                  </View>
-                  {d.restDay ? (
-                    <Badge tone="neutral">{t("member.restDay")}</Badge>
-                  ) : (
-                    <Badge tone="primary">{d.exerciseCount ?? 0} ex</Badge>
-                  )}
-                </View>
-              </Card>
-            );
-          })
+          (upcoming.data ?? []).slice(0, 5).map((d: any) => (
+            <UpcomingDayCard key={d.dayId} day={d} />
+          ))
         )}
       </ScrollView>
     </Screen>

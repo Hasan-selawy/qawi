@@ -107,6 +107,7 @@ com/qawi/dto/AddPlanExerciseRequest.class
 com/qawi/entity/ScheduleDay.class
 com/qawi/dto/AddExerciseRequest.class
 com/qawi/entity/CoachMember.class
+com/qawi/controller/MemberController$1DayRef.class
 com/qawi/dto/ErrorResponse$ErrorResponseBuilder.class
 com/qawi/controller/GymAdminController.class
 com/qawi/repository/WorkoutTemplateDayExerciseRepository.class
