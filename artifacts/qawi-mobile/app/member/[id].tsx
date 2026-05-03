@@ -21,11 +21,14 @@ import { apiFetch } from "@/services/api";
 
 type Overview = {
   member?: { id: string; name?: string; email?: string; isActive?: boolean; subscriptionEndDate?: string };
-  measurements?: any[];
-  notes?: any[];
-  workoutPlan?: any;
+  latestMeasurements?: {
+    weight?: number; chest?: number; waist?: number; arms?: number; legs?: number;
+    bodyFat?: number; recordedAt?: string;
+  } | null;
+  coachNotes?: { id: string; note?: string; content?: string; createdAt?: string }[];
+  currentWorkoutPlan?: any;
   nutritionPlan?: any;
-  streak?: number;
+  attendanceStreak?: number;
 };
 
 export default function MemberDetail() {
@@ -46,10 +49,9 @@ export default function MemberDetail() {
   });
 
   const member = overview.data?.member ?? ({} as NonNullable<Overview["member"]>);
-  const measurements = overview.data?.measurements ?? [];
-  const notes = overview.data?.notes ?? [];
-  const latest = measurements[0];
-  const streak = overview.data?.streak ?? 0;
+  const latest = overview.data?.latestMeasurements ?? null;
+  const notes = overview.data?.coachNotes ?? [];
+  const streak = overview.data?.attendanceStreak ?? 0;
 
   return (
     <Screen>
@@ -101,7 +103,7 @@ export default function MemberDetail() {
               <Stat label={lang === "ar" ? "تتابع" : "Streak"} value={`${streak} 🔥`} />
               <Stat
                 label={lang === "ar" ? "خطة تمرين" : "Workout"}
-                value={overview.data?.workoutPlan ? "✓" : "—"}
+                value={overview.data?.currentWorkoutPlan ? "✓" : "—"}
               />
               <Stat
                 label={lang === "ar" ? "خطة غذاء" : "Nutrition"}
@@ -126,7 +128,7 @@ export default function MemberDetail() {
               <MeasureCard label={t("member.waist")} value={latest.waist} unit="cm" />
               <MeasureCard label={t("member.arms")} value={latest.arms} unit="cm" />
               <MeasureCard label={t("member.legs")} value={latest.legs} unit="cm" />
-              <MeasureCard label={t("member.bodyFat")} value={latest.bodyFatPercentage} unit="%" />
+              <MeasureCard label={t("member.bodyFat")} value={latest.bodyFat} unit="%" />
             </View>
           )}
 

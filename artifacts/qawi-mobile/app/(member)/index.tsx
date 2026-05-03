@@ -156,6 +156,24 @@ export default function MemberHome() {
               {t("member.restDay")}
             </Text>
           </Card>
+        ) : today.data.isCompleted ? (
+          <Card style={{ alignItems: "center", paddingVertical: 28 }}>
+            <View
+              style={{
+                width: 56, height: 56, borderRadius: 28,
+                backgroundColor: c.primary + "22",
+                alignItems: "center", justifyContent: "center",
+              }}
+            >
+              <Feather name="check-circle" size={30} color={c.primary} />
+            </View>
+            <Text style={{ color: c.foreground, fontSize: 18, fontWeight: "800", marginTop: 12, textAlign: "center" }}>
+              {lang === "ar" ? "أنهيت تمرين اليوم 💪" : "You've finished today's workout 💪"}
+            </Text>
+            <Text style={{ color: c.mutedForeground, fontSize: 13, marginTop: 6, textAlign: "center" }}>
+              {lang === "ar" ? "أحسنت! نراك في التمرين القادم." : "Great job! See you next time."}
+            </Text>
+          </Card>
         ) : (
           <Card>
             <View style={{ flexDirection: isRTL ? "row-reverse" : "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>

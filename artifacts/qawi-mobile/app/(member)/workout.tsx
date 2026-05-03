@@ -21,6 +21,7 @@ type PlanExercise = {
 type TodayResponse = {
   dayId?: string;
   restDay?: boolean;
+  isCompleted?: boolean;
   exercises?: PlanExercise[];
 };
 
@@ -95,6 +96,29 @@ export default function WorkoutScreen() {
       {today.isLoading ? (
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
           <ActivityIndicator color={c.primary} />
+        </View>
+      ) : today.data?.isCompleted ? (
+        <View style={{ flex: 1, padding: 20, justifyContent: "center" }}>
+          <Card style={{ alignItems: "center", paddingVertical: 36 }}>
+            <View
+              style={{
+                width: 64, height: 64, borderRadius: 32,
+                backgroundColor: c.primary + "22",
+                alignItems: "center", justifyContent: "center",
+              }}
+            >
+              <Feather name="check-circle" size={34} color={c.primary} />
+            </View>
+            <Text style={{ color: c.foreground, fontSize: 20, fontWeight: "800", marginTop: 14, textAlign: "center" }}>
+              {lang === "ar" ? "أنهيت تمرين اليوم 💪" : "You've finished today's workout 💪"}
+            </Text>
+            <Text style={{ color: c.mutedForeground, fontSize: 14, marginTop: 8, textAlign: "center", paddingHorizontal: 12 }}>
+              {lang === "ar" ? "أحسنت! نراك في التمرين القادم." : "Great job! See you next time."}
+            </Text>
+            <View style={{ marginTop: 20, width: "100%" }}>
+              <Button title={lang === "ar" ? "العودة للرئيسية" : "Back to home"} icon="home" onPress={() => router.replace("/(member)" as never)} />
+            </View>
+          </Card>
         </View>
       ) : !today.data || today.data.restDay || list.length === 0 ? (
         <View style={{ flex: 1, padding: 20 }}>
