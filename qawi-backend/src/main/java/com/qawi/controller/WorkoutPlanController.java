@@ -93,6 +93,15 @@ public class WorkoutPlanController {
         return ResponseEntity.ok(workoutPlanService.completeDay(dayId, userDetails.getUsername()));
     }
 
+    @DeleteMapping("/days/{dayId}/complete")
+    @PreAuthorize("hasRole('COACH')")
+    public ResponseEntity<Void> uncompleteDay(
+            @PathVariable UUID dayId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        workoutPlanService.uncompleteDay(dayId, userDetails.getUsername());
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/logs")
     @PreAuthorize("hasRole('MEMBER')")
     public ResponseEntity<WorkoutLog> logWorkout(

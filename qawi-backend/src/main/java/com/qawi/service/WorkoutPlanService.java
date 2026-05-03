@@ -280,9 +280,12 @@ public class WorkoutPlanService {
         if (completedDays.isEmpty()) return List.of();
 
         List<WorkoutLog> allLogs = logRepository.findByMemberIdOrderByLoggedAtDesc(memberId);
-        Map<UUID, WorkoutLog> latestLogByPlanExercise = new LinkedHashMap<>();
-        allLogs.forEach(l -> latestLogByPlanExercise.putIfAbsent(l.getPlanExerciseId(), l));
 
+        // Group all logs by planExerciseId (keep every set entry)
+        Map<UUID, List<WorkoutLog>> logsByPlanExercise = new LinkedHashMap<>();
+        allLogs.forEach(l -> logsByPlanExercise.computeIfAbsent(l.getPlanExerciseId(), k -> new ArrayList<>()).add(l));
+
+        // Best weight per exerciseTemplateId for PR detection
         Map<UUID, Double> bestWeightByTemplate = new HashMap<>();
         allLogs.forEach(l -> {
             PlanExercise pe = planExerciseRepository.findById(l.getPlanExerciseId()).orElse(null);
@@ -320,14 +323,30 @@ public class WorkoutPlanService {
                 em.put("targetReps", pe.getReps());
                 em.put("targetWeight", pe.getTargetWeight());
 
-                WorkoutLog log = latestLogByPlanExercise.get(pe.getId());
-                if (log != null) {
-                    em.put("actualSets", log.getActualSets());
-                    em.put("actualReps", log.getActualReps());
-                    em.put("actualWeight", log.getActualWeight());
-                    em.put("loggedAt", log.getLoggedAt());
+                // All log entries for this exercise, sorted chronologically (set 1 → last set)
+                List<WorkoutLog> exerciseLogs = logsByPlanExercise.getOrDefault(pe.getId(), List.of())
+                        .stream().sorted(Comparator.comparing(WorkoutLog::getLoggedAt)).toList();
+
+                List<Map<String, Object>> sets = new ArrayList<>();
+                for (int si = 0; si < exerciseLogs.size(); si++) {
+                    WorkoutLog sl = exerciseLogs.get(si);
+                    Map<String, Object> sm = new LinkedHashMap<>();
+                    sm.put("setNumber", si + 1);
+                    sm.put("actualWeight", sl.getActualWeight());
+                    sm.put("actualReps", sl.getActualReps());
+                    sm.put("loggedAt", sl.getLoggedAt());
+                    sets.add(sm);
+                }
+                em.put("sets", sets);
+
+                if (!exerciseLogs.isEmpty()) {
+                    double maxWeight = exerciseLogs.stream().mapToDouble(WorkoutLog::getActualWeight).max().orElse(0);
+                    em.put("actualSets", exerciseLogs.size());
+                    em.put("actualReps", exerciseLogs.get(0).getActualReps());
+                    em.put("actualWeight", maxWeight);
+                    em.put("loggedAt", exerciseLogs.get(exerciseLogs.size() - 1).getLoggedAt());
                     boolean isPR = pe.getExerciseTemplateId() != null
-                            && bestWeightByTemplate.getOrDefault(pe.getExerciseTemplateId(), 0.0) <= log.getActualWeight();
+                            && bestWeightByTemplate.getOrDefault(pe.getExerciseTemplateId(), 0.0) <= maxWeight;
                     em.put("isPersonalBest", isPR);
                 } else {
                     em.put("isPersonalBest", false);
@@ -362,6 +381,23 @@ public class WorkoutPlanService {
                     m.put("loggedAt", log.getLoggedAt());
                     return (Map<String, Object>) m;
                 }).toList();
+    }
+
+    @Transactional
+    public void uncompleteDay(UUID dayId, String coachEmail) {
+        ScheduleDay day = scheduleDayRepository.findById(dayId)
+                .orElseThrow(() -> new AppException("Day not found", "اليوم غير موجود", HttpStatus.NOT_FOUND));
+        assertCoachOwnsPlan(day.getWorkoutPlanId(), coachEmail);
+
+        List<UUID> planExerciseIds = planExerciseRepository.findByScheduleDayIdOrderByOrderIndex(dayId)
+                .stream().map(PlanExercise::getId).toList();
+        if (!planExerciseIds.isEmpty()) {
+            logRepository.deleteByPlanExerciseIdIn(planExerciseIds);
+        }
+
+        day.setCompleted(false);
+        day.setCompletedAt(null);
+        scheduleDayRepository.save(day);
     }
 
     private WorkoutPlan assertCoachOwnsPlan(UUID planId, String coachEmail) {

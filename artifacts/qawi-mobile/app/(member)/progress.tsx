@@ -27,6 +27,13 @@ const FIELDS: { key: string; label: string }[] = [
   { key: "bodyFat", label: "bodyFat" },
 ];
 
+type SetLog = {
+  setNumber: number;
+  actualWeight: number;
+  actualReps: number;
+  loggedAt: string;
+};
+
 type HistoryDay = {
   dayId: string;
   dayName: string;
@@ -45,6 +52,7 @@ type HistoryDay = {
     actualReps?: number;
     actualWeight?: number;
     isPersonalBest?: boolean;
+    sets?: SetLog[];
   }[];
 };
 
@@ -93,6 +101,7 @@ function HistoryDayCard({ day, lang, isRTL }: { day: HistoryDay; lang: string; i
               ex.actualReps != null &&
               ex.actualSets >= ex.targetSets &&
               ex.actualReps >= ex.targetReps;
+            const hasSets = ex.sets && ex.sets.length > 0;
 
             return (
               <View
@@ -125,6 +134,39 @@ function HistoryDayCard({ day, lang, isRTL }: { day: HistoryDay; lang: string; i
                     </Text>
                   )}
                 </View>
+
+                {/* Per-set weight breakdown */}
+                {hasSets && (
+                  <View style={{ marginTop: 8, gap: 4 }}>
+                    <View style={{ height: 1, backgroundColor: c.border, marginBottom: 4 }} />
+                    {ex.sets!.map((s) => (
+                      <View
+                        key={s.setNumber}
+                        style={{
+                          flexDirection: isRTL ? "row-reverse" : "row",
+                          alignItems: "center",
+                          gap: 8,
+                        }}
+                      >
+                        <View style={{
+                          width: 22, height: 22, borderRadius: 11,
+                          backgroundColor: c.primary + "25",
+                          alignItems: "center", justifyContent: "center",
+                        }}>
+                          <Text style={{ color: c.primary, fontSize: 10, fontWeight: "800" }}>
+                            {s.setNumber}
+                          </Text>
+                        </View>
+                        <Text style={{ color: c.foreground, fontSize: 12, fontWeight: "700" }}>
+                          {s.actualWeight} kg
+                        </Text>
+                        <Text style={{ color: c.mutedForeground, fontSize: 11 }}>
+                          × {s.actualReps} {lang === "ar" ? "تكرار" : "reps"}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
               </View>
             );
           })}

@@ -8,7 +8,7 @@ import { GradientAvatar } from '@/components/GradientAvatar';
 import { StatusBadge, BadgeStatus } from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Flame, Plus, Activity, Trash2, BedDouble, X, CheckCircle2 } from 'lucide-react';
+import { Loader2, Flame, Plus, Activity, Trash2, BedDouble, X, CheckCircle2, RotateCcw } from 'lucide-react';
 import { format, isToday, parseISO, eachDayOfInterval } from 'date-fns';
 import { toast } from 'sonner';
 import { WeightChart } from '@/components/charts/WeightChart';
@@ -166,6 +166,16 @@ function PlanTab({ plan, memberId, lang }: { plan: any; memberId: string; lang: 
     onError: (err: any) => toast.error(err?.error || 'Failed'),
   });
 
+  const uncompleteMut = useMutation({
+    mutationFn: (dayId: string) =>
+      apiFetch(`/workouts/days/${dayId}/complete`, { method: 'DELETE' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['coach', 'members', memberId, 'overview'] });
+      toast.success('Day marked as incomplete');
+    },
+    onError: (err: any) => toast.error(err?.error || 'Failed'),
+  });
+
   if (!plan) {
     return (
       <div className="glass-card p-12 text-center border-dashed">
@@ -273,8 +283,15 @@ function PlanTab({ plan, memberId, lang }: { plan: any; memberId: string; lang: 
                   deleteExMut.mutate({ dayId: activeDay.id, exerciseId });
                 }
               }}
+              onUncomplete={() => {
+                if (window.confirm('Mark this day as incomplete? This will erase the logged workout data for this day.')) {
+                  uncompleteMut.mutate(activeDay.id);
+                  setActiveDateStr(null);
+                }
+              }}
               addPending={addExMut.isPending}
               deletePending={deleteExMut.isPending}
+              uncompletePending={uncompleteMut.isPending}
             />
           )}
         </DialogContent>
@@ -283,13 +300,15 @@ function PlanTab({ plan, memberId, lang }: { plan: any; memberId: string; lang: 
   );
 }
 
-function DayDetail({ day, lang, logsByExerciseId, categories, libraryExercises, onAddExercise, onDeleteExercise, addPending, deletePending }: {
+function DayDetail({ day, lang, logsByExerciseId, categories, libraryExercises, onAddExercise, onDeleteExercise, onUncomplete, addPending, deletePending, uncompletePending }: {
   day: any; lang: 'en' | 'ar'; logsByExerciseId: Record<string, any[]>;
   categories: any[]; libraryExercises: any[];
   onAddExercise: (data: any) => void;
   onDeleteExercise: (exerciseId: string) => void;
+  onUncomplete: () => void;
   addPending: boolean;
   deletePending: boolean;
+  uncompletePending: boolean;
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [catFilter, setCatFilter] = useState('');
@@ -301,9 +320,21 @@ function DayDetail({ day, lang, logsByExerciseId, categories, libraryExercises, 
       <div className="flex justify-between items-center">
         <p className="text-sm text-muted-foreground">{day.exercises?.length || 0} exercises assigned</p>
         {day.isCompleted && (
-          <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full flex items-center gap-1">
-            <CheckCircle2 size={12} /> Completed by member
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full flex items-center gap-1">
+              <CheckCircle2 size={12} /> Completed by member
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onUncomplete}
+              disabled={uncompletePending}
+              className="text-xs h-7 px-2 border-orange-500/40 text-orange-400 hover:bg-orange-500/10 hover:text-orange-300"
+            >
+              <RotateCcw size={12} className="mr-1" />
+              {uncompletePending ? 'Undoing...' : 'Undo'}
+            </Button>
+          </div>
         )}
       </div>
 

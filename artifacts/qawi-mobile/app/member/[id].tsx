@@ -105,6 +105,17 @@ export default function MemberDetail() {
       Alert.alert(lang === "ar" ? "قوي" : "Qawi", e?.message || (lang === "ar" ? "تعذر حذف التمرين" : "Could not delete exercise")),
   });
 
+  const uncompleteDay = useMutation({
+    mutationFn: (dayId: string) =>
+      apiFetch(`/workouts/days/${dayId}/complete`, { method: "DELETE" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["coach", "member-overview", id] });
+      setSelectedDay(null);
+    },
+    onError: (e: any) =>
+      Alert.alert(lang === "ar" ? "قوي" : "Qawi", e?.message || (lang === "ar" ? "تعذر التراجع" : "Could not undo completion")),
+  });
+
   const addEx = useMutation({
     mutationFn: (payload: { dayId: string; exerciseTemplateId: string; sets: number; reps: number; targetWeight?: number }) =>
       apiFetch(`/workouts/days/${payload.dayId}/exercises`, {
@@ -363,7 +374,24 @@ export default function MemberDetail() {
               ]
             )
           }
+          onUncomplete={() =>
+            Alert.alert(
+              lang === "ar" ? "التراجع عن الإكمال" : "Undo Completion",
+              lang === "ar"
+                ? "هل تريد التراجع عن إكمال هذا اليوم؟ سيتم حذف التسجيلات المرتبطة به."
+                : "Mark this day as incomplete? The logged workout data for this day will be erased.",
+              [
+                { text: lang === "ar" ? "إلغاء" : "Cancel", style: "cancel" },
+                {
+                  text: lang === "ar" ? "تراجع" : "Undo",
+                  style: "destructive",
+                  onPress: () => uncompleteDay.mutate(selectedDay.id),
+                },
+              ]
+            )
+          }
           deletePending={deleteEx.isPending}
+          uncompletePending={uncompleteDay.isPending}
         />
       )}
 
@@ -389,14 +417,18 @@ function DayModal({
   onClose,
   onAddExercise,
   onDeleteExercise,
+  onUncomplete,
   deletePending,
+  uncompletePending,
 }: {
   day: ScheduleDay;
   planId: string;
   onClose: () => void;
   onAddExercise: () => void;
   onDeleteExercise: (exId: string) => void;
+  onUncomplete: () => void;
   deletePending: boolean;
+  uncompletePending: boolean;
 }) {
   const c = useColors();
   const { lang, isRTL } = useLanguage();
@@ -436,10 +468,31 @@ function DayModal({
               ) : null}
             </View>
             {day.isCompleted && (
-              <View style={{ backgroundColor: `${c.primary}20`, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
-                <Text style={{ color: c.primary, fontSize: 12, fontWeight: "700" }}>
-                  {lang === "ar" ? "✅ مكتمل" : "✅ Done"}
-                </Text>
+              <View style={{ flexDirection: isRTL ? "row-reverse" : "row", alignItems: "center", gap: 8 }}>
+                <View style={{ backgroundColor: `${c.primary}20`, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
+                  <Text style={{ color: c.primary, fontSize: 12, fontWeight: "700" }}>
+                    {lang === "ar" ? "✅ مكتمل" : "✅ Done"}
+                  </Text>
+                </View>
+                <Pressable
+                  onPress={onUncomplete}
+                  disabled={uncompletePending}
+                  style={({ pressed }) => ({
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 4,
+                    backgroundColor: pressed ? "rgba(249,115,22,0.2)" : "rgba(249,115,22,0.12)",
+                    borderRadius: 8,
+                    paddingHorizontal: 10,
+                    paddingVertical: 5,
+                    opacity: uncompletePending ? 0.5 : 1,
+                  })}
+                >
+                  <Feather name="rotate-ccw" size={12} color="#f97316" />
+                  <Text style={{ color: "#f97316", fontSize: 12, fontWeight: "700" }}>
+                    {lang === "ar" ? "تراجع" : "Undo"}
+                  </Text>
+                </Pressable>
               </View>
             )}
             <Pressable onPress={onClose} hitSlop={10}>
