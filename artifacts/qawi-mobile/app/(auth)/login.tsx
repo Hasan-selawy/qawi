@@ -74,6 +74,7 @@ function FloatingInput({
       <Ionicons name={iconName} size={20} color={focused ? C.primary : C.muted} />
       <View style={styles.inputBody}>
         <Animated.Text
+          allowFontScaling={false}
           style={[
             styles.inputLabel,
             { top: labelTop as any, fontSize: labelSize as any, color: focused ? C.primary : C.muted },
@@ -90,6 +91,7 @@ function FloatingInput({
           keyboardType={keyboardType}
           autoCapitalize="none"
           autoCorrect={false}
+          allowFontScaling={false}
           style={styles.inputField}
         />
       </View>
@@ -128,7 +130,7 @@ export default function LoginScreen() {
     setSubmitting(true);
     try {
       const u = await login(email.trim(), password);
-      if (u.role === "SUPER_ADMIN") Alert.alert(lang === "ar" ? "قوي" : "Qawi", t("auth.superNotAllowed"));
+      if (u.role === "SUPER_ADMIN") Alert.alert("قوي", t("auth.superNotAllowed"));
     } catch (e: any) {
       let msg = t("auth.loginError");
       if (e?.status === 401 || e?.status === 403) {
@@ -138,7 +140,7 @@ export default function LoginScreen() {
       } else {
         msg = `Network error: ${e?.message || "Cannot reach server"}`;
       }
-      Alert.alert(lang === "ar" ? "قوي" : "Qawi", msg);
+      Alert.alert("قوي", msg);
     } finally {
       setSubmitting(false);
     }
@@ -184,17 +186,17 @@ export default function LoginScreen() {
           {/* Logo block */}
           <View style={styles.logoBlock}>
             <GlowingArabicLogo
-              fontFamily={lang === "ar" ? arabicFont : englishBold}
-              label={lang === "ar" ? "قوي" : "Qawi"}
+              fontFamily={arabicFont}
+              label="قوي"
             />
             <Text
               allowFontScaling={false}
               style={[
                 styles.brand,
-                { fontFamily: lang === "ar" ? arabicBold : englishBold, letterSpacing: lang === "ar" ? 0 : 6 },
+                { fontFamily: englishBold, letterSpacing: 6 },
               ]}
             >
-              {lang === "ar" ? "قوي" : "QAWI"}
+              QAWI
             </Text>
             <View style={styles.divider} />
             <Text
