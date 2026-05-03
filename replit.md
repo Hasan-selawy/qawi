@@ -118,6 +118,14 @@ Per-gym via `gym_features` table. Flags: `nutritionEnabled`, `pushNotificationsE
 - **Skeleton loaders** — replaced `ActivityIndicator` with shimmer placeholder blocks on loading states in nutrition, progress, coach/members, notifications
 - **Improved empty states** — bilingual descriptive sub-text + CTA button on progress, nutrition, coach members, notifications
 
+### Coach Member Detail — Workout Plan (completed)
+- **API URL fix** (`services/api.ts`): removed `:9000` port — requests now route through Replit shared proxy correctly at `/api/v1`
+- **Member card navigation** (`(coach)/index.tsx`): already uses `router.push('/member/${item.id}')` → `app/member/[id].tsx`
+- **Workout plan calendar** (`app/member/[id].tsx`): reads `overview.currentWorkoutPlan.scheduleDays`; renders each day as a tappable row with color-coded status (green = done, blue = has exercises, gray = rest, dim = empty)
+- **Day detail bottom sheet**: shows day name + date header; lists exercises (name in AR bold, sets × reps @ weight); trash icon to delete each exercise; "😴 يوم راحة" when rest day; "لا يوجد تمارين" when empty
+- **Exercise picker**: "+ إضافة تمرين" button opens exercise picker modal with search, full library list; tap exercise → sets/reps/weight form → `POST /workouts/days/{dayId}/exercises`; refreshes overview on success
+- **Delete exercise**: confirmation alert → `DELETE /workouts/days/{dayId}/exercises/{exId}`; refreshes overview on success
+
 ---
 
 ## Node.js Workspace
