@@ -1,0 +1,55 @@
+Add these 3 features to the Exercise Library page:
+
+FEATURE 1 — "Add to Member" button on each exercise card:
+Add a green "+" button on every exercise card.
+When clicked → opens a modal:
+  Title: "Add to Member's Plan"
+  - Member dropdown (GET /api/v1/coach/members)
+  - Day dropdown (loads days from member's current plan)
+  - Sets input (pre-filled with exercise default)
+  - Reps input (pre-filled with exercise default)  
+  - Coach note input (optional, placeholder "e.g. Use machine #1")
+  - Green "Add Exercise" button
+  → POST /api/v1/workouts/days/{dayId}/exercises
+  → Show success toast "Added to [Member Name]'s plan!"
+
+FEATURE 2 — Click exercise to see who is using it:
+When coach clicks on an exercise card (not the + button):
+Open a side panel or modal showing:
+  Title: "[Exercise Name] — Usage"
+  List of members using this exercise:
+  - Member name + avatar
+  - Plan name
+  - Day name (e.g. "Monday - Chest Day")
+  - Sets × Reps assigned
+  - Last logged date + actual weight used
+  If nobody is using it → "No members assigned yet"
+  
+  Call GET /api/v1/exercises/{exerciseId}/usage
+  (create this endpoint if it doesn't exist:
+   query PlanExercise JOIN WorkoutLog where 
+   exerciseTemplateId = {id}, return member info)
+
+FEATURE 3 — Delete any exercise (Admin + Coach for own):
+Currently only custom exercises (wad, hasan) show 
+edit/delete buttons.
+
+Rules:
+- COACH can delete exercises they created (scope=COACH)
+- GYM_ADMIN can delete any exercise in their gym 
+  (scope=COACH or scope=GYM)
+- SUPER_ADMIN can delete any exercise including GLOBAL
+
+Add delete button (red trash icon) on ALL exercise cards
+based on the user's permission level.
+
+On delete click:
+→ Confirm dialog: "Delete [Exercise Name]? 
+  This will remove it from all plans using it."
+→ DELETE /api/v1/exercises/library/{exerciseId}
+→ Remove from list instantly
+→ Show toast "Exercise deleted"
+
+For GYM_ADMIN: show delete on all exercises in their gym
+For COACH: show delete only on their own custom exercises
+For SUPER_ADMIN: show delete on everything

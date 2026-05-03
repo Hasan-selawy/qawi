@@ -12,4 +12,7 @@ public interface WorkoutTemplateDayExerciseRepository extends JpaRepository<Work
     List<WorkoutTemplateDayExercise> findByTemplateDayIdOrderByOrderIndex(UUID templateDayId);
     void deleteByTemplateDayId(UUID templateDayId);
     boolean existsByExerciseTemplateId(UUID exerciseTemplateId);
+
+    @org.springframework.data.jpa.repository.Modifying
+    void deleteByExerciseTemplateId(UUID exerciseTemplateId);
 }

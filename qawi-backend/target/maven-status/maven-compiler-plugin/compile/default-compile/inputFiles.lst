@@ -67,6 +67,7 @@
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/CreateCoachNoteRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/MealType.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/service/CoachDashboardService.java
+/home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/ExerciseUsageResponse.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/WorkoutTemplateDay.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/CreateTemplateRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/GymDetailResponse.java

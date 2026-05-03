@@ -1,22 +1,29 @@
 package com.qawi.service;
 
 import com.qawi.dto.AddExerciseRequest;
+import com.qawi.dto.ExerciseUsageResponse;
 import com.qawi.entity.ExerciseCategory;
 import com.qawi.entity.ExerciseScope;
 import com.qawi.entity.ExerciseTemplate;
+import com.qawi.entity.PlanExercise;
 import com.qawi.entity.Role;
+import com.qawi.entity.ScheduleDay;
 import com.qawi.entity.User;
+import com.qawi.entity.WorkoutLog;
+import com.qawi.entity.WorkoutPlan;
 import com.qawi.exception.AppException;
 import com.qawi.repository.ExerciseCategoryRepository;
 import com.qawi.repository.ExerciseTemplateRepository;
 import com.qawi.repository.PlanExerciseRepository;
 import com.qawi.repository.UserRepository;
+import com.qawi.repository.WorkoutLogRepository;
 import com.qawi.repository.WorkoutTemplateDayExerciseRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -29,6 +36,7 @@ public class ExerciseService {
     private final UserRepository userRepository;
     private final PlanExerciseRepository planExerciseRepository;
     private final WorkoutTemplateDayExerciseRepository workoutTemplateDayExerciseRepository;
+    private final WorkoutLogRepository workoutLogRepository;
 
     public List<ExerciseCategory> getAllCategories() {
         return categoryRepository.findAll();
@@ -172,12 +180,16 @@ public class ExerciseService {
         // Ownership check by role/scope
         switch (user.getRole()) {
             case SUPER_ADMIN -> {
-                // can delete anything except in-use rows (handled below)
+                // can delete anything
             }
             case GYM_ADMIN -> {
-                if (ex.getScope() != ExerciseScope.GYM
-                        || ex.getGymId() == null
-                        || !ex.getGymId().equals(user.getGymId())) {
+                // Gym admins may delete GYM-scope and COACH-scope rows that
+                // belong to their gym (gymId is stamped on COACH rows too).
+                boolean inMyGym = ex.getGymId() != null
+                        && ex.getGymId().equals(user.getGymId());
+                boolean okScope = ex.getScope() == ExerciseScope.GYM
+                        || ex.getScope() == ExerciseScope.COACH;
+                if (!okScope || !inMyGym) {
                     throw new AppException(
                             "You can only delete exercises owned by your gym",
                             "يمكنك حذف تمارين صالتك فقط",
@@ -200,15 +212,77 @@ public class ExerciseService {
                     HttpStatus.FORBIDDEN);
         }
 
-        if (planExerciseRepository.existsByExerciseTemplateId(exerciseId)
-                || workoutTemplateDayExerciseRepository.existsByExerciseTemplateId(exerciseId)) {
-            throw new AppException(
-                    "Exercise is in use by an existing plan or template",
-                    "هذا التمرين مستخدم في خطة أو قالب موجود",
-                    HttpStatus.CONFLICT);
+        // Cascade: drop logs → plan_exercises → template_day_exercises
+        // This honors the spec "remove it from all plans using it".
+        List<PlanExercise> usages = planExerciseRepository.findByExerciseTemplateId(exerciseId);
+        if (!usages.isEmpty()) {
+            List<UUID> peIds = usages.stream().map(PlanExercise::getId).toList();
+            workoutLogRepository.deleteByPlanExerciseIdIn(peIds);
+            planExerciseRepository.deleteByExerciseTemplateId(exerciseId);
         }
+        workoutTemplateDayExerciseRepository.deleteByExerciseTemplateId(exerciseId);
 
         templateRepository.delete(ex);
+    }
+
+    // ── Usage (who is using this exercise) ──────────────────────────────────
+
+    public List<ExerciseUsageResponse> getExerciseUsage(UUID exerciseId, String userEmail) {
+        User user = requireUser(userEmail);
+
+        // Existence guard (keeps the 404 contract).
+        templateRepository.findById(exerciseId)
+                .orElseThrow(() -> new AppException("Exercise not found", "التمرين غير موجود", HttpStatus.NOT_FOUND));
+
+        // Members are not allowed to query usage at all.
+        if (user.getRole() == Role.MEMBER) {
+            throw new AppException("Not allowed", "غير مسموح", HttpStatus.FORBIDDEN);
+        }
+
+        // Visibility filter is enforced in SQL via :role + :scopeId — no
+        // cross-tenant rows are ever loaded into application memory.
+        UUID scopeId = switch (user.getRole()) {
+            case COACH     -> user.getId();
+            case GYM_ADMIN -> user.getGymId();
+            default        -> null; // SUPER_ADMIN ignores :scopeId
+        };
+
+        List<Object[]> rows = planExerciseRepository.findUsageRows(
+                exerciseId, user.getRole().name(), scopeId);
+        if (rows.isEmpty()) return List.of();
+
+        // Batch-fetch latest log per plan_exercise (1 query, not N).
+        List<UUID> peIds = rows.stream()
+                .map(r -> ((PlanExercise) r[0]).getId())
+                .toList();
+        java.util.Map<UUID, WorkoutLog> latestByPeId = new java.util.HashMap<>();
+        for (WorkoutLog log : workoutLogRepository.findByPlanExerciseIdInOrderByLoggedAtDesc(peIds)) {
+            latestByPeId.putIfAbsent(log.getPlanExerciseId(), log);
+        }
+
+        List<ExerciseUsageResponse> out = new ArrayList<>(rows.size());
+        for (Object[] r : rows) {
+            PlanExercise pe = (PlanExercise) r[0];
+            ScheduleDay day = (ScheduleDay) r[1];
+            WorkoutPlan plan = (WorkoutPlan) r[2];
+            String memberName = (String) r[3];
+            WorkoutLog latest = latestByPeId.get(pe.getId());
+
+            out.add(ExerciseUsageResponse.builder()
+                    .memberId(plan.getMemberId())
+                    .memberName(memberName != null ? memberName : "Unknown")
+                    .planId(plan.getId())
+                    .planName(plan.getName())
+                    .dayId(day.getId())
+                    .dayName(day.getDayName())
+                    .dayDate(day.getDayDate())
+                    .sets(pe.getSets())
+                    .reps(pe.getReps())
+                    .lastLoggedAt(latest != null ? latest.getLoggedAt() : null)
+                    .lastWeight(latest != null ? latest.getActualWeight() : null)
+                    .build());
+        }
+        return out;
     }
 
     private User requireUser(String email) {

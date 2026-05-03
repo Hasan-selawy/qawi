@@ -1,6 +1,7 @@
 package com.qawi.controller;
 
 import com.qawi.dto.AddExerciseRequest;
+import com.qawi.dto.ExerciseUsageResponse;
 import com.qawi.entity.ExerciseCategory;
 import com.qawi.entity.ExerciseTemplate;
 import com.qawi.service.ExerciseService;
@@ -67,5 +68,13 @@ public class ExerciseController {
             @AuthenticationPrincipal UserDetails userDetails) {
         exerciseService.deleteCustomExercise(id, userDetails.getUsername());
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/usage")
+    @PreAuthorize("hasAnyRole('COACH','GYM_ADMIN','SUPER_ADMIN')")
+    public ResponseEntity<List<ExerciseUsageResponse>> getUsage(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(exerciseService.getExerciseUsage(id, userDetails.getUsername()));
     }
 }

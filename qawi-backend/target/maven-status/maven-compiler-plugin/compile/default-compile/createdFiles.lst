@@ -120,6 +120,7 @@ com/qawi/entity/MemberSubscriptionPlan.class
 com/qawi/dto/CreateGymRequest.class
 com/qawi/entity/WorkoutTemplateDay$WorkoutTemplateDayBuilder.class
 com/qawi/repository/AttendanceRepository.class
+com/qawi/dto/ExerciseUsageResponse$ExerciseUsageResponseBuilder.class
 com/qawi/repository/NutritionPlanRepository.class
 com/qawi/security/UserDetailsServiceImpl.class
 com/qawi/controller/PublicGymController.class
@@ -154,6 +155,7 @@ com/qawi/dto/RegisterGymRequest.class
 com/qawi/service/MeasurementService.class
 com/qawi/config/Phase4DataSeeder.class
 com/qawi/entity/MealType.class
+com/qawi/dto/ExerciseUsageResponse.class
 com/qawi/controller/AttendanceController.class
 com/qawi/repository/WorkoutPlanRepository.class
 com/qawi/repository/GymRepository.class
