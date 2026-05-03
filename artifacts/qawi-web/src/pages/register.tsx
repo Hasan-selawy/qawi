@@ -9,25 +9,23 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Eye, EyeOff, Loader2, ArrowRight, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { Eye, EyeOff, Loader2, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 const step1Schema = z.object({
-  gymName: z.string().min(2),
-  gymNameAr: z.string().optional(),
-  adminName: z.string().min(2),
-  adminNameAr: z.string().optional(),
+  gymName: z.string().min(2, "Gym name must be at least 2 characters"),
+  adminName: z.string().min(2, "Admin name must be at least 2 characters"),
 });
 
 const step2Schema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6),
-  confirmPassword: z.string()
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  confirmPassword: z.string(),
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords do not match",
-  path: ["confirmPassword"]
+  path: ["confirmPassword"],
 });
 
 export default function RegisterPage() {
@@ -40,7 +38,7 @@ export default function RegisterPage() {
 
   const form1 = useForm<z.infer<typeof step1Schema>>({
     resolver: zodResolver(step1Schema),
-    defaultValues: { gymName: "", gymNameAr: "", adminName: "", adminNameAr: "" },
+    defaultValues: { gymName: "", adminName: "" },
   });
 
   const form2 = useForm<z.infer<typeof step2Schema>>({
@@ -58,21 +56,26 @@ export default function RegisterPage() {
     onSuccess: (data: any) => {
       localStorage.setItem("qawi_token", data.token);
       queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
-      toast.success(lang === 'ar' ? 'تم التسجيل بنجاح' : 'Registered successfully');
+      toast.success(
+        lang === "ar"
+          ? "مرحباً بك في قوي! بدأت تجربتك المجانية 🎉"
+          : "Welcome to Qawi! Your 14-day trial has started 🎉",
+        { duration: 5000 }
+      );
       setLocation("/admin/dashboard");
     },
     onError: (error: any) => {
-      toast.error(lang === 'ar' ? error.messageAr : error.error);
-    }
+      toast.error(lang === "ar" ? error.messageAr : error.error);
+    },
   });
 
   const onStep1Submit = (data: z.infer<typeof step1Schema>) => {
-    setFormData({ ...formData, ...data });
+    setFormData((prev: any) => ({ ...prev, ...data }));
     setStep(2);
   };
 
   const onStep2Submit = (data: z.infer<typeof step2Schema>) => {
-    setFormData({ ...formData, ...data });
+    setFormData((prev: any) => ({ ...prev, ...data }));
     setStep(3);
   };
 
@@ -99,15 +102,32 @@ export default function RegisterPage() {
 
       <div className={cn("glass-card w-full p-8 border-primary/20 relative z-10", step === 3 ? "max-w-4xl" : "max-w-md")}>
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-primary mb-2 tracking-tight" style={{ textShadow: '0 0 20px rgba(34,197,94,0.3)', fontFamily: '"Noto Kufi Arabic", "Tajawal", system-ui, sans-serif' }}>قوي</h1>
+          {lang === "ar" ? (
+            <h1
+              className="text-4xl font-bold text-primary mb-2 tracking-tight"
+              style={{ textShadow: "0 0 20px rgba(34,197,94,0.3)", fontFamily: '"Noto Kufi Arabic", "Tajawal", system-ui, sans-serif' }}
+            >
+              قوي
+            </h1>
+          ) : (
+            <h1
+              className="text-4xl font-bold text-primary mb-2 tracking-tight"
+              style={{ textShadow: "0 0 20px rgba(34,197,94,0.3)", letterSpacing: "0.08em" }}
+            >
+              QAWI
+            </h1>
+          )}
           <p className="text-muted-foreground">{t("auth.register")}</p>
-          
+
           <div className="flex justify-center items-center gap-2 mt-6">
             {[1, 2, 3].map(i => (
-              <div key={i} className={cn(
-                "h-2 rounded-full transition-all duration-300",
-                step >= i ? "w-8 bg-primary" : "w-2 bg-white/10"
-              )} />
+              <div
+                key={i}
+                className={cn(
+                  "h-2 rounded-full transition-all duration-300",
+                  step >= i ? "w-8 bg-primary" : "w-2 bg-white/10"
+                )}
+              />
             ))}
           </div>
         </div>
@@ -119,33 +139,21 @@ export default function RegisterPage() {
                 <form onSubmit={form1.handleSubmit(onStep1Submit)} className="space-y-4">
                   <FormField control={form1.control} name="gymName" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{lang === 'ar' ? 'اسم الصالة الرياضية' : 'Gym Name'}</FormLabel>
+                      <FormLabel>{t("common.gymName")}</FormLabel>
                       <FormControl><Input {...field} className="bg-black/20" /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form1.control} name="gymNameAr" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{lang === 'ar' ? 'اسم الصالة الرياضية (بالعربية)' : 'Gym Name (Arabic)'}</FormLabel>
-                      <FormControl><Input {...field} className="bg-black/20" dir="rtl" /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
                   <FormField control={form1.control} name="adminName" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{lang === 'ar' ? 'اسم المدير' : 'Admin Name'}</FormLabel>
+                      <FormLabel>{t("common.adminName")}</FormLabel>
                       <FormControl><Input {...field} className="bg-black/20" /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
-                  <FormField control={form1.control} name="adminNameAr" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{lang === 'ar' ? 'اسم المدير (بالعربية)' : 'Admin Name (Arabic)'}</FormLabel>
-                      <FormControl><Input {...field} className="bg-black/20" dir="rtl" /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <Button type="submit" className="w-full h-12 mt-6">{t('common.next') || 'Next'}</Button>
+                  <Button type="submit" className="w-full h-12 mt-6">
+                    {t("common.next")}
+                  </Button>
                 </form>
               </Form>
             </motion.div>
@@ -157,18 +165,22 @@ export default function RegisterPage() {
                 <form onSubmit={form2.handleSubmit(onStep2Submit)} className="space-y-4">
                   <FormField control={form2.control} name="email" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('common.email')}</FormLabel>
+                      <FormLabel>{t("common.email")}</FormLabel>
                       <FormControl><Input {...field} type="email" className="bg-black/20" /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
                   <FormField control={form2.control} name="password" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('common.password')}</FormLabel>
+                      <FormLabel>{t("common.password")}</FormLabel>
                       <FormControl>
                         <div className="relative">
-                          <Input {...field} type={showPassword ? "text" : "password"} className="bg-black/20" />
-                          <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-muted-foreground rtl:left-3 rtl:right-auto">
+                          <Input {...field} type={showPassword ? "text" : "password"} className="bg-black/20 pr-10 rtl:pl-10 rtl:pr-3" />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-3 text-muted-foreground rtl:left-3 rtl:right-auto"
+                          >
                             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                           </button>
                         </div>
@@ -178,14 +190,20 @@ export default function RegisterPage() {
                   )} />
                   <FormField control={form2.control} name="confirmPassword" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{lang === 'ar' ? 'تأكيد كلمة المرور' : 'Confirm Password'}</FormLabel>
-                      <FormControl><Input {...field} type={showPassword ? "text" : "password"} className="bg-black/20" /></FormControl>
+                      <FormLabel>{t("common.confirmPassword")}</FormLabel>
+                      <FormControl>
+                        <Input {...field} type={showPassword ? "text" : "password"} className="bg-black/20" />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
                   <div className="flex gap-3 mt-6">
-                    <Button type="button" variant="outline" onClick={() => setStep(1)} className="h-12 w-full">{t('common.back') || 'Back'}</Button>
-                    <Button type="submit" className="w-full h-12">{t('common.next') || 'Next'}</Button>
+                    <Button type="button" variant="outline" onClick={() => setStep(1)} className="h-12 w-full">
+                      {t("common.back")}
+                    </Button>
+                    <Button type="submit" className="w-full h-12">
+                      {t("common.next")}
+                    </Button>
                   </div>
                 </form>
               </Form>
@@ -197,47 +215,57 @@ export default function RegisterPage() {
               <div className="text-center mb-6">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4 border border-primary/20">
                   <CheckCircle2 size={16} />
-                  {lang === 'ar' ? 'تجربة مجانية لمدة 14 يوماً - بدون بطاقة ائتمان' : '14-day free trial — no credit card'}
+                  {lang === "ar"
+                    ? "تجربة مجانية لمدة 14 يوماً - بدون بطاقة ائتمان"
+                    : "14-day free trial — no credit card"}
                 </div>
+                <h2 className="text-xl font-semibold text-foreground">{t("common.choosePlan")}</h2>
               </div>
-              
+
               {loadingPlans ? (
-                <div className="flex justify-center p-12"><Loader2 className="animate-spin text-primary h-8 w-8" /></div>
+                <div className="flex justify-center p-12">
+                  <Loader2 className="animate-spin text-primary h-8 w-8" />
+                </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {plans?.map((plan: any) => (
                     <div key={plan.plan} className="glass-card p-6 flex flex-col border border-white/5 hover:border-primary/50 transition-colors">
                       <h3 className="text-xl font-bold mb-2">{plan.plan}</h3>
-                      <div className="text-3xl font-bold text-primary mb-6">${plan.price}<span className="text-sm text-muted-foreground font-normal">/mo</span></div>
-
+                      <div className="text-3xl font-bold text-primary mb-6">
+                        ${plan.price}<span className="text-sm text-muted-foreground font-normal">/mo</span>
+                      </div>
                       <ul className="space-y-3 mb-8 flex-1 text-sm text-muted-foreground">
                         <li className="flex items-start gap-2">
                           <CheckCircle2 size={16} className="text-primary shrink-0 mt-0.5" />
-                          <span>Up to {plan.maxMembers} members</span>
+                          <span>{lang === "ar" ? `حتى ${plan.maxMembers} عضو` : `Up to ${plan.maxMembers} members`}</span>
                         </li>
                         <li className="flex items-start gap-2">
                           <CheckCircle2 size={16} className="text-primary shrink-0 mt-0.5" />
-                          <span>Up to {plan.maxCoaches} coaches</span>
+                          <span>{lang === "ar" ? `حتى ${plan.maxCoaches} مدرب` : `Up to ${plan.maxCoaches} coaches`}</span>
                         </li>
                         <li className="flex items-start gap-2">
                           <CheckCircle2 size={16} className="text-primary shrink-0 mt-0.5" />
-                          <span>Bilingual EN / AR dashboard</span>
+                          <span>{lang === "ar" ? "لوحة تحكم ثنائية اللغة" : "Bilingual EN / AR dashboard"}</span>
                         </li>
                       </ul>
-
                       <Button
                         onClick={() => onPlanSelect(plan.plan)}
                         disabled={registerMutation.isPending}
                         className="w-full h-12 glow-hover"
                       >
-                        {registerMutation.isPending ? <Loader2 className="animate-spin" /> : (lang === 'ar' ? 'اختيار هذه الخطة' : 'Select Plan')}
+                        {registerMutation.isPending
+                          ? <Loader2 className="animate-spin" />
+                          : t("common.startTrial")}
                       </Button>
                     </div>
                   ))}
                 </div>
               )}
+
               <div className="mt-8 flex justify-center">
-                 <Button type="button" variant="outline" onClick={() => setStep(2)} className="h-12 w-full max-w-xs">{t('common.back') || 'Back'}</Button>
+                <Button type="button" variant="outline" onClick={() => setStep(2)} className="h-12 w-full max-w-xs">
+                  {t("common.back")}
+                </Button>
               </div>
             </motion.div>
           )}
@@ -250,9 +278,9 @@ export default function RegisterPage() {
           </Link>
         </div>
       </div>
-      
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-[120px] pointer-events-none"></div>
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-[120px] pointer-events-none" />
     </div>
   );
 }

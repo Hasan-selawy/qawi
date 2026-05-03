@@ -29,7 +29,15 @@
     "library": "Library",
     "notes": "Notes",
     "gyms": "Gyms",
-    "nutrition": "Nutrition"
+    "nutrition": "Nutrition",
+    "next": "Next",
+    "back": "Back",
+    "registerGym": "Register Your Gym",
+    "gymName": "Gym Name",
+    "adminName": "Admin Name",
+    "confirmPassword": "Confirm Password",
+    "choosePlan": "Choose Your Plan",
+    "startTrial": "Start Free Trial"
   },
   "auth": {
     "login": "Login",

@@ -29,7 +29,15 @@
     "library": "المكتبة",
     "notes": "الملاحظات",
     "gyms": "الصالات",
-    "nutrition": "التغذية"
+    "nutrition": "التغذية",
+    "next": "التالي",
+    "back": "رجوع",
+    "registerGym": "سجّل صالتك",
+    "gymName": "اسم الصالة",
+    "adminName": "اسم المسؤول",
+    "confirmPassword": "تأكيد كلمة المرور",
+    "choosePlan": "اختر خطتك",
+    "startTrial": "ابدأ التجربة المجانية"
   },
   "auth": {
     "login": "تسجيل الدخول",
