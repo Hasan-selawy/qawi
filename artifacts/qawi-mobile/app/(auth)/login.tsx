@@ -132,19 +132,6 @@ export default function LoginScreen() {
   const [showPwd, setShowPwd] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const pressScale = useRef(new Animated.Value(1)).current;
-  const shimmer = useRef(new Animated.Value(-1)).current;
-
-  useEffect(() => {
-    Animated.loop(
-      Animated.timing(shimmer, {
-        toValue: 1,
-        duration: 2400,
-        easing: Easing.inOut(Easing.ease),
-        useNativeDriver: true,
-      }),
-      { resetBeforeIteration: true }
-    ).start();
-  }, [shimmer]);
 
   const onSubmit = async () => {
     if (!email || !password) return;
@@ -166,8 +153,6 @@ export default function LoginScreen() {
   const englishMedium = "Inter_500Medium";
   const englishBold = "Inter_700Bold";
 
-  const shimmerTranslate = shimmer.interpolate({ inputRange: [-1, 1], outputRange: [-220, 320] });
-
   return (
     <View style={styles.root}>
       <LinearGradient
@@ -176,21 +161,11 @@ export default function LoginScreen() {
         style={StyleSheet.absoluteFillObject}
       />
 
-      {/* Radial green glow circles behind logo */}
-      <View
-        pointerEvents="none"
-        style={[
-          styles.glowOuter,
-          { top: insets.top + 90 },
-        ]}
-      />
-      <View
-        pointerEvents="none"
-        style={[
-          styles.glowInner,
-          { top: insets.top + 140 },
-        ]}
-      />
+      {/* Soft ambient green halo behind logo (layered for diffuse falloff) */}
+      <View pointerEvents="none" style={[styles.glow1, { top: insets.top + 40 }]} />
+      <View pointerEvents="none" style={[styles.glow2, { top: insets.top + 90 }]} />
+      <View pointerEvents="none" style={[styles.glow3, { top: insets.top + 140 }]} />
+      <View pointerEvents="none" style={[styles.glow4, { top: insets.top + 180 }]} />
 
       <KeyboardAvoidingView style={styles.kav} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <ScrollView
@@ -269,24 +244,14 @@ export default function LoginScreen() {
                 end={{ x: 1, y: 0 }}
                 style={styles.signinGradient}
               >
-                <View style={styles.signinInner}>
-                  <Ionicons name="log-in-outline" size={20} color="#FFFFFF" />
-                  <Text
-                    style={[
-                      styles.signinText,
-                      { fontFamily: lang === "ar" ? arabicBold : englishBold },
-                    ]}
-                  >
-                    {submitting ? "..." : t("auth.loginButton")}
-                  </Text>
-                </View>
-                <Animated.View
-                  pointerEvents="none"
+                <Text
                   style={[
-                    styles.shimmer,
-                    { transform: [{ translateX: shimmerTranslate }, { skewX: "-20deg" }] },
+                    styles.signinText,
+                    { fontFamily: lang === "ar" ? arabicBold : englishBold },
                   ]}
-                />
+                >
+                  {submitting ? "..." : t("auth.loginButton")}
+                </Text>
               </LinearGradient>
             </Pressable>
           </Animated.View>
@@ -334,21 +299,37 @@ const styles = StyleSheet.create({
   },
   langText: { color: C.text, fontSize: 12, letterSpacing: 1 },
   langDivider: { color: C.divider, fontSize: 12 },
-  glowOuter: {
+  glow1: {
     position: "absolute",
     alignSelf: "center",
-    width: 280,
-    height: 280,
-    borderRadius: 140,
-    backgroundColor: "rgba(34,197,94,0.12)",
+    width: 420,
+    height: 420,
+    borderRadius: 210,
+    backgroundColor: "rgba(34,197,94,0.04)",
   },
-  glowInner: {
+  glow2: {
     position: "absolute",
     alignSelf: "center",
-    width: 180,
-    height: 180,
-    borderRadius: 90,
-    backgroundColor: "rgba(34,197,94,0.08)",
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: "rgba(34,197,94,0.05)",
+  },
+  glow3: {
+    position: "absolute",
+    alignSelf: "center",
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: "rgba(34,197,94,0.06)",
+  },
+  glow4: {
+    position: "absolute",
+    alignSelf: "center",
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: "rgba(34,197,94,0.07)",
   },
   logoBlock: { alignItems: "center", marginBottom: 48 },
   logoStack: { width: 200, height: 130, alignItems: "center", justifyContent: "center" },
@@ -380,9 +361,7 @@ const styles = StyleSheet.create({
   signinWrap: { marginTop: 28 },
   signin: { borderRadius: 14, overflow: "hidden", height: 56 },
   signinGradient: { flex: 1, alignItems: "center", justifyContent: "center" },
-  signinInner: { flexDirection: "row", alignItems: "center", gap: 8 },
   signinText: { color: "#FFFFFF", fontSize: 16, letterSpacing: 0.5 },
-  shimmer: { position: "absolute", top: 0, bottom: 0, width: 80, backgroundColor: "rgba(255,255,255,0.18)" },
   spacer: { flex: 1, minHeight: 20 },
   registerRow: { alignItems: "center", marginTop: 40 },
   registerInner: { flexDirection: "row", alignItems: "center", gap: 6 },
