@@ -296,6 +296,9 @@ function Step1(props: {
   );
 }
 
+const DAY_PRESETS_EN = ["Push", "Pull", "Legs", "Chest", "Back", "Shoulders", "Arms", "Cardio", "Full Body"];
+const DAY_PRESETS_AR = ["دفع", "سحب", "أرجل", "صدر", "ظهر", "أكتاف", "ذراعين", "كارديو", "كامل الجسم"];
+
 function Step2(props: {
   startDate: string; endDate: string;
   days: DraftDay[]; setDays: React.Dispatch<React.SetStateAction<DraftDay[]>>;
@@ -303,6 +306,7 @@ function Step2(props: {
 }) {
   const c = useColors();
   const { lang, isRTL } = useLanguage();
+  const presets = lang === "ar" ? DAY_PRESETS_AR : DAY_PRESETS_EN;
 
   const dateRange = useMemo(() => {
     const out: string[] = [];
@@ -314,6 +318,9 @@ function Step2(props: {
     }
     return out;
   }, [props.startDate, props.endDate]);
+
+  const setDayName = (tempId: string, name: string) =>
+    props.setDays((arr) => arr.map((x) => x.tempId === tempId ? { ...x, dayName: name } : x));
 
   return (
     <>
@@ -349,32 +356,81 @@ function Step2(props: {
       </View>
 
       {props.days.length > 0 ? (
-        <View style={{ gap: 8, marginTop: 8 }}>
-          {props.days.map((d) => (
+        <View style={{ gap: 10, marginTop: 8 }}>
+          <Text style={{ color: c.mutedForeground, fontSize: 12 }}>
+            {lang === "ar"
+              ? "اسم كل يوم — اكتب أو اختر من المقترحات"
+              : "Name each day — type or tap a preset (Push, Pull, Legs…)"}
+          </Text>
+          {props.days.map((d, idx) => (
             <Card key={d.tempId}>
-              <View style={{ flexDirection: isRTL ? "row-reverse" : "row", gap: 10, alignItems: "center" }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: c.mutedForeground, fontSize: 11 }}>{d.dayDate}</Text>
-                  <TextInput
-                    value={d.dayName}
-                    onChangeText={(v) => props.setDays((arr) => arr.map((x) => x.tempId === d.tempId ? { ...x, dayName: v } : x))}
-                    style={{ color: c.foreground, fontSize: 15, fontWeight: "700", padding: 0 }}
-                  />
+              <View style={{ gap: 10 }}>
+                <View style={{ flexDirection: isRTL ? "row-reverse" : "row", gap: 10, alignItems: "center" }}>
+                  <View
+                    style={{
+                      width: 44, height: 44, borderRadius: 22,
+                      backgroundColor: c.primary + "22", alignItems: "center", justifyContent: "center",
+                    }}
+                  >
+                    <Text style={{ color: c.primary, fontWeight: "900" }}>{idx + 1}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: c.mutedForeground, fontSize: 11 }}>
+                      {new Date(d.dayDate).toLocaleDateString(undefined, { weekday: "long" })} • {d.dayDate}
+                    </Text>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 }}>
+                      <Feather name="edit-2" size={12} color={c.mutedForeground} />
+                      <TextInput
+                        value={d.dayName}
+                        onChangeText={(v) => setDayName(d.tempId, v)}
+                        placeholder={lang === "ar" ? "مثلاً: دفع" : "e.g. Push"}
+                        placeholderTextColor={c.mutedForeground}
+                        style={{
+                          flex: 1, color: c.foreground, fontSize: 16, fontWeight: "800",
+                          padding: 0, textAlign: isRTL ? "right" : "left",
+                        }}
+                      />
+                    </View>
+                  </View>
+                  <Pressable
+                    onPress={() => props.setDays((arr) => arr.map((x) => x.tempId === d.tempId ? { ...x, restDay: !x.restDay } : x))}
+                    style={{
+                      paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999,
+                      backgroundColor: d.restDay ? c.warning : c.muted,
+                    }}
+                  >
+                    <Text style={{ color: d.restDay ? "#000" : c.foreground, fontSize: 11, fontWeight: "700" }}>
+                      {d.restDay ? (lang === "ar" ? "راحة" : "Rest") : (lang === "ar" ? "تدريب" : "Train")}
+                    </Text>
+                  </Pressable>
+                  <Pressable onPress={() => props.setDays((arr) => arr.filter((x) => x.tempId !== d.tempId))} hitSlop={8}>
+                    <Feather name="trash-2" size={18} color={c.destructive} />
+                  </Pressable>
                 </View>
-                <Pressable
-                  onPress={() => props.setDays((arr) => arr.map((x) => x.tempId === d.tempId ? { ...x, restDay: !x.restDay } : x))}
-                  style={{
-                    paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999,
-                    backgroundColor: d.restDay ? c.warning : c.muted,
-                  }}
-                >
-                  <Text style={{ color: d.restDay ? "#000" : c.foreground, fontSize: 11, fontWeight: "700" }}>
-                    {d.restDay ? (lang === "ar" ? "راحة" : "Rest") : (lang === "ar" ? "تدريب" : "Train")}
-                  </Text>
-                </Pressable>
-                <Pressable onPress={() => props.setDays((arr) => arr.filter((x) => x.tempId !== d.tempId))}>
-                  <Feather name="trash-2" size={18} color={c.destructive} />
-                </Pressable>
+                {!d.restDay ? (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    <View style={{ flexDirection: "row", gap: 6 }}>
+                      {presets.map((p) => {
+                        const active = d.dayName === p;
+                        return (
+                          <Pressable
+                            key={p}
+                            onPress={() => setDayName(d.tempId, p)}
+                            style={{
+                              paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999,
+                              backgroundColor: active ? c.primary : c.surface,
+                              borderWidth: 1, borderColor: active ? c.primary : c.border,
+                            }}
+                          >
+                            <Text style={{ color: active ? c.primaryForeground : c.foreground, fontSize: 12, fontWeight: "700" }}>
+                              {p}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </ScrollView>
+                ) : null}
               </View>
             </Card>
           ))}
@@ -392,26 +448,50 @@ function Step3(props: {
   onPickFor: (tempId: string) => void;
 }) {
   const c = useColors();
-  const { lang } = useLanguage();
+  const { lang, isRTL } = useLanguage();
   return (
     <>
-      {props.days.map((d) => (
+      <Text style={{ color: c.mutedForeground, fontSize: 12 }}>
+        {lang === "ar"
+          ? "اضغط على «إضافة تمرين» في اليوم الذي تريد"
+          : "Tap “Add exercise” on the day you want it added to"}
+      </Text>
+      {props.days.map((d, idx) => (
         <Card key={d.tempId}>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-            <View>
-              <Text style={{ color: c.mutedForeground, fontSize: 11 }}>{d.dayDate}</Text>
-              <Text style={{ color: c.foreground, fontWeight: "800", fontSize: 15 }}>{d.dayName}</Text>
+          <View style={{ flexDirection: isRTL ? "row-reverse" : "row", alignItems: "center", gap: 10 }}>
+            <View
+              style={{
+                width: 40, height: 40, borderRadius: 20,
+                backgroundColor: c.primary + "22", alignItems: "center", justifyContent: "center",
+              }}
+            >
+              <Text style={{ color: c.primary, fontWeight: "900" }}>{idx + 1}</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: c.mutedForeground, fontSize: 11, textAlign: isRTL ? "right" : "left" }}>
+                {new Date(d.dayDate).toLocaleDateString(undefined, { weekday: "short" })} • {d.dayDate}
+              </Text>
+              <Text style={{ color: c.foreground, fontWeight: "800", fontSize: 16, textAlign: isRTL ? "right" : "left" }}>
+                {d.dayName}
+              </Text>
             </View>
             {d.restDay ? (
-              <Text style={{ color: c.warning, fontWeight: "700" }}>{lang === "ar" ? "يوم راحة" : "Rest day"}</Text>
+              <View style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: c.warning + "22" }}>
+                <Text style={{ color: c.warning, fontWeight: "700", fontSize: 12 }}>
+                  {lang === "ar" ? "يوم راحة" : "Rest day"}
+                </Text>
+              </View>
             ) : (
               <Pressable
                 onPress={() => props.onPickFor(d.tempId)}
-                style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: c.primary, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 }}
+                style={{
+                  flexDirection: "row", alignItems: "center", gap: 6,
+                  backgroundColor: c.primary, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10,
+                }}
               >
                 <Feather name="plus" size={14} color={c.primaryForeground} />
-                <Text style={{ color: c.primaryForeground, fontWeight: "700", fontSize: 12 }}>
-                  {lang === "ar" ? "تمرين" : "Exercise"}
+                <Text style={{ color: c.primaryForeground, fontWeight: "800", fontSize: 12 }}>
+                  {lang === "ar" ? "إضافة تمرين" : "Add exercise"}
                 </Text>
               </Pressable>
             )}
