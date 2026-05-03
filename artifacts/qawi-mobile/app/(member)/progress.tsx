@@ -20,7 +20,7 @@ const FIELDS: { key: string; label: string }[] = [
 
 export default function ProgressScreen() {
   const c = useColors();
-  const { t, isRTL } = useLanguage();
+  const { t, lang, isRTL } = useLanguage();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [vals, setVals] = useState<Record<string, string>>({});
@@ -37,7 +37,7 @@ export default function ProgressScreen() {
       setOpen(false);
       setVals({});
     },
-    onError: () => Alert.alert("Qawi", "Could not save"),
+    onError: () => Alert.alert(lang === "ar" ? "قوي" : "Qawi", lang === "ar" ? "تعذر الحفظ" : "Could not save"),
   });
 
   const submit = () => {

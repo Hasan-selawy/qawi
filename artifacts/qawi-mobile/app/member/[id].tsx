@@ -162,7 +162,7 @@ export default function MemberDetail() {
                                 await apiFetch(`/notes/${n.id}`, { method: "DELETE" });
                                 qc.invalidateQueries({ queryKey: ["coach", "member-overview", id] });
                               } catch (e: any) {
-                                Alert.alert("Qawi", e?.message || (lang === "ar" ? "تعذر حذف الملاحظة" : "Could not delete note"));
+                                Alert.alert(lang === "ar" ? "قوي" : "Qawi", e?.message || (lang === "ar" ? "تعذر حذف الملاحظة" : "Could not delete note"));
                               }
                             },
                           },
@@ -262,7 +262,7 @@ function AddNoteModal({
       onSaved();
       onClose();
     },
-    onError: (e: any) => Alert.alert("Qawi", e?.message || "Could not save note"),
+    onError: (e: any) => Alert.alert(lang === "ar" ? "قوي" : "Qawi", e?.message || (lang === "ar" ? "تعذر حفظ الملاحظة" : "Could not save note")),
   });
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -310,7 +310,7 @@ function AddMeasurementModal({
   onSaved: () => void;
 }) {
   const c = useColors();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [m, setM] = useState({ weight: "", chest: "", waist: "", arms: "", legs: "", bodyFatPercentage: "" });
   const setField = (k: keyof typeof m) => (v: string) => setM((s) => ({ ...s, [k]: v.replace(/[^0-9.]/g, "") }));
   const save = useMutation({
@@ -326,7 +326,7 @@ function AddMeasurementModal({
       onSaved();
       onClose();
     },
-    onError: (e: any) => Alert.alert("Qawi", e?.message || "Could not save measurement"),
+    onError: (e: any) => Alert.alert(lang === "ar" ? "قوي" : "Qawi", e?.message || (lang === "ar" ? "تعذر حفظ القياس" : "Could not save measurement")),
   });
   const fields: { key: keyof typeof m; label: string; unit: string }[] = [
     { key: "weight", label: t("member.weight"), unit: "kg" },

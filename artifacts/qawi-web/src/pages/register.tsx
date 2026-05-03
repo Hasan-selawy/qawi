@@ -99,7 +99,7 @@ export default function RegisterPage() {
 
       <div className={cn("glass-card w-full p-8 border-primary/20 relative z-10", step === 3 ? "max-w-4xl" : "max-w-md")}>
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-primary mb-2 tracking-tight" style={{ textShadow: '0 0 20px rgba(34,197,94,0.3)' }}>قوي</h1>
+          <h1 className="text-4xl font-bold text-primary mb-2 tracking-tight" style={{ textShadow: '0 0 20px rgba(34,197,94,0.3)' }} dir={lang === 'ar' ? 'rtl' : 'ltr'}>{lang === 'ar' ? 'قوي' : 'Qawi'}</h1>
           <p className="text-muted-foreground">{t("auth.register")}</p>
           
           <div className="flex justify-center items-center gap-2 mt-6">

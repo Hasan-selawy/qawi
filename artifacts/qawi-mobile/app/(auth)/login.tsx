@@ -98,14 +98,14 @@ function FloatingInput({
   );
 }
 
-function GlowingArabicLogo({ fontFamily }: { fontFamily: string }) {
+function GlowingArabicLogo({ fontFamily, label }: { fontFamily: string; label: string }) {
   return (
     <View style={styles.logoWrap}>
       <View style={styles.logoGlow1} />
       <View style={styles.logoGlow2} />
       <View style={styles.logoGlow3} />
       <Text allowFontScaling={false} style={[styles.logoText, { fontFamily, fontWeight: "700" }]}>
-        قوي
+        {label}
       </Text>
     </View>
   );
@@ -128,7 +128,7 @@ export default function LoginScreen() {
     setSubmitting(true);
     try {
       const u = await login(email.trim(), password);
-      if (u.role === "SUPER_ADMIN") Alert.alert("Qawi", t("auth.superNotAllowed"));
+      if (u.role === "SUPER_ADMIN") Alert.alert(lang === "ar" ? "قوي" : "Qawi", t("auth.superNotAllowed"));
     } catch (e: any) {
       let msg = t("auth.loginError");
       if (e?.status === 401 || e?.status === 403) {
@@ -138,7 +138,7 @@ export default function LoginScreen() {
       } else {
         msg = `Network error: ${e?.message || "Cannot reach server"}`;
       }
-      Alert.alert("Qawi", msg);
+      Alert.alert(lang === "ar" ? "قوي" : "Qawi", msg);
     } finally {
       setSubmitting(false);
     }
@@ -183,8 +183,19 @@ export default function LoginScreen() {
 
           {/* Logo block */}
           <View style={styles.logoBlock}>
-            <GlowingArabicLogo fontFamily={arabicFont} />
-            <Text style={[styles.brand, { fontFamily: englishBold }]}>QAWI</Text>
+            <GlowingArabicLogo
+              fontFamily={lang === "ar" ? arabicFont : englishBold}
+              label={lang === "ar" ? "قوي" : "Qawi"}
+            />
+            <Text
+              allowFontScaling={false}
+              style={[
+                styles.brand,
+                { fontFamily: lang === "ar" ? arabicBold : englishBold, letterSpacing: lang === "ar" ? 0 : 6 },
+              ]}
+            >
+              {lang === "ar" ? "قوي" : "QAWI"}
+            </Text>
             <View style={styles.divider} />
             <Text
               style={[

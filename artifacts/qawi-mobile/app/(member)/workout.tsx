@@ -79,13 +79,13 @@ export default function WorkoutScreen() {
       }
     },
     onSuccess: () => {
-      Alert.alert("Qawi", lang === "ar" ? "أحسنت! تم حفظ التمرين." : "Great work! Workout saved.");
+      Alert.alert(lang === "ar" ? "قوي" : "Qawi", lang === "ar" ? "أحسنت! تم حفظ التمرين." : "Great work! Workout saved.");
       setDone({});
       qc.invalidateQueries({ queryKey: ["member"] });
       router.replace("/(member)" as never);
     },
     onError: (e: any) =>
-      Alert.alert("Qawi", e?.message || (lang === "ar" ? "تعذر حفظ التمرين" : "Could not save workout")),
+      Alert.alert(lang === "ar" ? "قوي" : "Qawi", e?.message || (lang === "ar" ? "تعذر حفظ التمرين" : "Could not save workout")),
   });
 
   const list = today.data?.exercises ?? [];

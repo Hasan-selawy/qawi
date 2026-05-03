@@ -72,17 +72,30 @@ export default function LoginPage() {
             style={{
               color: '#22C55E',
               textShadow: '0 0 24px rgba(34,197,94,0.45), 0 0 48px rgba(34,197,94,0.18)',
-              fontFamily: '"Noto Kufi Arabic", "Tajawal", system-ui, sans-serif',
+              fontFamily: lang === 'ar'
+                ? '"Noto Kufi Arabic", "Tajawal", system-ui, sans-serif'
+                : 'Inter, system-ui, sans-serif',
             }}
-            dir="rtl"
+            dir={lang === 'ar' ? 'rtl' : 'ltr'}
           >
-            قوي
+            {lang === 'ar' ? 'قوي' : 'Qawi'}
           </h1>
           <p
-            className="text-base text-white/70 font-light tracking-[0.35em] uppercase"
-            style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
+            className={lang === 'ar'
+              ? 'text-base text-white/70 font-light'
+              : 'text-base text-white/70 font-light tracking-[0.35em] uppercase'}
+            style={{
+              fontFamily: lang === 'ar'
+                ? '"Noto Kufi Arabic", "Tajawal", system-ui, sans-serif'
+                : 'Inter, system-ui, sans-serif',
+              textShadow: lang === 'ar' ? '0 0 16px rgba(34,197,94,0.35)' : undefined,
+            }}
+            dir={lang === 'ar' ? 'rtl' : 'ltr'}
           >
-            Qawi
+            {lang === 'ar' ? 'قوي' : 'QAWI'}
+          </p>
+          <p className="text-xs text-white/50 mt-3" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+            {lang === 'ar' ? 'تدرب بذكاء. كن أقوى.' : 'Train Smarter. Get Stronger.'}
           </p>
         </div>
 

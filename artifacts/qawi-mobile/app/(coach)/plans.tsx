@@ -83,7 +83,7 @@ export default function CoachPlans() {
 
   const onCreate = () => {
     if (memberList.length === 0) {
-      Alert.alert("Qawi", t("coach.noMembers"));
+      Alert.alert(lang === "ar" ? "قوي" : "Qawi", t("coach.noMembers"));
       return;
     }
     if (tab === "workout") router.push("/coach/create-plan" as never);

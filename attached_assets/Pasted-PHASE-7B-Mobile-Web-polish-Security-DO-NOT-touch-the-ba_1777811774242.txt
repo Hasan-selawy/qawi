@@ -1,0 +1,166 @@
+PHASE 7B — Mobile + Web polish + Security.
+DO NOT touch the backend.
+
+WEB DASHBOARD POLISH:
+
+1. LOADING SKELETONS:
+Add skeleton loaders on every page while data loads.
+Skeleton must match the shape of the actual content:
+- Stat cards: 4 gray animated rectangles
+- Member table: 5 rows of gray lines
+- Exercise grid: 8 gray cards
+- Charts: gray rectangle same size as chart
+Use CSS animation: pulse (opacity 0.5 → 1 → 0.5, 1.5s loop)
+Never show blank white/dark space while loading.
+
+2. ERROR BOUNDARIES:
+Wrap every page in an ErrorBoundary component.
+If a page crashes → show:
+- Icon: ⚠️
+- Title: "Something went wrong"
+- Arabic: "حدث خطأ ما"
+- Button: "Try Again" → reloads the page
+Never show a blank white screen.
+
+3. EMPTY STATES:
+Every list/table must have an empty state when no data:
+- Members list empty: 👥 "No members yet. Add your first member!"
+- Coach list empty: 🏋️ "No coaches yet."
+- Exercise library empty: 💪 "No exercises found."
+- Notifications empty: 🔔 "You're all caught up!"
+- Plans empty: 📋 "No plans created yet."
+Each empty state: centered icon + message + optional CTA button.
+
+4. FORM VALIDATION:
+Every form must validate before submitting:
+- Required fields: show red border + error message below
+- Email: must contain @ and valid domain
+- Password: minimum 6 characters
+- Dates: end date must be after start date
+- Price: must be positive number
+- Show errors inline, not as alerts
+- Disable submit button until form is valid
+
+5. RESPONSIVE DESIGN:
+- Sidebar collapses automatically on screens < 1024px
+- Tables scroll horizontally on small screens
+- Cards stack vertically on tablet
+- Minimum supported width: 768px
+- Test at 768px, 1024px, 1280px, 1920px
+
+6. OFFLINE DETECTION:
+Add a banner at the top when internet is lost:
+- Yellow banner: "⚠️ No internet connection"
+- Arabic: "⚠️ لا يوجد اتصال بالإنترنت"
+- Disappears automatically when connection returns
+- Show green "✅ Back online!" for 3 seconds when restored
+
+MOBILE APP POLISH:
+
+7. PULL TO REFRESH:
+Add pull-to-refresh on ALL scrollable screens:
+- Member home screen
+- Coach members list
+- Plans list
+- Notifications list
+- Measurements screen
+Use RefreshControl component:
+<ScrollView
+  refreshControl={
+    <RefreshControl
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+      tintColor="#22C55E"
+      colors={["#22C55E"]}
+    />
+  }
+>
+
+8. TOKEN EXPIRY HANDLING:
+In the axios interceptor, handle 401 responses:
+if (error.response?.status === 401) {
+  await AsyncStorage.removeItem('token');
+  await AsyncStorage.removeItem('user');
+  router.replace('/(auth)/login');
+}
+Add this interceptor in services/api.ts.
+Show toast: "Session expired. Please log in again."
+Arabic: "انتهت الجلسة. يرجى تسجيل الدخول مرة أخرى."
+
+9. OFFLINE QUEUE FOR CHECK-IN:
+When member tries to check in offline:
+- Save the checkin attempt to AsyncStorage:
+  key: 'pendingCheckins'
+  value: [{ timestamp, userId, gymId }]
+- Show: "Check-in saved! Will sync when back online. 📶"
+- When app comes back online (NetInfo event):
+  → Send all pending checkins from the queue
+  → Clear the queue
+  → Show: "✅ Check-ins synced!"
+Use @react-native-community/netinfo for detection.
+
+10. EMPTY STATES ON ALL SCREENS:
+Every screen must handle empty data gracefully:
+- No workout today: "😴 Rest day! No workout scheduled."
+- No nutrition plan: "🥗 No meal plan yet. Ask your coach!"
+- No measurements: "📊 No measurements recorded yet."
+- No notifications: "🔔 You're all caught up!"
+- No members (coach): "👥 No members assigned yet."
+Each: centered icon (64px) + message + subtle CTA.
+
+11. LOADING STATES:
+Every async action must show loading feedback:
+- Buttons: show spinner + disable while loading
+- Screens: show skeleton or spinner on mount
+- Never let the user tap a button twice
+- Use ActivityIndicator with color="#22C55E"
+
+SECURITY:
+
+12. INPUT SANITIZATION (frontend):
+Before sending any data to the API, sanitize inputs:
+- Trim all string fields: value.trim()
+- Remove any HTML tags from text inputs
+- Validate email format client-side
+- Validate date formats before sending
+
+13. ASYNCSTORAGE SECURITY:
+Only store in AsyncStorage:
+- JWT token (key: 'token')
+- User object without sensitive fields (key: 'user')
+- Language preference (key: 'language')
+NEVER store passwords or payment info.
+
+14. ENVIRONMENT VARIABLES:
+Make sure ALL sensitive config is in .env files:
+Web (.env):
+  VITE_API_URL=https://your-backend-url/api/v1
+
+Mobile (.env):
+  EXPO_PUBLIC_API_URL=https://your-backend-url/api/v1
+
+Never hardcode URLs or secrets in source code.
+
+FINAL CHECKS:
+
+15. Test all 4 roles end to end:
+MEMBER: login → home → workout → complete → checkin → nutrition
+COACH: login → view members → create plan → add exercises → notes
+GYM_ADMIN: login → dashboard → add member → renew subscription
+SUPER_ADMIN: login → view all gyms → toggle features → stats
+
+16. Arabic RTL check on all screens:
+When language = AR:
+- All text right-aligned
+- Icons on correct side
+- Flex direction reversed
+- Input text right-to-left
+- Sidebar on right side (web)
+
+17. All API errors must show user-friendly messages:
+Never show raw error objects to users.
+Always show: toast or inline message in current language.
+Arabic errors from backend messageAr field.
+English errors from backend error field.
+
+Tell me when Phase 7B is done! 🚀

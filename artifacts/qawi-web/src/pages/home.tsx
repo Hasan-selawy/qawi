@@ -15,7 +15,7 @@ export function RoleHome() {
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
       <div className="glass-card max-w-md w-full p-8 text-center space-y-6">
-        <h1 className="text-3xl font-bold text-primary">قوي</h1>
+        <h1 className="text-3xl font-bold text-primary" dir={lang === 'ar' ? 'rtl' : 'ltr'}>{lang === 'ar' ? 'قوي' : 'Qawi'}</h1>
         <h2 className="text-xl font-semibold">
           {lang === 'ar' ? 'بوابة الأعضاء قريباً' : 'Member portal coming soon'}
         </h2>

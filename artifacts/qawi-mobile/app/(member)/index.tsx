@@ -119,7 +119,7 @@ export default function MemberHome() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       qc.invalidateQueries({ queryKey: ["member"] });
     },
-    onError: (e: any) => Alert.alert("Qawi", e?.body?.error || "Check-in failed"),
+    onError: (e: any) => Alert.alert(lang === "ar" ? "قوي" : "Qawi", e?.body?.error || "Check-in failed"),
   });
   const checkout = useMutation({
     mutationFn: () => apiFetch("/attendance/me/checkout", { method: "POST" }),
@@ -127,7 +127,7 @@ export default function MemberHome() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       qc.invalidateQueries({ queryKey: ["member"] });
     },
-    onError: (e: any) => Alert.alert("Qawi", e?.body?.error || "Check-out failed"),
+    onError: (e: any) => Alert.alert(lang === "ar" ? "قوي" : "Qawi", e?.body?.error || "Check-out failed"),
   });
 
   const formatTime = (iso?: string) => {
@@ -181,7 +181,7 @@ export default function MemberHome() {
               title={t("member.endDay")}
               icon="log-out"
               onPress={() =>
-                Alert.alert("Qawi", t("member.endDay") + "?", [
+                Alert.alert(lang === "ar" ? "قوي" : "Qawi", t("member.endDay") + "?", [
                   { text: t("common.cancel"), style: "cancel" },
                   { text: t("member.checkOut"), onPress: () => checkout.mutate() },
                 ])

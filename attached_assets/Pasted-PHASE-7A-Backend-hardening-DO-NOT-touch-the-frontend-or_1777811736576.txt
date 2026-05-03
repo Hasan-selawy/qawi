@@ -1,0 +1,116 @@
+PHASE 7A — Backend hardening.
+DO NOT touch the frontend or mobile app.
+
+1. INPUT VALIDATION:
+Add @Valid to all controller endpoints.
+Add Bean Validation annotations to all DTOs:
+- @NotNull, @NotBlank on required fields
+- @Email on email fields
+- @Size(min=6) on passwords
+- @Positive on price fields
+- @Future or @FutureOrPresent on subscription dates
+Return validation errors as:
+{
+  "error": "Validation failed",
+  "fields": { "email": "must not be blank" },
+  "timestamp": "..."
+}
+
+2. RATE LIMITING (Bucket4j):
+Add to pom.xml: bucket4j-spring-boot-starter
+Rate limits:
+- POST /api/v1/auth/login → 5 requests per minute per IP
+- POST /api/v1/public/register-gym → 3 per hour per IP
+- All other endpoints → 100 per minute per user
+Return 429 Too Many Requests with message:
+{
+  "error": "Too many requests. Please slow down.",
+  "messageAr": "طلبات كثيرة جداً. يرجى الانتظار."
+}
+
+3. REQUEST LOGGING:
+Add MDC logging to all requests:
+- Log: method, path, userId, gymId, duration, status
+- Format: [GET /api/v1/admin/members] userId=xxx gymId=xxx 
+  duration=45ms status=200
+- Use a filter/interceptor, not manual logging
+
+4. HEALTH CHECK:
+Add to pom.xml: spring-boot-starter-actuator
+Expose: GET /actuator/health
+Returns: { "status": "UP", "database": "UP" }
+Secure it: only SUPER_ADMIN can access /actuator/**
+
+5. PAGINATION:
+Add Pageable to all list endpoints that return 
+more than 20 items:
+- GET /api/v1/exercises/library 
+  → ?page=0&size=20&sort=name
+- GET /api/v1/admin/members
+  → ?page=0&size=20
+- GET /api/v1/notifications
+  → ?page=0&size=10
+Return paginated response:
+{
+  "content": [...],
+  "page": 0,
+  "size": 20,
+  "totalElements": 70,
+  "totalPages": 4
+}
+
+6. EXCEPTION HANDLING:
+Add global @ControllerAdvice to handle:
+- NullPointerException → 500 with friendly message
+- EntityNotFoundException → 404
+- AccessDeniedException → 403
+- MethodArgumentNotValidException → 400 with field errors
+- DataIntegrityViolationException → 409 (duplicate email etc)
+All errors must return Arabic + English message.
+
+7. README.md:
+Create comprehensive README.md in project root:
+
+# Qawi - قوي | Gym Management Platform
+
+## Overview (English)
+Qawi is a multi-tenant SaaS gym management platform...
+[full description]
+
+## نظرة عامة (Arabic)
+قوي هو نظام إدارة صالات رياضية...
+
+## Roles
+- SUPER_ADMIN: manages all gyms
+- GYM_ADMIN: manages their gym
+- COACH: manages assigned members
+- MEMBER: tracks their own workouts
+
+## Tech Stack
+- Java 17 + Spring Boot 3
+- PostgreSQL
+- JWT Authentication
+- Redis (optional for rate limiting)
+
+## Running Locally
+1. Clone the repo
+2. Set environment variables (see .env.example)
+3. Run: mvn spring-boot:run
+
+## Environment Variables
+- DB_URL=jdbc:postgresql://localhost:5432/qawi
+- DB_USERNAME=postgres
+- DB_PASSWORD=yourpassword
+- JWT_SECRET=your-secret-key
+- JWT_EXPIRATION=604800000
+
+## API Endpoints
+[full list of all endpoints by role]
+
+## Test Accounts
+- Super Admin: super@qawi.com / qawi_super_2024
+- Gym Admin: admin@ironpeak.com / password123
+- Coach: coach.jordan@ironpeak.com / password123
+- Member: sam@ironpeak.com / password123
+
+Tell me when Phase 7A is done!

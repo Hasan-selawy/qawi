@@ -10,7 +10,7 @@ import { Loader2, TrendingUp, Activity, Medal, Lock } from 'lucide-react';
 import { GradientAvatar } from '@/components/GradientAvatar';
 
 export default function AdminAnalytics() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { features } = useGymConfig();
   const advanced = features.analyticsAdvancedEnabled;
 
@@ -113,7 +113,9 @@ export default function AdminAnalytics() {
           <Lock className="h-10 w-10 mx-auto mb-4 text-primary/70" />
           <h3 className="text-xl font-semibold mb-2">Advanced Analytics — Pro feature</h3>
           <p className="text-muted-foreground max-w-md mx-auto">
-            Revenue tracking, attendance trends, member growth charts and top performer leaderboards are available on the Pro plan. Contact your Qawi administrator to upgrade.
+            {lang === 'ar'
+              ? 'تتبع الإيرادات، اتجاهات الحضور، نمو الأعضاء وقوائم أفضل المتدربين متاحة في خطة Pro. تواصل مع مسؤول قوي للترقية.'
+              : 'Revenue tracking, attendance trends, member growth charts and top performer leaderboards are available on the Pro plan. Contact your Qawi administrator to upgrade.'}
           </p>
         </div>
       )}

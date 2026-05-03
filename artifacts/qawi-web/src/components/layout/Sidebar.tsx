@@ -67,8 +67,8 @@ export function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (v:
             onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
           />
         ) : (
-          <h1 className={cn("font-bold text-primary tracking-tight transition-all shrink-0", isOpen ? "text-2xl" : "text-xl")} style={{ textShadow: '0 0 20px rgba(34,197,94,0.3)' }}>
-            {isOpen ? 'قوي' : 'ق'}
+          <h1 className={cn("font-bold text-primary tracking-tight transition-all shrink-0", isOpen ? "text-2xl" : "text-xl")} style={{ textShadow: '0 0 20px rgba(34,197,94,0.3)' }} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+            {isOpen ? (lang === 'ar' ? 'قوي' : 'Qawi') : (lang === 'ar' ? 'ق' : 'Q')}
           </h1>
         )}
         {isOpen && showGymName && (
