@@ -73,4 +73,14 @@ public class SuperAdminController {
     public ResponseEntity<PlatformStatsResponse> getStats() {
         return ResponseEntity.ok(superAdminService.getStats());
     }
+
+    @GetMapping("/leads")
+    public ResponseEntity<List<ContactRequestDto>> getLeads(@RequestParam(required = false) String filter) {
+        return ResponseEntity.ok(superAdminService.getLeads(filter));
+    }
+
+    @PutMapping("/leads/{id}/contacted")
+    public ResponseEntity<MarkContactedResponse> markContacted(@PathVariable UUID id) {
+        return ResponseEntity.ok(superAdminService.markContacted(id));
+    }
 }

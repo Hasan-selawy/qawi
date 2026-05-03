@@ -1,6 +1,11 @@
 package com.qawi.controller;
 
-import com.qawi.dto.*;
+import com.qawi.dto.CheckEmailRequest;
+import com.qawi.dto.ContactRequestCreate;
+import com.qawi.dto.ContactResponse;
+import com.qawi.dto.PlanInfo;
+import com.qawi.dto.RegisterGymResponse;
+import com.qawi.dto.RegisterGymRequest;
 import com.qawi.service.PublicGymService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,5 +37,10 @@ public class PublicGymController {
     public ResponseEntity<Map<String, Boolean>> checkEmail(@Valid @RequestBody CheckEmailRequest request) {
         boolean available = publicGymService.isEmailAvailable(request.getEmail());
         return ResponseEntity.ok(Map.of("available", available));
+    }
+
+    @PostMapping("/contact")
+    public ResponseEntity<ContactResponse> contact(@Valid @RequestBody ContactRequestCreate request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(publicGymService.createContactRequest(request));
     }
 }

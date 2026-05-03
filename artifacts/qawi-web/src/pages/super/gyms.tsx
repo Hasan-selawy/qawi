@@ -82,7 +82,7 @@ export default function SuperGyms() {
                 <Select name="subscriptionPlan" required defaultValue="BASIC">
                   <SelectTrigger className="bg-black/20"><SelectValue placeholder="Subscription Plan" /></SelectTrigger>
                   <SelectContent>
-                    {plans?.map((p: any) => <SelectItem key={p.plan} value={p.plan}>{p.plan} — ${p.price}/mo</SelectItem>)}
+                    {plans?.map((p: any) => <SelectItem key={p.plan} value={p.plan}>{p.plan} — {p.price} JOD/{p.billingCycle === 'yearly' ? 'year' : 'mo'}</SelectItem>)}
                   </SelectContent>
                 </Select>
                 <Button type="submit" className="w-full h-12" disabled={addGym.isPending}>
@@ -145,7 +145,7 @@ export default function SuperGyms() {
                             <Select name="subscriptionPlan" required defaultValue={gym.subscriptionPlan}>
                               <SelectTrigger className="bg-black/20"><SelectValue placeholder="New Plan" /></SelectTrigger>
                               <SelectContent>
-                                {plans?.map((p: any) => <SelectItem key={p.plan} value={p.plan}>{p.plan} — ${p.price}/mo</SelectItem>)}
+                                {plans?.map((p: any) => <SelectItem key={p.plan} value={p.plan}>{p.plan} — {p.price} JOD/{p.billingCycle === 'yearly' ? 'year' : 'mo'}</SelectItem>)}
                               </SelectContent>
                             </Select>
                             <Input name="expiresAt" type="date" required className="bg-black/20" />
@@ -153,12 +153,7 @@ export default function SuperGyms() {
                           </form>
                         </DialogContent>
                       </Dialog>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => { if (confirm(`Deactivate ${gym.name}?`)) deactivate.mutate(gym.id); }}
-                      >
+                      <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => { if (confirm(`Deactivate ${gym.name}?`)) deactivate.mutate(gym.id); }}>
                         <Trash2 size={14} />
                       </Button>
                     </TableCell>

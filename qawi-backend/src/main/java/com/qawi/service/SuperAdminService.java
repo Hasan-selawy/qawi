@@ -1,8 +1,23 @@
 package com.qawi.service;
 
-import com.qawi.dto.*;
-import com.qawi.entity.*;
+import com.qawi.dto.ContactRequestDto;
+import com.qawi.dto.ContactResponse;
+import com.qawi.dto.CreateGymResponse;
+import com.qawi.dto.GymBrandingRequest;
+import com.qawi.dto.GymDetailResponse;
+import com.qawi.dto.GymFeaturesRequest;
+import com.qawi.dto.GymLimitsRequest;
+import com.qawi.dto.MarkContactedResponse;
+import com.qawi.dto.PlatformStatsResponse;
+import com.qawi.dto.UpdateSubscriptionRequest;
+import com.qawi.dto.UserDto;
+import com.qawi.entity.ContactRequest;
+import com.qawi.entity.Gym;
+import com.qawi.entity.Role;
+import com.qawi.entity.SubscriptionPlan;
+import com.qawi.entity.User;
 import com.qawi.exception.AppException;
+import com.qawi.repository.ContactRequestRepository;
 import com.qawi.repository.GymRepository;
 import com.qawi.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +36,7 @@ public class SuperAdminService {
 
     private final GymRepository gymRepository;
     private final UserRepository userRepository;
+    private final ContactRequestRepository contactRequestRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
@@ -91,7 +107,7 @@ public class SuperAdminService {
     @Transactional
     public GymDetailResponse updateLimits(UUID gymId, GymLimitsRequest req) {
         Gym gym = loadGym(gymId);
-        gym.setMaxMembers(req.getMaxMembers()); // null = unlimited
+        gym.setMaxMembers(req.getMaxMembers());
         return toGymDetail(gymRepository.save(gym));
     }
 
@@ -125,6 +141,25 @@ public class SuperAdminService {
                 .build();
     }
 
+    @Transactional(readOnly = true)
+    public List<ContactRequestDto> getLeads(String filter) {
+        return contactRequestRepository.findAll().stream()
+                .filter(req -> filter == null || filter.equalsIgnoreCase("ALL") ||
+                        ("PENDING".equalsIgnoreCase(filter) && !req.isContacted()) ||
+                        ("CONTACTED".equalsIgnoreCase(filter) && req.isContacted()))
+                .map(this::toDto)
+                .toList();
+    }
+
+    @Transactional
+    public MarkContactedResponse markContacted(UUID id) {
+        ContactRequest req = contactRequestRepository.findById(id)
+                .orElseThrow(() -> new AppException("Lead not found", "العميل غير موجود", HttpStatus.NOT_FOUND));
+        req.setContacted(true);
+        contactRequestRepository.save(req);
+        return MarkContactedResponse.builder().message("Lead marked as contacted").build();
+    }
+
     private Gym loadGym(UUID gymId) {
         return gymRepository.findById(gymId)
                 .orElseThrow(() -> new AppException("Gym not found", "الصالة غير موجودة", HttpStatus.NOT_FOUND));
@@ -132,6 +167,19 @@ public class SuperAdminService {
 
     private static String emptyToNull(String s) {
         return (s == null || s.isBlank()) ? null : s.trim();
+    }
+
+    private ContactRequestDto toDto(ContactRequest req) {
+        return ContactRequestDto.builder()
+                .id(req.getId())
+                .fullName(req.getFullName())
+                .phoneNumber(req.getPhoneNumber())
+                .gymName(req.getGymName())
+                .city(req.getCity())
+                .message(req.getMessage())
+                .createdAt(req.getCreatedAt())
+                .contacted(req.isContacted())
+                .build();
     }
 
     private GymDetailResponse toGymDetail(Gym gym) {

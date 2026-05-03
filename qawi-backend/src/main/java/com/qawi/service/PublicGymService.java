@@ -1,8 +1,19 @@
 package com.qawi.service;
 
-import com.qawi.dto.*;
-import com.qawi.entity.*;
+import com.qawi.dto.ContactRequestCreate;
+import com.qawi.dto.ContactResponse;
+import com.qawi.dto.GymDetailResponse;
+import com.qawi.dto.PlanInfo;
+import com.qawi.dto.RegisterGymResponse;
+import com.qawi.dto.RegisterGymRequest;
+import com.qawi.dto.UserDto;
+import com.qawi.entity.ContactRequest;
+import com.qawi.entity.Gym;
+import com.qawi.entity.Role;
+import com.qawi.entity.SubscriptionPlan;
+import com.qawi.entity.User;
 import com.qawi.exception.AppException;
+import com.qawi.repository.ContactRequestRepository;
 import com.qawi.repository.GymRepository;
 import com.qawi.repository.UserRepository;
 import com.qawi.security.JwtService;
@@ -21,6 +32,7 @@ public class PublicGymService {
 
     private final GymRepository gymRepository;
     private final UserRepository userRepository;
+    private final ContactRequestRepository contactRequestRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
@@ -85,30 +97,55 @@ public class PublicGymService {
                 .build();
     }
 
+    @Transactional(readOnly = true)
     public List<PlanInfo> getPlans() {
         return List.of(
                 PlanInfo.builder()
                         .plan(SubscriptionPlan.BASIC)
-                        .price(49)
-                        .currency("USD")
+                        .price(30)
+                        .currency("JOD")
+                        .billingCycle("monthly")
+                        .yearlyPrice(300)
+                        .yearlySavings(60)
                         .maxMembers(50)
                         .maxCoaches(3)
                         .build(),
                 PlanInfo.builder()
                         .plan(SubscriptionPlan.PRO)
-                        .price(99)
-                        .currency("USD")
+                        .price(60)
+                        .currency("JOD")
+                        .billingCycle("monthly")
+                        .yearlyPrice(600)
+                        .yearlySavings(120)
                         .maxMembers(200)
                         .maxCoaches(10)
                         .build(),
                 PlanInfo.builder()
                         .plan(SubscriptionPlan.ENTERPRISE)
-                        .price(199)
-                        .currency("USD")
-                        .maxMembers(999)
-                        .maxCoaches(999)
+                        .price(100)
+                        .currency("JOD")
+                        .billingCycle("monthly")
+                        .yearlyPrice(1000)
+                        .yearlySavings(200)
+                        .maxMembers(Integer.MAX_VALUE)
+                        .maxCoaches(Integer.MAX_VALUE)
                         .build()
         );
+    }
+
+    @Transactional
+    public ContactResponse createContactRequest(ContactRequestCreate req) {
+        contactRequestRepository.save(ContactRequest.builder()
+                .fullName(req.getFullName())
+                .phoneNumber(req.getPhoneNumber())
+                .gymName(req.getGymName())
+                .city(req.getCity())
+                .message(req.getMessage())
+                .build());
+        return ContactResponse.builder()
+                .message("We will contact you soon!")
+                .messageAr("سنتواصل معك قريباً!")
+                .build();
     }
 
     public boolean isEmailAvailable(String email) {
