@@ -1,0 +1,129 @@
+Create Docker configuration for the entire Qawi project.
+
+CREATE THESE FILES:
+
+1. Backend Dockerfile (in qawi-backend/):
+FROM eclipse-temurin:17-jdk-alpine AS builder
+WORKDIR /app
+COPY pom.xml .
+COPY src ./src
+RUN ./mvnw clean package -DskipTests
+
+FROM eclipse-temurin:17-jre-alpine
+WORKDIR /app
+COPY --from=builder /app/target/*.jar app.jar
+EXPOSE 9000
+ENTRYPOINT ["java", "-jar", "app.jar"]
+
+2. Web Dashboard Dockerfile (in qawi-web/):
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package*.json .
+RUN npm install
+COPY . .
+RUN npm run build
+
+FROM nginx:alpine
+COPY --from=builder /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80
+
+3. nginx.conf (for web dashboard):
+server {
+  listen 80;
+  location / {
+    root /usr/share/nginx/html;
+    try_files $uri $uri/ /index.html;
+  }
+  location /api {
+    proxy_pass http://backend:9000;
+  }
+}
+
+4. docker-compose.yml (in project root):
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: qawi-db
+    environment:
+      POSTGRES_DB: qawi
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./qawi-backend
+    container_name: qawi-backend
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/qawi
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: 604800000
+    ports:
+      - "9000:9000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    build: ./qawi-web
+    container_name: qawi-web
+    environment:
+      VITE_API_URL: http://backend:9000/api/v1
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+5. .env.example (in project root):
+DB_USERNAME=postgres
+DB_PASSWORD=yourpassword
+JWT_SECRET=your-super-secret-jwt-key-min-32-chars
+DB_URL=jdbc:postgresql://postgres:5432/qawi
+
+6. .dockerignore for backend:
+target/
+*.md
+.git/
+
+7. .dockerignore for web:
+node_modules/
+dist/
+.env
+
+After creating all files, verify by running:
+docker-compose config
+(just validates the yaml, doesn't start anything)
+
+Also add to README.md:
+
+## Running with Docker
+
+1. Copy .env.example to .env and fill in values
+2. Run: docker-compose up --build
+3. Access:
+   - Web Dashboard: http://localhost:80
+   - Backend API: http://localhost:9000
+   - Database: localhost:5432
+
+## Production Deployment
+- Backend: Railway or Render (Docker support)
+- Database: Supabase or Railway PostgreSQL
+- Web: Vercel or Railway
+- Mobile: Expo EAS Build → App Store + Google Play
