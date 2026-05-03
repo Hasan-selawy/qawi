@@ -60,10 +60,12 @@
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/CreateGymRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/controller/MemberController.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/PlanInfo.java
+/home/runner/workspace/qawi-backend/src/main/java/com/qawi/filter/RateLimitFilter.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/controller/NotificationController.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/repository/ExerciseCategoryRepository.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/CreateGymUserRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/CreateWorkoutPlanRequest.java
+/home/runner/workspace/qawi-backend/src/main/java/com/qawi/filter/RequestLoggingFilter.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/CreateCoachNoteRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/MealType.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/service/CoachDashboardService.java

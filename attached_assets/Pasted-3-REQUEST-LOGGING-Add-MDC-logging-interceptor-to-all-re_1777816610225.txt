@@ -1,0 +1,91 @@
+3. REQUEST LOGGING:
+Add MDC logging interceptor to all requests.
+Log: method, path, userId, gymId, duration, status
+Format: [GET /api/v1/admin/members] userId=xxx duration=45ms status=200
+
+4. HEALTH CHECK:
+Add spring-boot-starter-actuator to pom.xml
+Expose GET /actuator/health
+Returns: { "status": "UP", "database": "UP" }
+Only SUPER_ADMIN can access /actuator/**
+
+5. PAGINATION:
+Add Pageable to these endpoints:
+- GET /api/v1/exercises/library → ?page=0&size=20
+- GET /api/v1/admin/members → ?page=0&size=20
+- GET /api/v1/notifications → ?page=0&size=10
+- GET /api/v1/workouts/logs/member/{id} → ?page=0&size=20
+Return:
+{
+  "content": [...],
+  "page": 0,
+  "size": 20,
+  "totalElements": 70,
+  "totalPages": 4
+}
+
+6. EXCEPTION HANDLING:
+Global @ControllerAdvice handles:
+- NullPointerException → 500 friendly message
+- EntityNotFoundException → 404
+- AccessDeniedException → 403
+- MethodArgumentNotValidException → 400 with fields
+- DataIntegrityViolationException → 409
+All errors return Arabic + English message.
+
+7. SECURITY:
+- Sanitize all string inputs (trim + strip HTML)
+- Email always lowercased before lookup
+- JWT secret minimum 256 bits validation on startup
+- Add HTTPS redirect filter for production
+- Never log passwords or tokens
+
+8. README.md:
+Create comprehensive README at project root:
+
+# Qawi - قوي | Smart Gym Management
+
+## Overview
+Qawi is a multi-tenant SaaS gym management platform
+built with Java Spring Boot 3, PostgreSQL, React, 
+and React Native.
+
+## Roles
+- SUPER_ADMIN: manages all gyms on the platform
+- GYM_ADMIN: manages their gym, members, subscriptions
+- COACH: manages assigned members, creates workout plans
+- MEMBER: tracks workouts, attendance, nutrition
+
+## Tech Stack
+- Backend: Java 17, Spring Boot 3, PostgreSQL, JWT
+- Web: React 18, TypeScript, Vite, Tailwind CSS
+- Mobile: React Native, Expo SDK 51
+
+## Running Locally
+1. Clone the repo
+2. Copy .env.example to .env
+3. Set DATABASE_URL, JWT_SECRET
+4. Run: cd qawi-backend && mvn spring-boot:run
+5. Run: cd qawi-web && npm run dev
+6. Run: cd qawi-mobile && npx expo start
+
+## Environment Variables
+DATABASE_URL=jdbc:postgresql://localhost:5432/qawi
+DB_USERNAME=postgres
+DB_PASSWORD=yourpassword
+JWT_SECRET=your-256-bit-secret-key
+PORT=9000
+
+## Test Accounts
+super@qawi.com / qawi_super_2024 (SUPER_ADMIN)
+admin@ironpeak.com / password123 (GYM_ADMIN)
+coach.jordan@ironpeak.com / password123 (COACH)
+sam@ironpeak.com / password123 (MEMBER)
+
+## API Base URL
+http://localhost:9000/api/v1
+
+## Docker
+docker-compose up --build
+
+Tell me when Phase 7A is done.

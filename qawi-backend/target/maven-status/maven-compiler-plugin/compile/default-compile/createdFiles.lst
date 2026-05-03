@@ -21,6 +21,7 @@ com/qawi/entity/WorkoutTemplate$WorkoutTemplateBuilder.class
 com/qawi/entity/User$UserBuilder.class
 com/qawi/entity/Role.class
 com/qawi/dto/CreateGymResponse.class
+com/qawi/filter/RequestLoggingFilter.class
 com/qawi/entity/CoachNote$CoachNoteBuilder.class
 com/qawi/dto/PlanInfo.class
 com/qawi/entity/Notification.class
@@ -99,6 +100,7 @@ com/qawi/security/JwtService.class
 com/qawi/dto/GymDetailResponse.class
 com/qawi/entity/PlanExercise$PlanExerciseBuilder.class
 com/qawi/controller/AuthController.class
+com/qawi/filter/RateLimitFilter.class
 com/qawi/entity/NutritionPlan$NutritionPlanBuilder.class
 com/qawi/dto/PlatformStatsResponse.class
 com/qawi/service/SuperAdminService.class

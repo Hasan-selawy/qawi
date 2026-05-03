@@ -22,6 +22,7 @@ import { getSubStatus } from '@/lib/sub-status';
 
 export default function AdminMembers() {
   const { t, lang } = useLanguage();
+  const { limits } = useGymConfig();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -70,13 +71,32 @@ export default function AdminMembers() {
         actions={
           <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
             <DialogTrigger asChild>
-              <Button className="glow-hover"><Plus className="mr-2 h-4 w-4" /> {t('member.add_member')}</Button>
+              <div className="flex items-center gap-3">
+                {limits.maxMembers !== null && (
+                  <span className="text-sm text-muted-foreground">
+                    {members?.length ?? 0}/{limits.maxMembers} {lang === 'ar' ? 'عضو' : 'members'}
+                  </span>
+                )}
+                <Button
+                  className="glow-hover"
+                  disabled={limits.maxMembers !== null && (members?.length ?? 0) >= limits.maxMembers}
+                >
+                  <Plus className="mr-2 h-4 w-4" /> {t('member.add_member')}
+                </Button>
+              </div>
             </DialogTrigger>
             <DialogContent className="glass-card border-white/10 sm:max-w-[425px]">
               <DialogHeader><DialogTitle>{t('member.add_member')}</DialogTitle></DialogHeader>
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
+                  const count = members?.length ?? 0;
+                  if (limits.maxMembers !== null && count >= limits.maxMembers) {
+                    toast.error(lang === 'ar'
+                      ? 'تم الوصول للحد الأقصى من الأعضاء. يرجى ترقية الخطة.'
+                      : 'Member limit reached. Upgrade your plan.');
+                    return;
+                  }
                   const fd = new FormData(e.currentTarget);
                   addMember.mutate(Object.fromEntries(fd.entries()));
                 }}

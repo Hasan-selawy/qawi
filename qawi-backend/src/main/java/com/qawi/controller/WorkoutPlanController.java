@@ -69,7 +69,7 @@ public class WorkoutPlanController {
     @PreAuthorize("hasRole('COACH')")
     public ResponseEntity<PlanExercise> addExerciseToDay(
             @PathVariable UUID dayId,
-            @RequestBody AddPlanExerciseRequest request,
+            @Valid @RequestBody AddPlanExerciseRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(workoutPlanService.addExerciseToDay(dayId, request, userDetails.getUsername()));

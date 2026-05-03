@@ -1,0 +1,112 @@
+Test all gym feature flags end to end. 
+
+For the gym "Iron Peak Gym" (gymId: 1a5551ec-48c1-4ca5-b7b4-2f4e4a99baa5):
+
+STEP 1 — Turn ALL features ON and verify they appear:
+Call PUT /api/v1/super/gyms/{gymId}/features with:
+{
+  "nutritionEnabled": true,
+  "pushNotificationsEnabled": true,
+  "customBranding": true,
+  "classBookingEnabled": true,
+  "analyticsAdvanced": true,
+  "maxMembers": 200
+}
+
+Then verify on web dashboard logged in as coach.jordan@ironpeak.com:
+- Nutrition menu item appears in sidebar ✅
+- Class Booking menu item appears ✅
+- Advanced Analytics visible ✅
+
+Verify on web dashboard logged in as admin@ironpeak.com:
+- All features visible ✅
+
+STEP 2 — Turn each feature OFF one by one and verify it disappears:
+
+Test 1: nutritionEnabled = false
+→ Nutrition disappears from coach sidebar ✅
+→ Nutrition disappears from admin sidebar ✅
+→ Nutrition tab disappears from member mobile app ✅
+
+Test 2: classBookingEnabled = false  
+→ Class Booking disappears from all menus ✅
+
+Test 3: analyticsAdvanced = false
+→ Advanced analytics hidden from admin dashboard ✅
+→ Only basic stats visible ✅
+
+Test 4: maxMembers = 2
+→ Admin tries to add a 3rd member
+→ Gets error: "Member limit reached. Upgrade your plan."
+→ Arabic: "تم الوصول للحد الأقصى من الأعضاء. يرجى ترقية الخطة."
+
+Test 5: customBranding = true
+→ Gym admin can upload custom logo
+→ Custom logo appears in sidebar instead of Qawi logo
+→ Custom accent color applies to buttons
+
+STEP 3 — Turn everything back ON after testing:
+{
+  "nutritionEnabled": true,
+  "pushNotificationsEnabled": true,
+  "customBranding": true,
+  "classBookingEnabled": true,
+  "analyticsAdvanced": true,
+  "maxMembers": 200
+}
+
+IMPLEMENTATION REQUIREMENTS:
+
+1. BACKEND — Feature flags must be returned with every auth response:
+Add gymFeatures to the login response:
+{
+  "token": "...",
+  "user": {...},
+  "gymFeatures": {
+    "nutritionEnabled": true,
+    "classBookingEnabled": false,
+    "analyticsAdvanced": true,
+    "maxMembers": 200,
+    "customBranding": false,
+    "pushNotificationsEnabled": true
+  }
+}
+
+Also add GET /api/v1/gyms/my-features endpoint
+for fetching current gym features after login.
+
+2. FRONTEND (Web Dashboard) — Feature flag context:
+Store gymFeatures in AuthContext after login.
+Create a useFeatureFlag hook:
+const isEnabled = useFeatureFlag('nutritionEnabled');
+
+Use it in every component:
+- Sidebar: only show menu items if flag is true
+- Pages: show "Feature not available" if flag is false
+- Admin member add: check maxMembers before submitting
+
+3. MOBILE APP — Same feature flag check:
+Store gymFeatures in AsyncStorage after login.
+Hide tabs/screens based on flags:
+- Member nutrition tab: only if nutritionEnabled
+- Coach nutrition screen: only if nutritionEnabled
+- Advanced charts: only if analyticsAdvanced
+
+4. CUSTOM BRANDING:
+When customBranding = true and gym has uploaded a logo:
+- Replace Qawi sidebar logo with gym logo
+- Replace accent color #22C55E with gym's custom color
+- Apply custom color to all buttons, active states, badges
+
+When customBranding = false:
+- Always show Qawi green #22C55E
+- Always show قوي / Qawi logo
+
+5. MAX MEMBERS ENFORCEMENT:
+Before creating a new member:
+GET /api/v1/admin/members → count current members
+If count >= maxMembers → block with error message
+Show current usage: "47/50 members"
+
+Run all 5 tests and report which ones pass and which fail.
+Fix any that fail.

@@ -32,7 +32,7 @@ BASE_PATH = "/"
 
 [[services]]
 name = "qawi-spring-api"
-paths = [ "/api/v1" ]
+paths = [ "/api/v1", "/actuator" ]
 localPort = 9000
 
 [services.development]
