@@ -3,30 +3,41 @@ import { useLanguage } from '@/hooks/use-language';
 import { useGymConfig } from '@/hooks/use-gym-config';
 import { GradientAvatar } from '../GradientAvatar';
 import { NotificationBell } from '../NotificationBell';
-import { LogOut, User } from 'lucide-react';
-import { 
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, 
-  DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger 
+import { LogOut, Menu } from 'lucide-react';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
 
-export function Navbar() {
+interface NavbarProps {
+  onMenuClick?: () => void;
+}
+
+export function Navbar({ onMenuClick }: NavbarProps) {
   const { user, logout } = useAuth();
   const { lang, setLang, t } = useLanguage();
   const { features } = useGymConfig();
 
   return (
-    <header className="h-16 border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-30 px-6 flex items-center justify-between">
-      <div className="flex items-center">
-        {/* Contextual title can be injected here via a context or state, but for now we keep it clean */}
+    <header className="h-16 border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-30 px-4 md:px-6 flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        {onMenuClick && (
+          <button
+            onClick={onMenuClick}
+            aria-label="Toggle menu"
+            className="p-2 rounded-lg hover:bg-white/10 transition-colors text-foreground"
+          >
+            <Menu size={20} />
+          </button>
+        )}
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
         <button
-          onClick={() => setLang(lang === "ar" ? "en" : "ar")}
+          onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
           className="glass-card px-3 py-1.5 rounded-full text-xs font-semibold tracking-wider hover:bg-white/5 transition-colors"
         >
-          {lang === "ar" ? "EN" : "AR"}
+          {lang === 'ar' ? 'EN' : 'AR'}
         </button>
 
         {features.pushNotificationsEnabled && <NotificationBell />}
@@ -36,12 +47,8 @@ export function Navbar() {
             <button className="flex items-center gap-2 outline-none">
               <GradientAvatar name={user?.name || 'U'} size="sm" />
               <div className="hidden md:flex flex-col items-start text-sm text-left rtl:text-right">
-                <span className="font-medium text-foreground max-w-[120px] truncate">
-                  {user?.name}
-                </span>
-                <span className="text-xs text-muted-foreground capitalize">
-                  {user?.role?.replace('_', ' ').toLowerCase()}
-                </span>
+                <span className="font-medium text-foreground max-w-[120px] truncate">{user?.name}</span>
+                <span className="text-xs text-muted-foreground capitalize">{user?.role?.replace('_', ' ').toLowerCase()}</span>
               </div>
             </button>
           </DropdownMenuTrigger>

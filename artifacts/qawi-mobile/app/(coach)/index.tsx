@@ -2,7 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, Text, View } from "react-native";
+import { FlatList, Pressable, RefreshControl, Text, View } from "react-native";
 
 import { RoleHeader } from "@/components/RoleHeader";
 import { Avatar, Badge, Card, EmptyState, Input, Screen } from "@/components/ui";
@@ -14,7 +14,7 @@ type Filter = "all" | "active" | "inactive" | "expiring";
 
 export default function CoachMembers() {
   const c = useColors();
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, lang } = useLanguage();
   const router = useRouter();
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
@@ -64,18 +64,39 @@ export default function CoachMembers() {
           ))}
         </View>
       </View>
+
       {members.isLoading ? (
-        <ActivityIndicator color={c.primary} />
-      ) : list.length === 0 ? (
-        <View style={{ padding: 16 }}>
-          <Card><EmptyState icon="users" text={t("coach.noMembers")} /></Card>
+        <View style={{ padding: 16, gap: 12 }}>
+          {[...Array(4)].map((_, i) => (
+            <View key={i} style={{ height: 72, backgroundColor: c.surface, borderRadius: 16, opacity: 0.6 }} />
+          ))}
         </View>
+      ) : list.length === 0 ? (
+        <FlatList
+          data={[]}
+          renderItem={null}
+          refreshControl={<RefreshControl tintColor={c.primary} refreshing={members.isFetching} onRefresh={() => members.refetch()} />}
+          ListEmptyComponent={
+            <View style={{ padding: 16 }}>
+              <Card>
+                <EmptyState icon="users" text={members.data?.length === 0 ? (lang === "ar" ? "لا يوجد أعضاء مُعيَّنون بعد" : "No members assigned yet") : t("coach.noMembers")} />
+                {members.data?.length === 0 && (
+                  <Text style={{ color: c.mutedForeground, fontSize: 12, textAlign: "center", marginTop: 8 }}>
+                    {lang === "ar" ? "سيقوم المدير بتعيين أعضاء لك." : "Your gym admin will assign members to you."}
+                  </Text>
+                )}
+              </Card>
+            </View>
+          }
+          contentContainerStyle={{ flex: 1 }}
+        />
       ) : (
         <FlatList
           data={list}
           keyExtractor={(i: any) => i.id}
           contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 100 }}
           ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+          refreshControl={<RefreshControl tintColor={c.primary} refreshing={members.isFetching} onRefresh={() => members.refetch()} />}
           renderItem={({ item }) => (
             <Pressable onPress={() => router.push(`/member/${item.id}` as any)}>
               <Card>

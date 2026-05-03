@@ -87,6 +87,15 @@ Per-gym via `gym_features` table. Flags: `nutritionEnabled`, `pushNotificationsE
 - `/admin/members` — enforces `limits.maxMembers`; shows `X/Y members` count when limit set; disables Add button at limit
 - `/super/gyms/:id` — per-gym feature flag toggles and limits management
 
+### Phase 7B Polish (completed)
+- **ErrorBoundary** (`components/ErrorBoundary.tsx`) — wraps every page in `App.tsx`; bilingual fallback + reload button
+- **OfflineBanner** (`components/OfflineBanner.tsx`) — listens to `online`/`offline` events; yellow offline bar, green "back online" bar (auto-dismisses after 3s)
+- **Responsive sidebar** (`AppShell.tsx`): `useIsLargeScreen` hook (`matchMedia ≥ 1024px`); auto-collapses on small screens; full-viewport black/60 overlay backdrop on mobile closes on tap; Sidebar links close overlay on click
+- **Navbar** — hamburger `Menu` icon button passed via `onMenuClick` prop; renders on all screen sizes
+- **Skeleton loaders** — all loading spinners replaced with `<Skeleton>` (animate-pulse) on: admin/dashboard, admin/analytics, admin/members, admin/coaches, coach/dashboard, coach/library
+- **Improved empty states** — icon + bilingual text + CTA button on members, coaches, library, coach dashboard
+- **Form validation** — inline red error messages on add-member and add-coach dialogs (name ≥2 chars, valid email, password ≥6 chars, future subscription date)
+
 ---
 
 ## Qawi Mobile (`artifacts/qawi-mobile/`)
@@ -101,6 +110,13 @@ Per-gym via `gym_features` table. Flags: `nutritionEnabled`, `pushNotificationsE
   - `(coach)` — Members / Plans / Library / Nutrition (feature-flagged) / Profile
   - `(admin)` — Dashboard / Members / Coaches / Profile
 - **Workflow**: `artifacts/qawi-mobile: expo` — restart only on dependency changes
+
+### Phase 7B Polish (completed)
+- **401 token-expiry handler** (`services/api.ts`): global `setUnauthorizedHandler(fn)` callback; on 401, clears AsyncStorage token+user and fires the handler → `AuthContext` logs out immediately, routing redirects to login
+- **Offline check-in queue** (`(member)/index.tsx`): uses `@react-native-community/netinfo`; when offline, check-in/checkout is saved to `AsyncStorage` key `pendingCheckins`; syncs automatically on reconnect via `NetInfo` listener; shows yellow offline banner with pending count
+- **RefreshControl** added to: nutrition, progress, coach members, notifications screens
+- **Skeleton loaders** — replaced `ActivityIndicator` with shimmer placeholder blocks on loading states in nutrition, progress, coach/members, notifications
+- **Improved empty states** — bilingual descriptive sub-text + CTA button on progress, nutrition, coach members, notifications
 
 ---
 

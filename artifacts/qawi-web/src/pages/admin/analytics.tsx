@@ -6,8 +6,30 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { PageWrapper } from '@/components/layout/PageWrapper';
 import { AttendanceChart } from '@/components/charts/AttendanceChart';
 import { MemberGrowthChart } from '@/components/charts/MemberGrowthChart';
-import { Loader2, TrendingUp, Activity, Medal, Lock } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { TrendingUp, Activity, Medal, Lock } from 'lucide-react';
 import { GradientAvatar } from '@/components/GradientAvatar';
+
+function AnalyticsSkeleton() {
+  return (
+    <PageWrapper>
+      <div className="mb-6"><Skeleton className="h-8 w-32" /></div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="glass-card p-6 flex flex-col items-center gap-4">
+            <Skeleton className="h-16 w-16 rounded-full" />
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-10 w-20" />
+          </div>
+        ))}
+      </div>
+      <div className="glass-card p-6 mb-8 space-y-4">
+        <Skeleton className="h-5 w-48" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    </PageWrapper>
+  );
+}
 
 export default function AdminAnalytics() {
   const { t, lang } = useLanguage();
@@ -19,13 +41,7 @@ export default function AdminAnalytics() {
     queryFn: () => apiFetch('/admin/analytics'),
   });
 
-  if (isLoading) {
-    return (
-      <div className="flex h-full w-full items-center justify-center p-12">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+  if (isLoading) return <AnalyticsSkeleton />;
 
   const attendanceData = (stats?.attendanceThisWeek || []).map((d: any) => ({ date: d.day, count: d.count }));
   const growthData = (stats?.memberGrowth || []).map((d: any) => ({ month: d.month, count: d.count }));
@@ -46,11 +62,10 @@ export default function AdminAnalytics() {
               <TrendingUp className="h-8 w-8 text-primary" />
             </div>
             <h3 className="text-muted-foreground font-medium mb-1">Revenue This Month</h3>
-            <p className="text-4xl font-bold text-white mb-2">${revenue.toFixed(0)}</p>
+            <p className="text-4xl font-bold text-white mb-2">{revenue.toFixed(0)} JOD</p>
             <p className="text-sm text-primary">Live data</p>
           </div>
         )}
-
         {advanced && (
           <div className="glass-card p-6 flex flex-col justify-center items-center text-center">
             <div className="w-16 h-16 rounded-full bg-blue-500/20 flex items-center justify-center mb-4">
@@ -61,7 +76,6 @@ export default function AdminAnalytics() {
             <p className="text-sm text-muted-foreground">per week</p>
           </div>
         )}
-
         <div className={`glass-card p-6 flex flex-col justify-center items-center text-center ${advanced ? '' : 'lg:col-span-3'}`}>
           <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mb-4">
             <Activity className="h-8 w-8 text-red-500" />
@@ -80,21 +94,22 @@ export default function AdminAnalytics() {
               <AttendanceChart data={attendanceData} />
             </div>
           </div>
-
           <div className="glass-card p-6 mb-8">
             <h3 className="text-lg font-semibold mb-6">Member Growth Trajectory</h3>
             <div className="h-[300px]">
               <MemberGrowthChart data={growthData} />
             </div>
           </div>
-
           <div className="glass-card p-6">
             <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
               <Medal className="text-yellow-500" /> Top Performing Members
             </h3>
             <div className="space-y-4">
               {topPerformers.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">No performance data yet.</div>
+                <div className="text-center py-8">
+                  <Medal className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
+                  <p className="text-muted-foreground text-sm">No performance data yet. Members need to log workouts first.</p>
+                </div>
               ) : topPerformers.slice(0, 10).map((member: any, i: number) => (
                 <div key={i} className="flex items-center gap-4 p-3 bg-black/20 rounded-lg">
                   <div className="font-bold text-xl w-6 text-center text-muted-foreground">{i + 1}</div>

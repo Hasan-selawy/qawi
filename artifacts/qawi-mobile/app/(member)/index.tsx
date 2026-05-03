@@ -1,9 +1,11 @@
 import { Feather } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
-import React, { useState } from "react";
-import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
+import NetInfo from "@react-native-community/netinfo";
+import React, { useCallback, useEffect, useState } from "react";
+import { Alert, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 
 import { RoleHeader } from "@/components/RoleHeader";
 import { Badge, Button, Card, EmptyState, Screen, SectionTitle } from "@/components/ui";
@@ -11,6 +13,14 @@ import { useAuth } from "@/context/AuthContext";
 import { useLanguage, pickName } from "@/context/LanguageContext";
 import { useColors } from "@/hooks/useColors";
 import { apiFetch } from "@/services/api";
+
+const PENDING_CHECKINS_KEY = "pendingCheckins";
+
+type PendingCheckin = {
+  id: string;
+  type: "checkin" | "checkout";
+  timestamp: string;
+};
 
 function UpcomingDayCard({ day }: { day: any }) {
   const c = useColors();
@@ -94,6 +104,54 @@ export default function MemberHome() {
   const { t, lang, isRTL } = useLanguage();
   const { user } = useAuth();
   const router = useRouter();
+  const [isOnline, setIsOnline] = useState(true);
+  const [pendingCount, setPendingCount] = useState(0);
+
+  // Track network state
+  useEffect(() => {
+    const unsub = NetInfo.addEventListener((state) => {
+      const online = state.isConnected !== false && state.isInternetReachable !== false;
+      const wasOffline = !isOnline;
+      setIsOnline(online);
+      // When we come back online, sync queued check-ins
+      if (wasOffline && online) {
+        syncPendingCheckins();
+      }
+    });
+    return () => unsub();
+  }, [isOnline]);
+
+  // Count pending on mount
+  useEffect(() => {
+    AsyncStorage.getItem(PENDING_CHECKINS_KEY).then((raw) => {
+      if (raw) {
+        try { setPendingCount(JSON.parse(raw).length); } catch { /* */ }
+      }
+    });
+  }, []);
+
+  const syncPendingCheckins = useCallback(async () => {
+    const raw = await AsyncStorage.getItem(PENDING_CHECKINS_KEY).catch(() => null);
+    if (!raw) return;
+    let pending: PendingCheckin[] = [];
+    try { pending = JSON.parse(raw); } catch { return; }
+    if (pending.length === 0) return;
+
+    const remaining: PendingCheckin[] = [];
+    for (const p of pending) {
+      try {
+        const endpoint = p.type === "checkin" ? "/attendance/me/checkin" : "/attendance/me/checkout";
+        await apiFetch(endpoint, { method: "POST" });
+      } catch {
+        remaining.push(p);
+      }
+    }
+    await AsyncStorage.setItem(PENDING_CHECKINS_KEY, JSON.stringify(remaining)).catch(() => {});
+    setPendingCount(remaining.length);
+    if (remaining.length < pending.length) {
+      qc.invalidateQueries({ queryKey: ["member"] });
+    }
+  }, []);
 
   const today = useQuery({
     queryKey: ["member", "today"],
@@ -113,22 +171,31 @@ export default function MemberHome() {
   const checkedOut = !!stats.data?.checkedOutToday;
   const checkedOutAt: string | undefined = stats.data?.checkedOutAt;
 
-  const checkin = useMutation({
-    mutationFn: () => apiFetch("/attendance/me/checkin", { method: "POST" }),
-    onSuccess: () => {
+  const doCheckin = async (type: "checkin" | "checkout") => {
+    if (!isOnline) {
+      // Queue for later
+      const raw = await AsyncStorage.getItem(PENDING_CHECKINS_KEY).catch(() => "[]");
+      let queue: PendingCheckin[] = [];
+      try { queue = JSON.parse(raw ?? "[]"); } catch { /* */ }
+      queue.push({ id: Date.now().toString(), type, timestamp: new Date().toISOString() });
+      await AsyncStorage.setItem(PENDING_CHECKINS_KEY, JSON.stringify(queue)).catch(() => {});
+      setPendingCount(queue.length);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      Alert.alert(
+        lang === "ar" ? "قوي" : "Qawi",
+        lang === "ar" ? "تم الحفظ! سيُزامَن تلقائياً عند عودة الاتصال 📶" : "Saved offline! Will sync when back online 📶"
+      );
+      return;
+    }
+    const endpoint = type === "checkin" ? "/attendance/me/checkin" : "/attendance/me/checkout";
+    try {
+      await apiFetch(endpoint, { method: "POST" });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       qc.invalidateQueries({ queryKey: ["member"] });
-    },
-    onError: (e: any) => Alert.alert(lang === "ar" ? "قوي" : "Qawi", e?.body?.error || "Check-in failed"),
-  });
-  const checkout = useMutation({
-    mutationFn: () => apiFetch("/attendance/me/checkout", { method: "POST" }),
-    onSuccess: () => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      qc.invalidateQueries({ queryKey: ["member"] });
-    },
-    onError: (e: any) => Alert.alert(lang === "ar" ? "قوي" : "Qawi", e?.body?.error || "Check-out failed"),
-  });
+    } catch (e: any) {
+      Alert.alert(lang === "ar" ? "قوي" : "Qawi", e?.body?.error || (type === "checkin" ? "Check-in failed" : "Check-out failed"));
+    }
+  };
 
   const formatTime = (iso?: string) => {
     if (!iso) return "";
@@ -141,10 +208,28 @@ export default function MemberHome() {
   return (
     <Screen>
       <RoleHeader title={`${t("member.welcome")}, ${user?.name?.split(" ")[0] ?? ""}`} subtitle={user?.gymName ?? undefined} />
+
+      {/* Offline indicator */}
+      {!isOnline && (
+        <View style={{ backgroundColor: "#ca8a04", paddingHorizontal: 16, paddingVertical: 8, flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <Feather name="wifi-off" size={14} color="#fff" />
+          <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600", flex: 1 }}>
+            {lang === "ar" ? "لا يوجد اتصال — سيتم المزامنة لاحقاً" : "Offline — check-ins will sync when reconnected"}
+          </Text>
+          {pendingCount > 0 && (
+            <Text style={{ color: "#fde047", fontSize: 11, fontWeight: "800" }}>{pendingCount} pending</Text>
+          )}
+        </View>
+      )}
+
       <ScrollView
         contentContainerStyle={{ padding: 16, gap: 16 }}
         refreshControl={
-          <RefreshControl tintColor={c.primary} refreshing={refreshing} onRefresh={() => { today.refetch(); stats.refetch(); upcoming.refetch(); }} />
+          <RefreshControl
+            tintColor={c.primary}
+            refreshing={refreshing}
+            onRefresh={() => { today.refetch(); stats.refetch(); upcoming.refetch(); syncPendingCheckins(); }}
+          />
         }
       >
         <Card style={{ alignItems: "center", paddingVertical: 22 }}>
@@ -152,7 +237,7 @@ export default function MemberHome() {
             <Feather
               name={checkedOut ? "log-out" : checkedIn ? "check-circle" : "log-in"}
               size={28}
-              color={c.primary}
+              color={!isOnline ? c.mutedForeground : c.primary}
             />
             <Text style={{ color: c.foreground, fontSize: 18, fontWeight: "800" }}>
               {checkedOut
@@ -169,10 +254,9 @@ export default function MemberHome() {
           )}
           {!checkedIn && (
             <Button
-              title={t("member.checkIn")}
+              title={isOnline ? t("member.checkIn") : (lang === "ar" ? "تسجيل دخول (أوفلاين)" : "Check In (Offline)")}
               icon="check"
-              onPress={() => checkin.mutate()}
-              loading={checkin.isPending}
+              onPress={() => doCheckin("checkin")}
               style={{ marginTop: 14, alignSelf: "stretch" }}
             />
           )}
@@ -183,10 +267,9 @@ export default function MemberHome() {
               onPress={() =>
                 Alert.alert(lang === "ar" ? "قوي" : "Qawi", t("member.endDay") + "?", [
                   { text: t("common.cancel"), style: "cancel" },
-                  { text: t("member.checkOut"), onPress: () => checkout.mutate() },
+                  { text: t("member.checkOut"), onPress: () => doCheckin("checkout") },
                 ])
               }
-              loading={checkout.isPending}
               style={{ marginTop: 14, alignSelf: "stretch" }}
             />
           )}
@@ -218,7 +301,13 @@ export default function MemberHome() {
 
         <SectionTitle>{t("member.todayWorkout")}</SectionTitle>
         {today.isLoading ? (
-          <Card><ActivityIndicator color={c.primary} /></Card>
+          <Card>
+            <View style={{ gap: 10 }}>
+              {[...Array(3)].map((_, i) => (
+                <View key={i} style={{ height: 16, backgroundColor: c.muted, borderRadius: 8, opacity: 0.6 }} />
+              ))}
+            </View>
+          </Card>
         ) : !today.data ? (
           <Card>
             <EmptyState icon="calendar" text={t("member.noPlan")} />
@@ -232,13 +321,7 @@ export default function MemberHome() {
           </Card>
         ) : today.data.isCompleted ? (
           <Card style={{ alignItems: "center", paddingVertical: 28 }}>
-            <View
-              style={{
-                width: 56, height: 56, borderRadius: 28,
-                backgroundColor: c.primary + "22",
-                alignItems: "center", justifyContent: "center",
-              }}
-            >
+            <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: c.primary + "22", alignItems: "center", justifyContent: "center" }}>
               <Feather name="check-circle" size={30} color={c.primary} />
             </View>
             <Text style={{ color: c.foreground, fontSize: 18, fontWeight: "800", marginTop: 12, textAlign: "center" }}>
@@ -262,7 +345,9 @@ export default function MemberHome() {
 
         <SectionTitle>{t("member.upcomingTraining")}</SectionTitle>
         {(upcoming.data ?? []).length === 0 ? (
-          <Card><EmptyState icon="calendar" text={t("member.noUpcoming")} /></Card>
+          <Card>
+            <EmptyState icon="calendar" text={t("member.noUpcoming")} />
+          </Card>
         ) : (
           (upcoming.data ?? []).slice(0, 5).map((d: any) => (
             <UpcomingDayCard key={d.dayId} day={d} />

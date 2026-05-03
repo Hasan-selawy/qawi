@@ -13,6 +13,15 @@ console.log("=== API URL ===", API_BASE);
 
 export const TOKEN_KEY = "qawi_token";
 
+// ─── 401 handler ──────────────────────────────────────────────────────────
+// Register this callback from AuthContext so api.ts can trigger logout
+// without creating a circular dependency.
+let _onUnauthorized: (() => void) | null = null;
+
+export function setUnauthorizedHandler(fn: () => void) {
+  _onUnauthorized = fn;
+}
+
 export class ApiError extends Error {
   status: number;
   body: any;
@@ -53,9 +62,7 @@ export async function apiFetch<T = any>(
   let { res, text } = await doFetch(path, options);
 
   // Replit dev domains return an HTML wakeup interstitial on the first request
-  // when the workspace is asleep. The wakeup can take several seconds on a real
-  // device (cold container + TLS handshake + JVM warmup), so retry with backoff
-  // up to ~12s total before giving up.
+  // when the workspace is asleep. Retry with backoff up to ~12s total.
   if (text && isHtmlBody(text)) {
     const delays = [1000, 1500, 2500, 3500, 4000];
     for (const delay of delays) {
@@ -72,13 +79,24 @@ export async function apiFetch<T = any>(
     parsed = true;
   } catch { /* keep as text */ }
 
+  // 401 → session expired, trigger global logout
+  if (res.status === 401) {
+    // Clear stored credentials immediately
+    await AsyncStorage.multiRemove([TOKEN_KEY, "qawi_user"]).catch(() => {});
+    // Notify AuthContext to clear state + navigate to login
+    if (_onUnauthorized) {
+      _onUnauthorized();
+    }
+    throw new ApiError(401, body ?? { error: "Session expired. Please log in again." });
+  }
+
   if (!res.ok) throw new ApiError(res.status, body);
 
   if (text && !parsed) {
     const snippet = String(text).slice(0, 200).replace(/\s+/g, " ");
     console.warn(`[api] Non-JSON ${res.status} response from ${path}: ${snippet}`);
     throw new ApiError(res.status, {
-      error: `Server returned non-JSON response (likely a proxy/interstitial page). First 200 chars: ${snippet}`,
+      error: `Server returned non-JSON response. First 200 chars: ${snippet}`,
     });
   }
 

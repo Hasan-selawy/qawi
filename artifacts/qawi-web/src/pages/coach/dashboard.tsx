@@ -7,12 +7,36 @@ import { useLocation } from 'wouter';
 import { PageWrapper } from '@/components/layout/PageWrapper';
 import { GradientAvatar } from '@/components/GradientAvatar';
 import { StatusBadge, BadgeStatus } from '@/components/StatusBadge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { format } from 'date-fns';
-import { Loader2, Calendar, Activity, ChevronRight } from 'lucide-react';
+import { Calendar, Activity, ChevronRight, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getDaysSince } from '@/lib/sub-status';
+
+function CoachSkeleton() {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+      {[...Array(6)].map((_, i) => (
+        <div key={i} className="glass-card p-6 space-y-4">
+          <div className="flex items-start gap-3">
+            <Skeleton className="h-12 w-12 rounded-full shrink-0" />
+            <div className="space-y-2 flex-1">
+              <Skeleton className="h-5 w-32" />
+              <Skeleton className="h-3 w-40" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Skeleton className="h-16 rounded-lg" />
+            <Skeleton className="h-16 rounded-lg" />
+          </div>
+          <Skeleton className="h-10 w-full rounded-lg" />
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function CoachDashboard() {
   const { t } = useLanguage();
@@ -53,25 +77,19 @@ export default function CoachDashboard() {
       </Tabs>
 
       {isLoading ? (
-        <div className="flex justify-center py-12"><Loader2 className="animate-spin text-primary h-8 w-8" /></div>
+        <CoachSkeleton />
+      ) : members?.length === 0 ? (
+        <div className="glass-card p-16 text-center border-dashed border-white/10">
+          <Users className="h-16 w-16 text-muted-foreground/20 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold mb-1">🏋️ No members assigned yet</h3>
+          <p className="text-muted-foreground text-sm">Your gym admin will assign members to you.</p>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredMembers.map((member: any) => {
             const days = getDaysSince(member.lastCheckinDate);
-            const checkinText = days === null
-              ? 'Never'
-              : days === 0
-                ? 'Today'
-                : days === 1
-                  ? 'Yesterday'
-                  : `${days} days ago`;
-            const checkinColor = days === null
-              ? 'text-red-500 bg-red-500/10'
-              : days === 0
-                ? 'text-green-500 bg-green-500/10'
-                : days <= 3
-                  ? 'text-orange-500 bg-orange-500/10'
-                  : 'text-red-500 bg-red-500/10';
+            const checkinText = days === null ? 'Never' : days === 0 ? 'Today' : days === 1 ? 'Yesterday' : `${days} days ago`;
+            const checkinColor = days === null ? 'text-red-500 bg-red-500/10' : days === 0 ? 'text-green-500 bg-green-500/10' : days <= 3 ? 'text-orange-500 bg-orange-500/10' : 'text-red-500 bg-red-500/10';
 
             return (
               <div key={member.id} className="glass-card p-6 flex flex-col hover:border-primary/30 transition-colors group">
@@ -87,7 +105,6 @@ export default function CoachDashboard() {
                     <StatusBadge status={member.subscriptionStatus as BadgeStatus} label={member.subscriptionStatus} />
                   )}
                 </div>
-
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   <div className="bg-black/20 p-3 rounded-lg">
                     <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1"><Activity size={12} /> Weekly</p>
@@ -98,7 +115,6 @@ export default function CoachDashboard() {
                     <p className={cn('font-semibold text-sm px-2 py-0.5 rounded-md inline-block', checkinColor)}>{checkinText}</p>
                   </div>
                 </div>
-
                 <Button
                   className="w-full mt-auto group-hover:bg-primary/90"
                   variant="outline"

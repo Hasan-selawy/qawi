@@ -1,8 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter, useSegments } from "expo-router";
-import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 
-import { apiFetch, TOKEN_KEY } from "@/services/api";
+import { apiFetch, TOKEN_KEY, setUnauthorizedHandler } from "@/services/api";
 
 async function safeSet(key: string, value: unknown): Promise<void> {
   if (typeof value !== "string" || value.length === 0) {
@@ -45,6 +45,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const routerRef = useRef<ReturnType<typeof useRouter> | null>(null);
+
+  const logout = useCallback(async () => {
+    await AsyncStorage.multiRemove([TOKEN_KEY, USER_KEY]);
+    setToken(null);
+    setUser(null);
+  }, []);
+
+  // Register global 401 handler once on mount
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      logout().catch(() => {});
+    });
+  }, [logout]);
 
   useEffect(() => {
     (async () => {
@@ -79,12 +93,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return res.user;
   }, []);
 
-  const logout = useCallback(async () => {
-    await AsyncStorage.multiRemove([TOKEN_KEY, USER_KEY]);
-    setToken(null);
-    setUser(null);
-  }, []);
-
   return <Ctx.Provider value={{ user, token, loading, login, logout }}>{children}</Ctx.Provider>;
 }
 
@@ -106,9 +114,6 @@ export function useProtectedRoute() {
   const segments = useSegments();
   const router = useRouter();
 
-  // Use only the first segment string as dep, not the array reference.
-  // The array is a new object every render; depending on it causes an
-  // infinite loop: effect fires → router.replace → re-render → repeat.
   const firstSegment = segments[0] as string | undefined;
 
   useEffect(() => {

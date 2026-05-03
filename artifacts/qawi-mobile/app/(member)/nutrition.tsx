@@ -2,7 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import React from "react";
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 
 import { RoleHeader } from "@/components/RoleHeader";
 import { Card, EmptyState, Screen } from "@/components/ui";
@@ -50,15 +50,28 @@ export default function NutritionScreen() {
     <Screen>
       <RoleHeader title={t("member.tabs.nutrition")} subtitle={plan.data ? pickName(lang, plan.data) : undefined} />
       {plan.isLoading ? (
-        <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-          <ActivityIndicator color={c.primary} />
-        </View>
+        <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
+          {[...Array(4)].map((_, i) => (
+            <View key={i} style={{ height: 80, backgroundColor: c.surface, borderRadius: 16, opacity: 0.6 }} />
+          ))}
+        </ScrollView>
       ) : !plan.data ? (
-        <View style={{ padding: 20 }}>
-          <Card><EmptyState icon="coffee" text={t("member.noNutrition")} /></Card>
-        </View>
+        <ScrollView
+          contentContainerStyle={{ padding: 20, flex: 1 }}
+          refreshControl={<RefreshControl tintColor={c.primary} refreshing={plan.isFetching} onRefresh={() => plan.refetch()} />}
+        >
+          <Card>
+            <EmptyState icon="coffee" text={t("member.noNutrition")} />
+            <Text style={{ color: c.mutedForeground, fontSize: 12, textAlign: "center", marginTop: 8 }}>
+              {lang === "ar" ? "لم يُعيَّن لك خطة تغذية بعد. تواصل مع كوتشك." : "No nutrition plan assigned yet. Ask your coach to add one."}
+            </Text>
+          </Card>
+        </ScrollView>
       ) : (
-        <ScrollView contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 100 }}>
+        <ScrollView
+          contentContainerStyle={{ padding: 16, gap: 12, paddingBottom: 100 }}
+          refreshControl={<RefreshControl tintColor={c.primary} refreshing={plan.isFetching} onRefresh={() => plan.refetch()} />}
+        >
           {plan.data.totalCalories ? (
             <Card>
               <View style={{ flexDirection: isRTL ? "row-reverse" : "row", justifyContent: "space-between" }}>
@@ -74,32 +87,36 @@ export default function NutritionScreen() {
               ) : null}
             </Card>
           ) : null}
-          {meals.map((m: any, i: number) => {
-            const done = !!m.done;
-            return (
-              <Pressable
-                key={m.id ?? i}
-                onPress={() => m.id && toggleDone.mutate({ mealId: m.id, done: !done })}
-                style={{ opacity: toggleDone.isPending ? 0.7 : 1 }}
-              >
-                <Card style={done ? { borderColor: c.primary, borderWidth: 1 } : undefined}>
-                  <View style={{ flexDirection: isRTL ? "row-reverse" : "row", justifyContent: "space-between", alignItems: "center" }}>
-                    <Text style={{ color: c.foreground, fontWeight: "700", fontSize: 16, textDecorationLine: done ? "line-through" : "none" }}>
-                      {t(`member.${(m.type ?? "snack").toLowerCase()}`) || pickName(lang, m)}
+          {meals.length === 0 ? (
+            <Card><EmptyState icon="coffee" text={lang === "ar" ? "لا توجد وجبات في هذه الخطة" : "No meals in this plan yet"} /></Card>
+          ) : (
+            meals.map((m: any, i: number) => {
+              const done = !!m.done;
+              return (
+                <Pressable
+                  key={m.id ?? i}
+                  onPress={() => m.id && toggleDone.mutate({ mealId: m.id, done: !done })}
+                  style={{ opacity: toggleDone.isPending ? 0.7 : 1 }}
+                >
+                  <Card style={done ? { borderColor: c.primary, borderWidth: 1 } : undefined}>
+                    <View style={{ flexDirection: isRTL ? "row-reverse" : "row", justifyContent: "space-between", alignItems: "center" }}>
+                      <Text style={{ color: c.foreground, fontWeight: "700", fontSize: 16, textDecorationLine: done ? "line-through" : "none" }}>
+                        {t(`member.${(m.type ?? "snack").toLowerCase()}`) || pickName(lang, m)}
+                      </Text>
+                      <Feather name={done ? "check-circle" : "circle"} size={20} color={done ? c.primary : c.mutedForeground} />
+                    </View>
+                    <Text style={{ color: c.mutedForeground, marginTop: 6, textAlign: isRTL ? "right" : "left" }}>{pickName(lang, m)}</Text>
+                    {m.calories ? (
+                      <Text style={{ color: c.mutedForeground, marginTop: 4, fontSize: 12 }}>{m.calories} kcal • P {m.protein ?? "-"}g • C {m.carbs ?? "-"}g • F {m.fats ?? "-"}g</Text>
+                    ) : null}
+                    <Text style={{ color: done ? c.primary : c.mutedForeground, marginTop: 6, fontSize: 11, fontWeight: "600", textAlign: isRTL ? "right" : "left" }}>
+                      {done ? `✓ ${t("member.mealDone")}` : t("member.tapToMarkDone")}
                     </Text>
-                    <Feather name={done ? "check-circle" : "circle"} size={20} color={done ? c.primary : c.mutedForeground} />
-                  </View>
-                  <Text style={{ color: c.mutedForeground, marginTop: 6, textAlign: isRTL ? "right" : "left" }}>{pickName(lang, m)}</Text>
-                  {m.calories ? (
-                    <Text style={{ color: c.mutedForeground, marginTop: 4, fontSize: 12 }}>{m.calories} kcal • P {m.protein ?? "-"}g • C {m.carbs ?? "-"}g • F {m.fats ?? "-"}g</Text>
-                  ) : null}
-                  <Text style={{ color: done ? c.primary : c.mutedForeground, marginTop: 6, fontSize: 11, fontWeight: "600", textAlign: isRTL ? "right" : "left" }}>
-                    {done ? `✓ ${t("member.mealDone")}` : t("member.tapToMarkDone")}
-                  </Text>
-                </Card>
-              </Pressable>
-            );
-          })}
+                  </Card>
+                </Pressable>
+              );
+            })
+          )}
         </ScrollView>
       )}
     </Screen>

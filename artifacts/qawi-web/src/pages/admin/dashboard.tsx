@@ -8,10 +8,38 @@ import { PageWrapper } from '@/components/layout/PageWrapper';
 import { StatCard } from '@/components/StatCard';
 import { AttendanceChart } from '@/components/charts/AttendanceChart';
 import { MemberGrowthChart } from '@/components/charts/MemberGrowthChart';
-import { Loader2, Users, Activity, Clock, UserSquare2, Medal, Lock } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Users, Activity, Clock, UserSquare2, Medal, Lock } from 'lucide-react';
 import { GradientAvatar } from '@/components/GradientAvatar';
 import { Button } from '@/components/ui/button';
 import { getDaysRemaining } from '@/lib/sub-status';
+
+function DashboardSkeleton() {
+  return (
+    <PageWrapper>
+      <div className="mb-6"><Skeleton className="h-8 w-48" /></div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="glass-card p-6 space-y-3">
+            <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-10 w-20" />
+            <Skeleton className="h-3 w-16" />
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+        <div className="glass-card p-6 lg:col-span-3 space-y-4">
+          <Skeleton className="h-5 w-40" />
+          <Skeleton className="h-48 w-full" />
+        </div>
+        <div className="glass-card p-6 lg:col-span-2 space-y-4">
+          <Skeleton className="h-5 w-32" />
+          <Skeleton className="h-48 w-full" />
+        </div>
+      </div>
+    </PageWrapper>
+  );
+}
 
 export default function AdminDashboard() {
   const { t } = useLanguage();
@@ -29,13 +57,7 @@ export default function AdminDashboard() {
     queryFn: () => apiFetch('/admin/expiring-subscriptions'),
   });
 
-  if (isLoading) {
-    return (
-      <div className="flex h-full w-full items-center justify-center p-12">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+  if (isLoading) return <DashboardSkeleton />;
 
   const attendanceData = (stats?.attendanceThisWeek || []).map((d: any) => ({ date: d.day, count: d.count }));
   const growthData = (stats?.memberGrowth || []).map((d: any) => ({ month: d.month, count: d.count }));
@@ -76,37 +98,43 @@ export default function AdminDashboard() {
 
       <div className={`grid grid-cols-1 ${advanced ? 'lg:grid-cols-2' : ''} gap-6`}>
         {advanced && (
-        <div className="glass-card p-6">
-          <h3 className="text-lg font-semibold mb-6">{t('admin.top_performers')}</h3>
-          <div className="space-y-4">
-            {topPerformers.length === 0 ? (
-              <p className="text-muted-foreground text-sm text-center py-4">No data available</p>
-            ) : (
-              topPerformers.map((member: any, i: number) => (
-                <div key={i} className="flex items-center gap-4 p-3 rounded-lg hover:bg-white/5 transition-colors">
-                  <div className="w-8 flex justify-center">
-                    {i === 0 ? <Medal className="text-yellow-500" /> : i === 1 ? <Medal className="text-gray-400" /> : i === 2 ? <Medal className="text-amber-700" /> : <span className="text-muted-foreground font-bold">{i + 1}</span>}
-                  </div>
-                  <GradientAvatar name={member.name} size="sm" />
-                  <div className="flex-1">
-                    <p className="font-medium">{member.name}</p>
-                    <p className="text-xs text-muted-foreground">{member.workoutsLogged} workouts logged</p>
-                  </div>
-                  <div className="w-24 h-2 bg-white/10 rounded-full overflow-hidden">
-                    <div className="h-full bg-primary" style={{ width: `${Math.min(100, (member.workoutsLogged / maxWorkouts) * 100)}%` }} />
-                  </div>
+          <div className="glass-card p-6">
+            <h3 className="text-lg font-semibold mb-6">{t('admin.top_performers')}</h3>
+            <div className="space-y-4">
+              {topPerformers.length === 0 ? (
+                <div className="text-center py-8">
+                  <Medal className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
+                  <p className="text-muted-foreground text-sm">No performance data yet</p>
                 </div>
-              ))
-            )}
+              ) : (
+                topPerformers.map((member: any, i: number) => (
+                  <div key={i} className="flex items-center gap-4 p-3 rounded-lg hover:bg-white/5 transition-colors">
+                    <div className="w-8 flex justify-center">
+                      {i === 0 ? <Medal className="text-yellow-500" /> : i === 1 ? <Medal className="text-gray-400" /> : i === 2 ? <Medal className="text-amber-700" /> : <span className="text-muted-foreground font-bold">{i + 1}</span>}
+                    </div>
+                    <GradientAvatar name={member.name} size="sm" />
+                    <div className="flex-1">
+                      <p className="font-medium">{member.name}</p>
+                      <p className="text-xs text-muted-foreground">{member.workoutsLogged} workouts logged</p>
+                    </div>
+                    <div className="w-24 h-2 bg-white/10 rounded-full overflow-hidden">
+                      <div className="h-full bg-primary" style={{ width: `${Math.min(100, (member.workoutsLogged / maxWorkouts) * 100)}%` }} />
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
-        </div>
         )}
 
         <div className={`glass-card p-6 ${advanced ? '' : 'lg:max-w-2xl lg:mx-auto w-full'}`}>
           <h3 className="text-lg font-semibold mb-6">{t('admin.expiring_subscriptions')}</h3>
           <div className="space-y-4">
             {(!expiring || expiring.length === 0) ? (
-              <p className="text-muted-foreground text-sm text-center py-4">No expiring subscriptions</p>
+              <div className="text-center py-8">
+                <Clock className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
+                <p className="text-muted-foreground text-sm">No expiring subscriptions this week 🎉</p>
+              </div>
             ) : (
               expiring.slice(0, 5).map((m: any) => {
                 const days = getDaysRemaining(m.subscriptionEndDate);

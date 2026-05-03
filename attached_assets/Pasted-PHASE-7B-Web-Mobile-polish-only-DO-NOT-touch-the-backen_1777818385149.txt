@@ -1,0 +1,100 @@
+PHASE 7B — Web + Mobile polish only.
+DO NOT touch the backend.
+
+WEB DASHBOARD:
+
+1. LOADING SKELETONS:
+Add animated skeleton loaders on every page.
+Skeleton matches shape of real content.
+CSS animation: pulse opacity 0.5→1→0.5, 1.5s loop.
+Apply to: stat cards, member tables, exercise grid, charts.
+
+2. ERROR BOUNDARIES:
+Wrap every page in ErrorBoundary component.
+On crash show:
+- ⚠️ "Something went wrong" / "حدث خطأ ما"
+- "Try Again" button → reloads page
+Never show blank screen.
+
+3. EMPTY STATES:
+Every list must handle empty data:
+- Members: 👥 "No members yet. Add your first member!"
+- Coaches: 🏋️ "No coaches yet."
+- Exercises: 💪 "No exercises found."
+- Notifications: 🔔 "You're all caught up!"
+- Plans: 📋 "No plans created yet."
+Centered icon + message + optional CTA button.
+
+4. FORM VALIDATION:
+Every form validates before submit:
+- Required fields: red border + error message
+- Email: valid format
+- Password: minimum 6 characters
+- End date must be after start date
+- Price must be positive
+Show inline errors, not alerts.
+Disable submit button until form is valid.
+
+5. RESPONSIVE DESIGN:
+- Sidebar collapses on screens < 1024px
+- Tables scroll horizontally on small screens
+- Cards stack on tablet
+- Test at 768px, 1024px, 1280px
+
+6. OFFLINE DETECTION:
+Yellow banner when offline:
+"⚠️ No internet connection" / "⚠️ لا يوجد اتصال بالإنترنت"
+Green "✅ Back online!" for 3 seconds when restored.
+
+MOBILE APP:
+
+7. PULL TO REFRESH:
+Add RefreshControl to ALL scrollable screens:
+tintColor: "#22C55E"
+colors: ["#22C55E"]
+Screens: Home, Members list, Plans, Notifications,
+Measurements, Coach dashboard.
+
+8. TOKEN EXPIRY:
+In axios interceptor handle 401:
+- Clear AsyncStorage token + user
+- Redirect to login screen
+- Show toast: "Session expired. Please log in again."
+- Arabic: "انتهت الجلسة. يرجى تسجيل الدخول مرة أخرى."
+
+9. OFFLINE CHECKIN QUEUE:
+When member checks in offline:
+- Save to AsyncStorage key: 'pendingCheckins'
+- Show: "Saved! Will sync when back online 📶"
+- Arabic: "تم الحفظ! سيتم المزامنة عند الاتصال 📶"
+- On reconnect: sync all pending checkins
+- Show: "✅ Check-ins synced!"
+Use @react-native-community/netinfo
+
+10. EMPTY STATES on all mobile screens:
+- No workout: "😴 No workout scheduled today"
+- No nutrition: "🥗 Ask your coach for a meal plan!"
+- No measurements: "📊 No measurements yet"
+- No notifications: "🔔 You're all caught up!"
+Each: 64px icon + Arabic + English message.
+
+11. LOADING STATES:
+- All buttons show spinner while loading
+- All screens show skeleton on mount
+- Disable buttons while request in progress
+- ActivityIndicator color="#22C55E"
+
+12. FINAL TEST all 4 roles end to end:
+MEMBER: login→home→workout→complete→checkin→nutrition
+COACH: login→members→create plan→add exercises→notes
+GYM_ADMIN: login→dashboard→add member→renew sub
+SUPER_ADMIN: login→all gyms→toggle features→stats
+
+13. Arabic RTL final check:
+All text right-aligned in AR mode
+All icons on correct side
+Flex direction correct
+Input text right-to-left
+Sidebar on right side in web AR mode
+
+Tell me when Phase 7B is done — Qawi is production ready! 💪
