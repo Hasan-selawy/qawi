@@ -15,10 +15,12 @@ export class ApiError extends Error {
   }
 }
 
-export async function apiFetch<T = any>(
-  path: string,
-  options: { method?: string; data?: any; headers?: Record<string, string> } = {}
-): Promise<T> {
+function isHtmlBody(text: string): boolean {
+  const head = text.trimStart().slice(0, 200).toLowerCase();
+  return head.startsWith("<!doctype html") || head.startsWith("<html");
+}
+
+async function doFetch(path: string, options: { method?: string; data?: any; headers?: Record<string, string> }) {
   const token = await AsyncStorage.getItem(TOKEN_KEY);
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -32,8 +34,23 @@ export async function apiFetch<T = any>(
     headers,
     body: options.data !== undefined ? JSON.stringify(options.data) : undefined,
   });
-
   const text = await res.text();
+  return { res, text };
+}
+
+export async function apiFetch<T = any>(
+  path: string,
+  options: { method?: string; data?: any; headers?: Record<string, string> } = {}
+): Promise<T> {
+  let { res, text } = await doFetch(path, options);
+
+  // Replit dev domains return an HTML wakeup interstitial on the first request
+  // when the workspace is asleep. Wait briefly and retry once before failing.
+  if (text && isHtmlBody(text)) {
+    await new Promise((r) => setTimeout(r, 1500));
+    ({ res, text } = await doFetch(path, options));
+  }
+
   let body: any = text;
   let parsed = false;
   try {
@@ -43,8 +60,6 @@ export async function apiFetch<T = any>(
 
   if (!res.ok) throw new ApiError(res.status, body);
 
-  // If server returned 2xx but the body isn't JSON, the request was almost
-  // certainly intercepted by a proxy/interstitial page (e.g. an auth gate).
   if (text && !parsed) {
     const snippet = String(text).slice(0, 200).replace(/\s+/g, " ");
     console.warn(`[api] Non-JSON ${res.status} response from ${path}: ${snippet}`);
