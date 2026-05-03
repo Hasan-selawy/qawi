@@ -38,7 +38,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   const loginMutation = useMutation({
-    mutationFn: (credentials: any) => apiFetch("/auth/login", { method: "POST", data: credentials }),
+    mutationFn: (credentials: any) => apiFetch("/auth/login", {
+      method: "POST",
+      data: { ...credentials, email: credentials.email?.toLowerCase().trim() },
+    }),
     onSuccess: (data) => {
       localStorage.setItem("qawi_token", data.token);
       queryClient.setQueryData(["auth", "me"], data.user);

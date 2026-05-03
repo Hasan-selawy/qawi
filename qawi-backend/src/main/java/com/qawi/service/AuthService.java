@@ -29,6 +29,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
 
     public AuthResponse register(RegisterRequest req) {
+        req.setEmail(req.getEmail().toLowerCase().trim());
         if (userRepository.existsByEmail(req.getEmail())) {
             throw new AppException(
                     "Email already in use",
@@ -59,7 +60,8 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest req) {
-        User user = userRepository.findByEmail(req.getEmail())
+        String email = req.getEmail().toLowerCase().trim();
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException(
                         "Invalid email or password",
                         "البريد الإلكتروني أو كلمة المرور غير صحيحة",
@@ -79,7 +81,7 @@ public class AuthService {
         }
 
         authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(req.getEmail(), req.getPassword())
+                new UsernamePasswordAuthenticationToken(email, req.getPassword())
         );
 
         String token = jwtService.generateToken(user);

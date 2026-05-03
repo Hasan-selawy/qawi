@@ -61,9 +61,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = useCallback(async (email: string, password: string): Promise<AuthUser> => {
+    const normalizedEmail = email.toLowerCase().trim();
     const res = await apiFetch<{ token?: string; user?: AuthUser }>("/auth/login", {
       method: "POST",
-      data: { email, password },
+      data: { email: normalizedEmail, password },
     });
 
     if (!res || typeof res.token !== "string" || !res.token || !res.user) {
