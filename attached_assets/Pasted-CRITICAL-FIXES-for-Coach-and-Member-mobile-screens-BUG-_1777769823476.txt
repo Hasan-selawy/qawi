@@ -1,0 +1,56 @@
+CRITICAL FIXES for Coach and Member mobile screens:
+
+BUG 1 — COACH LIBRARY shows "No data yet":
+The library is not loading exercises from the backend.
+Fix: Call GET /api/v1/exercises/library with the auth token.
+The endpoint requires Authorization: Bearer {token} header.
+Check that the token is being passed correctly in the API call.
+Also check that the base URL is correct: http://localhost:9000/api/v1
+
+BUG 2 — COACH PLANS shows "No plans yet":
+The plans screen is not loading data.
+Fix: 
+- Workout tab: Call GET /api/v1/coach/members to get members,
+  then for each member call GET /api/v1/workouts/member/{memberId}
+- Nutrition tab: Call GET /api/v1/nutrition/member/{memberId}
+  for each assigned member
+- Also add a "Create New Plan" button that opens the plan builder
+
+BUG 3 — MEMBER cannot save workout weight:
+When member enters weight and clicks Save/Complete, 
+nothing happens.
+Fix the complete workout flow:
+Step 1: For each exercise, call POST /api/v1/workouts/logs:
+{
+  "planExerciseId": "exercise id from the plan",
+  "actualSets": number,
+  "actualReps": number, 
+  "actualWeight": number entered by member
+}
+Step 2: After logging all exercises, call:
+PUT /api/v1/workouts/days/{dayId}/complete
+Step 3: Show success animation then go back to home screen
+Step 4: Refresh streak count
+
+BUG 4 — COACH mobile should have SAME features as web:
+The coach mobile app must support everything the web does:
+- View all assigned members
+- Open member detail with 5 tabs (Today, Plan, Nutrition, 
+  Measurements, Notes)
+- Create workout plans with full calendar builder
+- Add exercises to any day with category filter
+- Add coach notes per exercise
+- Create nutrition plans with meals
+- Add body measurements
+- View member's logged weights for today
+
+BUG 5 — GYM ADMIN mobile should have SAME features as web:
+- View analytics dashboard with real numbers
+- Add/manage members
+- Add/manage coaches  
+- Renew subscriptions
+- Assign coaches to members
+All data must come from the real API endpoints.
+
+Make sure ALL API calls include the Authorization Bearer token.
+The token is stored in AsyncStorage — retrieve it before every call.

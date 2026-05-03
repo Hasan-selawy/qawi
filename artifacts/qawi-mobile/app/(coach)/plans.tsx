@@ -1,37 +1,69 @@
 import { Feather } from "@expo/vector-icons";
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Alert, FlatList, Pressable, Text, View } from "react-native";
 
 import { RoleHeader } from "@/components/RoleHeader";
-import { Card, EmptyState, Screen } from "@/components/ui";
+import { Button, Card, EmptyState, Screen } from "@/components/ui";
 import { useLanguage, pickName } from "@/context/LanguageContext";
 import { useColors } from "@/hooks/useColors";
 import { apiFetch } from "@/services/api";
 
+type CoachMember = { id: string; name: string; email: string };
+
 export default function CoachPlans() {
   const c = useColors();
   const { t, lang, isRTL } = useLanguage();
+  const router = useRouter();
   const [tab, setTab] = useState<"workout" | "nutrition">("workout");
 
-  const workouts = useQuery({
-    queryKey: ["coach", "workout-templates"],
-    queryFn: () => apiFetch<any[]>("/coach/workout-templates").catch(() => []),
-    enabled: tab === "workout",
-  });
-  const nutrition = useQuery({
-    queryKey: ["coach", "nutrition-templates"],
-    queryFn: () => apiFetch<any[]>("/coach/nutrition-templates").catch(() => []),
-    enabled: tab === "nutrition",
+  const members = useQuery({
+    queryKey: ["coach", "members"],
+    queryFn: () => apiFetch<CoachMember[]>("/coach/members").catch(() => []),
   });
 
-  const data: any[] = (tab === "workout" ? workouts.data : nutrition.data) ?? [];
-  const loading = tab === "workout" ? workouts.isLoading : nutrition.isLoading;
+  const memberList = members.data ?? [];
+
+  const plansQueries = useQueries({
+    queries: memberList.map((m) => ({
+      queryKey: ["coach", "member-plans", tab, m.id],
+      queryFn: () =>
+        apiFetch<any[]>(tab === "workout" ? `/workouts/member/${m.id}` : `/nutrition/member/${m.id}`)
+          .catch(() => [])
+          .then((arr) => arr.map((p) => ({ ...p, _member: m }))),
+      enabled: !!m.id,
+    })),
+  });
+
+  const loading = members.isLoading || plansQueries.some((q) => q.isLoading);
+  const allPlans = plansQueries.flatMap((q) => q.data ?? []);
+
+  const onCreate = () => {
+    if (memberList.length === 0) {
+      Alert.alert("Qawi", t("coach.noMembers"));
+      return;
+    }
+    Alert.alert(
+      t("coach.createPlan"),
+      lang === "ar"
+        ? "اختر عضوًا لإنشاء خطة. الإنشاء الكامل للخطة يتم من لوحة الويب."
+        : "Pick a member to start a plan. Full plan builder is available on the web dashboard.",
+      [
+        { text: t("common.cancel"), style: "cancel" },
+        ...memberList.slice(0, 6).map((m) => ({
+          text: m.name,
+          onPress: () => router.push(`/member/${m.id}` as never),
+        })),
+      ]
+    );
+  };
 
   return (
     <Screen>
       <RoleHeader title={t("coach.tabs.plans")} />
-      <View style={{ flexDirection: isRTL ? "row-reverse" : "row", gap: 8, padding: 16 }}>
+
+      <View style={{ flexDirection: isRTL ? "row-reverse" : "row", gap: 8, paddingHorizontal: 16, paddingTop: 16 }}>
         {(["workout", "nutrition"] as const).map((s) => (
           <Pressable
             key={s}
@@ -52,30 +84,40 @@ export default function CoachPlans() {
           </Pressable>
         ))}
       </View>
+
+      <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>
+        <Button title={t("coach.createPlan")} icon="plus" onPress={onCreate} />
+      </View>
+
       {loading ? (
-        <ActivityIndicator color={c.primary} />
-      ) : data.length === 0 ? (
+        <View style={{ padding: 24 }}><ActivityIndicator color={c.primary} /></View>
+      ) : allPlans.length === 0 ? (
         <View style={{ padding: 16 }}>
           <Card><EmptyState icon="layers" text={t("coach.noPlans")} /></Card>
         </View>
       ) : (
         <FlatList
-          data={data}
-          keyExtractor={(i: any) => i.id}
+          data={allPlans}
+          keyExtractor={(p, i) => `${p.id ?? i}`}
           contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 100 }}
           ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
           renderItem={({ item }) => (
-            <Card>
-              <View style={{ flexDirection: isRTL ? "row-reverse" : "row", justifyContent: "space-between", alignItems: "center" }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: c.foreground, fontWeight: "700", fontSize: 15, textAlign: isRTL ? "right" : "left" }}>{pickName(lang, item)}</Text>
-                  {item.daysPerWeek ? (
-                    <Text style={{ color: c.mutedForeground, fontSize: 12, textAlign: isRTL ? "right" : "left" }}>{item.daysPerWeek} days / week</Text>
-                  ) : null}
+            <Pressable onPress={() => router.push(`/member/${item._member.id}` as never)}>
+              <Card>
+                <View style={{ flexDirection: isRTL ? "row-reverse" : "row", justifyContent: "space-between", alignItems: "center" }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: c.foreground, fontWeight: "700", fontSize: 15, textAlign: isRTL ? "right" : "left" }}>
+                      {pickName(lang, item) || item.name || "Plan"}
+                    </Text>
+                    <Text style={{ color: c.mutedForeground, fontSize: 12, textAlign: isRTL ? "right" : "left" }}>
+                      {item._member?.name}
+                      {item.startDate ? `  •  ${String(item.startDate).slice(0, 10)}` : ""}
+                    </Text>
+                  </View>
+                  <Feather name="chevron-right" size={18} color={c.mutedForeground} />
                 </View>
-                <Feather name="layers" size={18} color={c.primary} />
-              </View>
-            </Card>
+              </Card>
+            </Pressable>
           )}
         />
       )}

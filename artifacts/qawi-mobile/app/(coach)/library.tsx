@@ -9,27 +9,44 @@ import { useLanguage, pickName } from "@/context/LanguageContext";
 import { useColors } from "@/hooks/useColors";
 import { apiFetch } from "@/services/api";
 
-const CATS = ["all", "chest", "back", "legs", "shoulders", "arms", "core", "cardio"] as const;
+type ExerciseTemplate = {
+  id: string;
+  categoryId?: string;
+  name: string;
+  nameAr?: string;
+  defaultSets?: number;
+  defaultReps?: number;
+  defaultWeight?: number;
+  videoUrl?: string;
+};
+
+type Category = { id: string; name: string; nameAr?: string };
 
 export default function CoachLibrary() {
   const c = useColors();
   const { t, lang, isRTL } = useLanguage();
-  const [cat, setCat] = useState<(typeof CATS)[number]>("all");
+  const [catId, setCatId] = useState<string>("all");
   const [q, setQ] = useState("");
 
   const ex = useQuery({
-    queryKey: ["coach", "exercises"],
-    queryFn: () => apiFetch<any[]>("/coach/exercises").catch(() => []),
+    queryKey: ["exercises", "library"],
+    queryFn: () => apiFetch<ExerciseTemplate[]>("/exercises/library").catch(() => []),
+  });
+  const cats = useQuery({
+    queryKey: ["exercises", "categories"],
+    queryFn: () => apiFetch<Category[]>("/exercises/categories").catch(() => []),
   });
 
   const list = useMemo(() => {
     const data = ex.data ?? [];
     return data.filter((e) => {
-      const matchCat = cat === "all" || (e.category ?? "").toLowerCase() === cat;
+      const matchCat = catId === "all" || e.categoryId === catId;
       const matchQ = !q || pickName(lang, e).toLowerCase().includes(q.toLowerCase());
       return matchCat && matchQ;
     });
-  }, [ex.data, cat, q, lang]);
+  }, [ex.data, catId, q, lang]);
+
+  const catOptions = [{ id: "all", name: t("coach.filters.all"), nameAr: "الكل" }, ...(cats.data ?? [])];
 
   return (
     <Screen>
@@ -38,25 +55,25 @@ export default function CoachLibrary() {
         <Input icon="search" placeholder={t("common.search")} value={q} onChangeText={setQ} />
         <FlatList
           horizontal
-          data={CATS as any}
+          data={catOptions}
           showsHorizontalScrollIndicator={false}
           inverted={isRTL}
-          keyExtractor={(i: any) => i}
+          keyExtractor={(i) => i.id}
           ItemSeparatorComponent={() => <View style={{ width: 8 }} />}
-          renderItem={({ item }: any) => (
+          renderItem={({ item }) => (
             <Pressable
-              onPress={() => setCat(item)}
+              onPress={() => setCatId(item.id)}
               style={{
                 paddingHorizontal: 14,
                 paddingVertical: 8,
                 borderRadius: 999,
-                backgroundColor: cat === item ? c.primary : c.surface,
+                backgroundColor: catId === item.id ? c.primary : c.surface,
                 borderWidth: 1,
-                borderColor: cat === item ? c.primary : c.border,
+                borderColor: catId === item.id ? c.primary : c.border,
               }}
             >
-              <Text style={{ color: cat === item ? c.primaryForeground : c.foreground, fontSize: 12, fontWeight: "700" }}>
-                {item === "all" ? t("coach.filters.all") : t(`coach.categories.${item}`)}
+              <Text style={{ color: catId === item.id ? c.primaryForeground : c.foreground, fontSize: 12, fontWeight: "700" }}>
+                {pickName(lang, item)}
               </Text>
             </Pressable>
           )}
@@ -71,7 +88,7 @@ export default function CoachLibrary() {
       ) : (
         <FlatList
           data={list}
-          keyExtractor={(i: any) => i.id}
+          keyExtractor={(i) => i.id}
           contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 100 }}
           ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
           renderItem={({ item }) => (
@@ -82,7 +99,10 @@ export default function CoachLibrary() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={{ color: c.foreground, fontWeight: "700", textAlign: isRTL ? "right" : "left" }}>{pickName(lang, item)}</Text>
-                  <Text style={{ color: c.mutedForeground, fontSize: 12, textAlign: isRTL ? "right" : "left" }}>{item.category ?? ""}</Text>
+                  <Text style={{ color: c.mutedForeground, fontSize: 12, textAlign: isRTL ? "right" : "left" }}>
+                    {item.defaultSets ?? 3} × {item.defaultReps ?? 10}
+                    {item.defaultWeight ? `  •  ${item.defaultWeight}kg` : ""}
+                  </Text>
                 </View>
               </View>
             </Card>
