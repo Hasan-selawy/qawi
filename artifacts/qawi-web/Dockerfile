@@ -3,6 +3,9 @@ WORKDIR /app
 
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
+ARG VITE_API_URL=http://backend:9000/api/v1
+ENV VITE_API_URL=$VITE_API_URL
+
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY artifacts/qawi-web ./artifacts/qawi-web
 

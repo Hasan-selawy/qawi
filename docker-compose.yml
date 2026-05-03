@@ -25,6 +25,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION: 604800000
+      PORT: 9000
     ports:
       - "9000:9000"
     depends_on:
@@ -36,6 +37,8 @@ services:
     build:
       context: .
       dockerfile: artifacts/qawi-web/Dockerfile
+      args:
+        VITE_API_URL: http://backend:9000/api/v1
     container_name: qawi-web
     ports:
       - "80:80"
