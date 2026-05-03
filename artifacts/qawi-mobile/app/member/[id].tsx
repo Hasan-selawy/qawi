@@ -147,8 +147,8 @@ export default function MemberDetail() {
                 <View style={{ flexDirection: isRTL ? "row-reverse" : "row", justifyContent: "space-between", alignItems: "center" }}>
                   <Text style={{ color: c.mutedForeground, fontSize: 11 }}>{(n.createdAt ?? "").slice(0, 10)}</Text>
                   <Pressable
-                    hitSlop={10}
                     onPress={() => {
+                      console.log("[notes] delete pressed", n.id);
                       Alert.alert(
                         lang === "ar" ? "حذف الملاحظة" : "Delete note",
                         lang === "ar" ? "هل أنت متأكد من حذف هذه الملاحظة؟" : "Are you sure you want to delete this note?",
@@ -169,8 +169,17 @@ export default function MemberDetail() {
                         ],
                       );
                     }}
+                    style={({ pressed }) => ({
+                      padding: 10,
+                      marginRight: -8,
+                      marginLeft: -8,
+                      marginTop: -8,
+                      marginBottom: -8,
+                      borderRadius: 999,
+                      backgroundColor: pressed ? "rgba(255,255,255,0.08)" : "transparent",
+                    })}
                   >
-                    <Feather name="trash-2" size={16} color={c.mutedForeground} />
+                    <Feather name="trash-2" size={18} color={c.mutedForeground} />
                   </Pressable>
                 </View>
                 <Text style={{ color: c.foreground, marginTop: 4, textAlign: isRTL ? "right" : "left" }}>
