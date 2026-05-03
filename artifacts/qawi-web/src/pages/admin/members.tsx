@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RenewSubscriptionForm } from '@/components/RenewSubscriptionForm';
 import { Loader2, Plus, Search, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -183,7 +184,8 @@ function MemberDetailsSheet({ member, coaches }: { member: any; coaches: any[] }
     mutationFn: (data: any) => apiFetch(`/admin/members/${member.id}/subscription`, { method: 'PUT', data }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'members'] });
-      toast.success('Subscription updated');
+      queryClient.invalidateQueries({ queryKey: ['admin', 'expiring-subscriptions'] });
+      toast.success(`✅ Subscription renewed for ${member.name}!`);
     },
     onError: (err: any) => toast.error(err.error || 'Failed'),
   });
@@ -232,18 +234,13 @@ function MemberDetailsSheet({ member, coaches }: { member: any; coaches: any[] }
           </TabsContent>
 
           <TabsContent value="subscription" className="space-y-4">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                const fd = new FormData(e.currentTarget);
-                updateSub.mutate({ subscriptionEndDate: fd.get('endDate') });
-              }}
-              className="glass-card p-4 space-y-4"
-            >
+            <div className="glass-card p-4 space-y-4">
               <h3 className="font-medium">Renew Subscription</h3>
-              <Input name="endDate" type="date" required className="bg-black/20" />
-              <Button type="submit" className="w-full" disabled={updateSub.isPending}>Renew</Button>
-            </form>
+              <RenewSubscriptionForm
+                isPending={updateSub.isPending}
+                onSubmit={(data) => updateSub.mutate(data)}
+              />
+            </div>
           </TabsContent>
 
           <TabsContent value="coach" className="space-y-4">

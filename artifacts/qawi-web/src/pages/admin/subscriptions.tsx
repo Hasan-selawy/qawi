@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/services/api';
 import { useLanguage } from '@/hooks/use-language';
@@ -12,6 +13,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { getDaysRemaining } from '@/lib/sub-status';
 import { format, addDays } from 'date-fns';
+import { RenewSubscriptionForm } from '@/components/RenewSubscriptionForm';
 
 export default function AdminSubscriptions() {
   const { t, lang } = useLanguage();
@@ -22,13 +24,16 @@ export default function AdminSubscriptions() {
     queryFn: () => apiFetch('/admin/expiring-subscriptions'),
   });
 
+  const [openId, setOpenId] = useState<string | null>(null);
   const renew = useMutation({
     mutationFn: ({ memberId, data }: { memberId: string; data: any }) =>
       apiFetch(`/admin/members/${memberId}/subscription`, { method: 'PUT', data }),
-    onSuccess: () => {
+    onSuccess: (_d, vars) => {
+      const m = expiring?.find((x: any) => x.id === vars.memberId);
       queryClient.invalidateQueries({ queryKey: ['admin', 'expiring-subscriptions'] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'members'] });
-      toast.success('Subscription renewed');
+      toast.success(`✅ Subscription renewed for ${m?.name ?? 'member'}!`);
+      setOpenId(null);
     },
     onError: (err: any) => toast.error(lang === 'ar' ? err.messageAr : err.error || 'Failed'),
   });
@@ -67,33 +72,18 @@ export default function AdminSubscriptions() {
                   </div>
                 </div>
 
-                <Dialog>
+                <Dialog open={openId === member.id} onOpenChange={(o) => setOpenId(o ? member.id : null)}>
                   <DialogTrigger asChild>
                     <Button className="w-full mt-2 glow-hover" variant={days < 3 ? 'destructive' : 'default'}>
                       {t('admin.renew')}
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="glass-card border-white/10">
+                  <DialogContent className="glass-card border-white/10 max-w-lg">
                     <DialogHeader><DialogTitle>Renew {member.name}'s Subscription</DialogTitle></DialogHeader>
-                    <form
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        const fd = new FormData(e.currentTarget);
-                        renew.mutate({ memberId: member.id, data: { subscriptionEndDate: fd.get('endDate') } });
-                      }}
-                      className="space-y-4"
-                    >
-                      <Input
-                        name="endDate"
-                        type="date"
-                        defaultValue={format(addDays(new Date(), 30), 'yyyy-MM-dd')}
-                        className="bg-black/20"
-                        required
-                      />
-                      <Button type="submit" className="w-full" disabled={renew.isPending}>
-                        {renew.isPending ? <Loader2 className="animate-spin" /> : 'Confirm Renewal'}
-                      </Button>
-                    </form>
+                    <RenewSubscriptionForm
+                      isPending={renew.isPending}
+                      onSubmit={(data) => renew.mutate({ memberId: member.id, data })}
+                    />
                   </DialogContent>
                 </Dialog>
               </div>
