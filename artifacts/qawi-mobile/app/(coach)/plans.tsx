@@ -44,19 +44,8 @@ export default function CoachPlans() {
       Alert.alert("Qawi", t("coach.noMembers"));
       return;
     }
-    Alert.alert(
-      t("coach.createPlan"),
-      lang === "ar"
-        ? "اختر عضوًا لإنشاء خطة. الإنشاء الكامل للخطة يتم من لوحة الويب."
-        : "Pick a member to start a plan. Full plan builder is available on the web dashboard.",
-      [
-        { text: t("common.cancel"), style: "cancel" },
-        ...memberList.slice(0, 6).map((m) => ({
-          text: m.name,
-          onPress: () => router.push(`/member/${m.id}` as never),
-        })),
-      ]
-    );
+    if (tab === "workout") router.push("/coach/create-plan" as never);
+    else router.push("/coach/create-nutrition" as never);
   };
 
   return (

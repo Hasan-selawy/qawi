@@ -1,0 +1,64 @@
+Fix these critical coach mobile issues:
+
+BUG 1 — LIBRARY: Exercises show but cannot be added to a member:
+Each exercise row must have an "+ Add" button on the right.
+When tapped:
+1. Show a bottom sheet modal with:
+   - "Select Member" dropdown (from GET /api/v1/coach/members)
+   - "Select Day" dropdown (days from that member's current plan)
+   - Sets input (pre-filled with exercise default)
+   - Reps input (pre-filled with exercise default)
+   - Coach note input (optional)
+2. "Add Exercise" green button → calls:
+   POST /api/v1/workouts/days/{dayId}/exercises
+   body: { exerciseTemplateId, sets, reps, note }
+3. Show success toast "Added to [Member]'s plan!"
+
+BUG 2 — CREATE PLAN button does nothing:
+The "+ Create Plan" button on Plans screen must open 
+a 3-step wizard:
+
+Step 1 — Plan details:
+- Select member (dropdown from GET /api/v1/coach/members)
+- Plan name input
+- Start date picker
+- End date picker
+
+Step 2 — Build schedule:
+- Show a calendar grid for the selected date range
+- Tap any date to add a training day
+- For each day: enter day name, toggle rest day on/off
+- Days appear as a list below the calendar
+
+Step 3 — Add exercises per day:
+- For each training day, show "+ Add Exercises" button
+- Opens exercise picker with category filter tabs
+- Tap exercise to add it → set sets/reps/note inline
+
+Save button → calls:
+POST /api/v1/workouts → creates plan
+POST /api/v1/workouts/{planId}/days → for each day
+POST /api/v1/workouts/days/{dayId}/exercises → for each exercise
+Show success → go back to plans list
+
+BUG 3 — MEMBER DETAIL shows "?" avatar and no data:
+When coach taps a member, the detail screen shows 
+"?" avatar and "No data yet" for measurements and notes.
+
+Fix:
+- Avatar should show member initials with colored background
+- Call GET /api/v1/coach/members/{id}/overview to get:
+  measurements, notes, workout plan, nutrition, streak
+- Display measurements in a grid: weight, chest, waist, 
+  arms, legs, body fat — each as a stat card
+- Display notes as a timeline list
+- Add "Add Note" button → POST /api/v1/notes
+- Add "Add Measurement" button → POST /api/v1/measurements
+
+BUG 4 — NUTRITION plan creation not working:
+On Plans → Nutrition tab → Create Plan must:
+1. Select member
+2. Add meals: type (Breakfast/Lunch/Dinner/Snack), 
+   description EN, description AR, calories, protein
+3. Save → POST /api/v1/nutrition then 
+   POST /api/v1/nutrition/{planId}/meals for each meal
