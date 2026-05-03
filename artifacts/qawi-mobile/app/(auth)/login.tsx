@@ -129,8 +129,16 @@ export default function LoginScreen() {
     try {
       const u = await login(email.trim(), password);
       if (u.role === "SUPER_ADMIN") Alert.alert("Qawi", t("auth.superNotAllowed"));
-    } catch {
-      Alert.alert("Qawi", t("auth.loginError"));
+    } catch (e: any) {
+      let msg = t("auth.loginError");
+      if (e?.status === 401 || e?.status === 403) {
+        msg = t("auth.loginError");
+      } else if (typeof e?.status === "number") {
+        msg = `Server error ${e.status}: ${e?.body?.error || e?.message || "Unknown"}`;
+      } else {
+        msg = `Network error: ${e?.message || "Cannot reach server"}`;
+      }
+      Alert.alert("Qawi", msg);
     } finally {
       setSubmitting(false);
     }
