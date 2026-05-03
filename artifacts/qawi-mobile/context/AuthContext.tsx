@@ -4,6 +4,19 @@ import React, { createContext, useCallback, useContext, useEffect, useState } fr
 
 import { apiFetch, TOKEN_KEY } from "@/services/api";
 
+async function safeSet(key: string, value: unknown): Promise<void> {
+  if (typeof value !== "string" || value.length === 0) {
+    console.warn(`[auth] Refusing to store ${key}: value is`, value);
+    try {
+      await AsyncStorage.removeItem(key);
+    } catch (e) {
+      console.warn(`[auth] removeItem(${key}) failed`, e);
+    }
+    return;
+  }
+  await AsyncStorage.setItem(key, value);
+}
+
 export type Role = "MEMBER" | "COACH" | "GYM_ADMIN" | "SUPER_ADMIN";
 
 export type AuthUser = {
@@ -48,12 +61,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = useCallback(async (email: string, password: string): Promise<AuthUser> => {
-    const res = await apiFetch<{ token: string; user: AuthUser }>("/auth/login", {
+    const res = await apiFetch<{ token?: string; user?: AuthUser }>("/auth/login", {
       method: "POST",
       data: { email, password },
     });
-    await AsyncStorage.setItem(TOKEN_KEY, res.token);
-    await AsyncStorage.setItem(USER_KEY, JSON.stringify(res.user));
+
+    if (!res || typeof res.token !== "string" || !res.token || !res.user) {
+      console.warn("[auth] Login response missing token/user:", res);
+      throw new Error("Invalid login response from server");
+    }
+
+    await safeSet(TOKEN_KEY, res.token);
+    await safeSet(USER_KEY, JSON.stringify(res.user));
     setToken(res.token);
     setUser(res.user);
     return res.user;
