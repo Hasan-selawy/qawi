@@ -100,20 +100,14 @@ function FloatingInput({
 
 function GlowingArabicLogo({ fontFamily }: { fontFamily: string }) {
   return (
-    <Text
-      allowFontScaling={false}
-      style={[
-        styles.logoText,
-        {
-          fontFamily,
-          textShadowColor: "rgba(34,197,94,0.85)",
-          textShadowOffset: { width: 0, height: 0 },
-          textShadowRadius: 24,
-        },
-      ]}
-    >
-      قوي
-    </Text>
+    <View style={styles.logoWrap}>
+      <View style={styles.logoGlow1} />
+      <View style={styles.logoGlow2} />
+      <View style={styles.logoGlow3} />
+      <Text allowFontScaling={false} style={[styles.logoText, { fontFamily, fontWeight: "700" }]}>
+        قوي
+      </Text>
+    </View>
   );
 }
 
@@ -151,16 +145,9 @@ export default function LoginScreen() {
   return (
     <View style={styles.root}>
       <LinearGradient
-        colors={[C.bg, "#0A1814", C.bgBottom]}
-        locations={[0, 0.6, 1]}
+        colors={["#0A0F1E", "#0A1A0A"]}
         style={StyleSheet.absoluteFillObject}
       />
-
-      {/* Soft ambient green halo behind logo (layered for diffuse falloff) */}
-      <View style={[styles.glow1, { top: insets.top + 40 }]} />
-      <View style={[styles.glow2, { top: insets.top + 90 }]} />
-      <View style={[styles.glow3, { top: insets.top + 140 }]} />
-      <View style={[styles.glow4, { top: insets.top + 180 }]} />
 
       <KeyboardAvoidingView style={styles.kav} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <ScrollView
@@ -294,47 +281,29 @@ const styles = StyleSheet.create({
   },
   langText: { color: C.text, fontSize: 12, letterSpacing: 1 },
   langDivider: { color: C.divider, fontSize: 12 },
-  glow1: {
-    position: "absolute",
-    left: "50%",
-    marginLeft: -210,
-    width: 420,
-    height: 420,
-    borderRadius: 210,
-    backgroundColor: "rgba(34,197,94,0.04)",
-    pointerEvents: "none",
-  },
-  glow2: {
-    position: "absolute",
-    left: "50%",
-    marginLeft: -160,
-    width: 320,
-    height: 320,
-    borderRadius: 160,
-    backgroundColor: "rgba(34,197,94,0.05)",
-    pointerEvents: "none",
-  },
-  glow3: {
-    position: "absolute",
-    left: "50%",
-    marginLeft: -110,
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    backgroundColor: "rgba(34,197,94,0.06)",
-    pointerEvents: "none",
-  },
-  glow4: {
-    position: "absolute",
-    left: "50%",
-    marginLeft: -70,
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: "rgba(34,197,94,0.07)",
-    pointerEvents: "none",
-  },
   logoBlock: { alignItems: "center", marginBottom: 48 },
+  logoWrap: { width: 280, height: 140, alignItems: "center", justifyContent: "center" },
+  logoGlow1: {
+    position: "absolute",
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    backgroundColor: "rgba(34,197,94,0.07)",
+  },
+  logoGlow2: {
+    position: "absolute",
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: "rgba(34,197,94,0.05)",
+  },
+  logoGlow3: {
+    position: "absolute",
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: "rgba(34,197,94,0.04)",
+  },
   logoText: {
     fontSize: 100,
     lineHeight: 120,

@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { Cairo_700Bold, Cairo_900Black } from "@expo-google-fonts/cairo";
 import {
   Inter_400Regular,
@@ -45,6 +46,7 @@ export default function RootLayout() {
     Inter_700Bold,
     Cairo_700Bold,
     Cairo_900Black,
+    ...Ionicons.font,
   });
 
   useEffect(() => {
