@@ -41,6 +41,7 @@ public class MemberController {
     private final BodyMeasurementRepository measurementRepository;
     private final ProgressPhotoService photoService;
     private final ProgressPhotoRepository photoRepository;
+    private final MealLogRepository mealLogRepository;
 
     // ───────────────────────── ATTENDANCE ─────────────────────────
 
@@ -48,6 +49,11 @@ public class MemberController {
     public ResponseEntity<CheckInResponse> checkin(@AuthenticationPrincipal UserDetails ud) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(attendanceService.checkIn(ud.getUsername()));
+    }
+
+    @PostMapping("/attendance/checkout")
+    public ResponseEntity<Attendance> checkout(@AuthenticationPrincipal UserDetails ud) {
+        return ResponseEntity.ok(attendanceService.checkOut(ud.getUsername()));
     }
 
     @GetMapping("/attendance")
@@ -79,11 +85,19 @@ public class MemberController {
                 .map(a -> a.getCheckedInAt().toLocalDate())
                 .distinct()
                 .count();
+        Attendance todays = all.stream()
+                .filter(a -> a.getCheckedInAt() != null
+                        && LocalDate.now().equals(a.getCheckedInAt().toLocalDate()))
+                .findFirst()
+                .orElse(null);
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("streak", streak.getStreak());
         out.put("lastCheckIn", streak.getLastCheckIn());
         out.put("thisWeek", thisWeek);
         out.put("totalDays", total);
+        out.put("checkedInToday", todays != null);
+        out.put("checkedOutToday", todays != null && todays.getCheckedOutAt() != null);
+        out.put("checkedOutAt", todays == null ? null : todays.getCheckedOutAt());
         return ResponseEntity.ok(out);
     }
 
@@ -155,6 +169,72 @@ public class MemberController {
         return ResponseEntity.ok(out);
     }
 
+    @GetMapping("/workouts/upcoming")
+    public ResponseEntity<List<Map<String, Object>>> upcoming(@AuthenticationPrincipal UserDetails ud) {
+        User me = self(ud);
+        LocalDate today = LocalDate.now();
+        List<WorkoutPlan> plans = workoutPlanRepository.findByMemberId(me.getId());
+
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (WorkoutPlan plan : plans) {
+            for (ScheduleDay d : scheduleDayRepository.findByWorkoutPlanIdOrderByDayDate(plan.getId())) {
+                if (d.getDayDate() == null || !d.getDayDate().isAfter(today)) continue;
+                Map<String, Object> m = new LinkedHashMap<>();
+                m.put("dayId", d.getId());
+                m.put("planId", plan.getId());
+                m.put("planName", plan.getName());
+                m.put("date", d.getDayDate());
+                m.put("dayName", d.getDayName());
+                m.put("dayNameAr", d.getDayNameAr());
+                m.put("restDay", d.isRestDay());
+                m.put("isCompleted", d.isCompleted());
+                m.put("exerciseCount", planExerciseRepository.findByScheduleDayIdOrderByOrderIndex(d.getId()).size());
+                out.add(m);
+            }
+        }
+        out.sort(Comparator.comparing(x -> (LocalDate) x.get("date")));
+        return ResponseEntity.ok(out.stream().limit(10).toList());
+    }
+
+    // ───────────────────────── MEALS ─────────────────────────
+
+    @PostMapping("/meals/{mealId}/done")
+    public ResponseEntity<Map<String, Object>> markMealDone(
+            @AuthenticationPrincipal UserDetails ud,
+            @PathVariable UUID mealId) {
+        User me = self(ud);
+        LocalDate today = LocalDate.now();
+        if (mealLogRepository.findByMemberIdAndMealIdAndLogDate(me.getId(), mealId, today).isEmpty()) {
+            try {
+                mealLogRepository.save(MealLog.builder()
+                        .memberId(me.getId())
+                        .mealId(mealId)
+                        .logDate(today)
+                        .build());
+            } catch (org.springframework.dao.DataIntegrityViolationException ignored) {
+                // Concurrent duplicate — already logged, treat as success
+            }
+        }
+        return ResponseEntity.ok(Map.of("mealId", mealId, "done", true));
+    }
+
+    @DeleteMapping("/meals/{mealId}/done")
+    @org.springframework.transaction.annotation.Transactional
+    public ResponseEntity<Map<String, Object>> unmarkMealDone(
+            @AuthenticationPrincipal UserDetails ud,
+            @PathVariable UUID mealId) {
+        User me = self(ud);
+        mealLogRepository.deleteByMemberIdAndMealIdAndLogDate(me.getId(), mealId, LocalDate.now());
+        return ResponseEntity.ok(Map.of("mealId", mealId, "done", false));
+    }
+
+    @GetMapping("/meals/done")
+    public ResponseEntity<List<UUID>> mealsDoneToday(@AuthenticationPrincipal UserDetails ud) {
+        User me = self(ud);
+        return ResponseEntity.ok(mealLogRepository.findByMemberIdAndLogDate(me.getId(), LocalDate.now())
+                .stream().map(MealLog::getMealId).toList());
+    }
+
     // ───────────────────────── NUTRITION ─────────────────────────
 
     @GetMapping("/nutrition/active")
@@ -171,6 +251,9 @@ public class MemberController {
         int totalCal = meals.stream().mapToInt(m -> m.getCalories() == null ? 0 : m.getCalories()).sum();
         int totalProtein = meals.stream().mapToInt(m -> m.getProtein() == null ? 0 : m.getProtein()).sum();
 
+        Set<UUID> doneIds = mealLogRepository.findByMemberIdAndLogDate(me.getId(), LocalDate.now())
+                .stream().map(MealLog::getMealId).collect(java.util.stream.Collectors.toSet());
+
         List<Map<String, Object>> mealList = meals.stream().map(m -> {
             Map<String, Object> mm = new LinkedHashMap<>();
             mm.put("id", m.getId());
@@ -182,6 +265,7 @@ public class MemberController {
             mm.put("descriptionAr", m.getDescriptionAr());
             mm.put("calories", m.getCalories());
             mm.put("protein", m.getProtein());
+            mm.put("done", doneIds.contains(m.getId()));
             return mm;
         }).toList();
 

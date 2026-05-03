@@ -37,6 +37,7 @@ com/qawi/config/DataSeeder.class
 com/qawi/entity/ScheduleDay$ScheduleDayBuilder.class
 com/qawi/dto/PlanInfo$PlanInfoBuilder.class
 com/qawi/dto/UserDto$UserDtoBuilder.class
+com/qawi/entity/MealLog$MealLogBuilder.class
 com/qawi/entity/NutritionPlan.class
 com/qawi/controller/MeasurementController.class
 com/qawi/repository/CoachMemberRepository.class
@@ -73,6 +74,7 @@ com/qawi/dto/StreakResponse.class
 com/qawi/entity/Notification$NotificationBuilder.class
 com/qawi/entity/ExerciseCategory.class
 com/qawi/exception/GlobalExceptionHandler.class
+com/qawi/entity/MealLog.class
 com/qawi/entity/User.class
 com/qawi/controller/MemberController.class
 com/qawi/dto/UserDto.class
@@ -89,6 +91,7 @@ com/qawi/dto/AuthResponse$AuthResponseBuilder.class
 com/qawi/entity/SubscriptionHistory$SubscriptionHistoryBuilder.class
 com/qawi/dto/CheckInResponse.class
 com/qawi/entity/WorkoutTemplateDayExercise.class
+com/qawi/repository/MealLogRepository.class
 com/qawi/security/JwtService.class
 com/qawi/dto/GymDetailResponse.class
 com/qawi/entity/PlanExercise$PlanExerciseBuilder.class

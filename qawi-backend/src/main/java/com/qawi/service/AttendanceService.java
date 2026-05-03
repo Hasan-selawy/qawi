@@ -63,6 +63,23 @@ public class AttendanceService {
                 .build();
     }
 
+    @Transactional
+    public Attendance checkOut(String memberEmail) {
+        User member = userRepository.findByEmail(memberEmail)
+                .orElseThrow(() -> new AppException("User not found", "المستخدم غير موجود", HttpStatus.NOT_FOUND));
+
+        LocalDate today = LocalDate.now();
+        Attendance todays = attendanceRepository.findFirstByMemberIdOrderByCheckedInAtDesc(member.getId())
+                .filter(a -> a.getCheckedInAt() != null && today.equals(a.getCheckedInAt().toLocalDate()))
+                .orElseThrow(() -> new AppException(
+                        "You haven't checked in today",
+                        "لم تسجّل حضورك اليوم",
+                        HttpStatus.BAD_REQUEST));
+
+        todays.setCheckedOutAt(LocalDateTime.now());
+        return attendanceRepository.save(todays);
+    }
+
     public List<Attendance> getByMember(UUID memberId) {
         return attendanceRepository.findByMemberIdOrderByCheckedInAtDesc(memberId);
     }

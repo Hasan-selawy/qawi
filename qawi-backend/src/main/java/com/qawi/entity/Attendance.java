@@ -24,4 +24,7 @@ public class Attendance {
     @Column(name = "checked_in_at", nullable = false)
     @Builder.Default
     private LocalDateTime checkedInAt = LocalDateTime.now();
+
+    @Column(name = "checked_out_at")
+    private LocalDateTime checkedOutAt;
 }

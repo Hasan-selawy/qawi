@@ -21,6 +21,13 @@ a React/Vite web dashboard, and an Expo mobile app — all sharing the same back
   - `app/notifications.tsx` and `app/member/[id].tsx` are shared modal/detail routes.
 - **Shared components**: `components/ui.tsx` (Card/Button/Input/Badge/Avatar/EmptyState/Screen), `components/RoleHeader.tsx`, `components/RoleTabBar.tsx`.
 - **Workflow**: `artifacts/qawi-mobile: expo` — restart only on dependency changes.
+- **Member endpoints** (`/api/v1/member`, role MEMBER, JWT-resolved self):
+  - `POST /attendance/checkin`, `POST /attendance/checkout`, `GET /attendance`, `GET /attendance/stats` (streak, thisWeek, totalDays, checkedInToday, checkedOutToday, checkedOutAt)
+  - `GET /workouts/today`, `GET /workouts/upcoming` (next 10 future ScheduleDays, excludes today)
+  - `GET /nutrition/active` (meals carry `done` flag for today), `POST/DELETE /meals/{mealId}/done` (idempotent via uniq+catch), `GET /meals/done`
+  - `GET/POST /measurements`, `GET/POST /photos`
+- **MealLog entity** `meal_logs` table — uniq `(member_id, meal_id, log_date)` tracks per-day "done" toggles. Auto-created via `ddl-auto=update`.
+- **Attendance.checkedOutAt** column added — populated by `/attendance/checkout` (one per day, requires same-day check-in first).
 
 ## Stack
 

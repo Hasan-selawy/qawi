@@ -29,6 +29,7 @@
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/MemberSubscriptionPlan.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/User.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/NutritionPlan.java
+/home/runner/workspace/qawi-backend/src/main/java/com/qawi/repository/MealLogRepository.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/ErrorResponse.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/service/AttendanceService.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/CoachNote.java
@@ -44,6 +45,7 @@
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/repository/NotificationRepository.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/RegisterRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/StreakResponse.java
+/home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/MealLog.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/CreateProgressPhotoRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/controller/ProgressPhotoController.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/Role.java

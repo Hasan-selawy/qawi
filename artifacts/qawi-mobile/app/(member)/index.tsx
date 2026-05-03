@@ -25,8 +25,12 @@ export default function MemberHome() {
     queryKey: ["member", "stats"],
     queryFn: () => apiFetch<any>("/member/attendance/stats").catch(() => null),
   });
+  const upcoming = useQuery({
+    queryKey: ["member", "upcoming"],
+    queryFn: () => apiFetch<any[]>("/member/workouts/upcoming").catch(() => []),
+  });
 
-  const refreshing = today.isFetching || stats.isFetching;
+  const refreshing = today.isFetching || stats.isFetching || upcoming.isFetching;
 
   return (
     <Screen>
@@ -34,7 +38,7 @@ export default function MemberHome() {
       <ScrollView
         contentContainerStyle={{ padding: 16, gap: 16 }}
         refreshControl={
-          <RefreshControl tintColor={c.primary} refreshing={refreshing} onRefresh={() => { today.refetch(); stats.refetch(); }} />
+          <RefreshControl tintColor={c.primary} refreshing={refreshing} onRefresh={() => { today.refetch(); stats.refetch(); upcoming.refetch(); }} />
         }
       >
         <View style={{ flexDirection: isRTL ? "row-reverse" : "row", gap: 12 }}>
@@ -50,14 +54,14 @@ export default function MemberHome() {
             <Text style={{ color: c.foreground, fontSize: 22, fontWeight: "800", marginTop: 8 }}>
               {stats.data?.thisWeek ?? 0}
             </Text>
-            <Text style={{ color: c.mutedForeground, fontSize: 12 }}>This Week</Text>
+            <Text style={{ color: c.mutedForeground, fontSize: 12 }}>{t("member.thisWeek")}</Text>
           </Card>
           <Card style={{ flex: 1, alignItems: "center" }}>
             <Feather name="award" size={20} color={c.primary} />
             <Text style={{ color: c.foreground, fontSize: 22, fontWeight: "800", marginTop: 8 }}>
               {stats.data?.totalDays ?? 0}
             </Text>
-            <Text style={{ color: c.mutedForeground, fontSize: 12 }}>Total</Text>
+            <Text style={{ color: c.mutedForeground, fontSize: 12 }}>{t("member.total")}</Text>
           </Card>
         </View>
 
@@ -85,6 +89,31 @@ export default function MemberHome() {
             </View>
             <Button title={t("member.startWorkout")} icon="play" onPress={() => router.push("/(member)/workout")} />
           </Card>
+        )}
+
+        <SectionTitle>{t("member.upcomingTraining")}</SectionTitle>
+        {(upcoming.data ?? []).length === 0 ? (
+          <Card><EmptyState icon="calendar" text={t("member.noUpcoming")} /></Card>
+        ) : (
+          (upcoming.data ?? []).slice(0, 5).map((d: any) => {
+            const dateStr = (d.date ?? "").slice(0, 10);
+            const label = lang === "ar" ? (d.dayNameAr ?? d.dayName) : d.dayName;
+            return (
+              <Card key={d.dayId}>
+                <View style={{ flexDirection: isRTL ? "row-reverse" : "row", justifyContent: "space-between", alignItems: "center" }}>
+                  <View>
+                    <Text style={{ color: c.foreground, fontWeight: "700", fontSize: 15 }}>{label || dateStr}</Text>
+                    <Text style={{ color: c.mutedForeground, fontSize: 12, marginTop: 2 }}>{dateStr}</Text>
+                  </View>
+                  {d.restDay ? (
+                    <Badge tone="neutral">{t("member.restDay")}</Badge>
+                  ) : (
+                    <Badge tone="primary">{d.exerciseCount ?? 0} ex</Badge>
+                  )}
+                </View>
+              </Card>
+            );
+          })
         )}
       </ScrollView>
     </Screen>
