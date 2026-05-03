@@ -10,4 +10,7 @@ import java.util.UUID;
 @Repository
 public interface CoachMemberRepository extends JpaRepository<CoachMember, UUID> {
     List<CoachMember> findByCoachId(UUID coachId);
+    List<CoachMember> findByMemberId(UUID memberId);
+    void deleteByCoachId(UUID coachId);
+    void deleteByMemberId(UUID memberId);
 }

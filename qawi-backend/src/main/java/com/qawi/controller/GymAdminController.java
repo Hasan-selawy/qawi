@@ -37,6 +37,13 @@ public class GymAdminController {
         return ResponseEntity.ok(gymAdminService.getCoaches(userDetails.getUsername()));
     }
 
+    @GetMapping("/coaches/{coachId}/members")
+    public ResponseEntity<List<User>> getCoachMembers(
+            @PathVariable UUID coachId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(gymAdminService.getCoachMembers(coachId, userDetails.getUsername()));
+    }
+
     @PostMapping("/members")
     public ResponseEntity<User> createMember(
             @Valid @RequestBody CreateGymUserRequest request,

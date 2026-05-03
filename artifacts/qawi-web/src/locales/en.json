@@ -45,7 +45,14 @@
     "total_coaches": "Total Coaches",
     "top_performers": "Top Performers",
     "expiring_subscriptions": "Expiring Subscriptions",
-    "renew": "Renew"
+    "renew": "Renew",
+    "delete_user_confirm": "Delete \"{name}\"? They will lose access immediately.",
+    "delete_coach_confirm": "Delete coach \"{name}\"? Their member assignments will be removed.",
+    "user_deleted": "User deleted",
+    "delete_failed": "Failed to delete",
+    "assigned_members": "Assigned Members",
+    "no_assigned_members": "No members assigned to this coach yet.",
+    "view_members": "View Assigned Members"
   },
   "coach": {
     "welcome": "Welcome",

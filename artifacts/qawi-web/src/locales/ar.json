@@ -45,7 +45,14 @@
     "total_coaches": "إجمالي المدربين",
     "top_performers": "أفضل الأعضاء",
     "expiring_subscriptions": "اشتراكات تقترب من الانتهاء",
-    "renew": "تجديد"
+    "renew": "تجديد",
+    "delete_user_confirm": "حذف \"{name}\"؟ سيفقد الوصول فوراً.",
+    "delete_coach_confirm": "حذف المدرب \"{name}\"؟ ستتم إزالة تعييناته للأعضاء.",
+    "user_deleted": "تم حذف المستخدم",
+    "delete_failed": "تعذر الحذف",
+    "assigned_members": "الأعضاء المعينون",
+    "no_assigned_members": "لا يوجد أعضاء معينون لهذا المدرب بعد.",
+    "view_members": "عرض الأعضاء المعينين"
   },
   "coach": {
     "welcome": "مرحباً",

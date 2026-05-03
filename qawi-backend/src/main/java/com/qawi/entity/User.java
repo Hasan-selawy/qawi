@@ -1,5 +1,6 @@
 package com.qawi.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -32,6 +33,7 @@ public class User implements UserDetails {
     private String email;
 
     @Column(nullable = false)
+    @JsonIgnore
     private String password;
 
     @Enumerated(EnumType.STRING)
@@ -56,24 +58,30 @@ public class User implements UserDetails {
     private LocalDateTime createdAt = LocalDateTime.now();
 
     @Override
+    @JsonIgnore
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
     }
 
     @Override
+    @JsonIgnore
     public String getUsername() {
         return email;
     }
 
     @Override
+    @JsonIgnore
     public boolean isAccountNonExpired() { return true; }
 
     @Override
+    @JsonIgnore
     public boolean isAccountNonLocked() { return true; }
 
     @Override
+    @JsonIgnore
     public boolean isCredentialsNonExpired() { return true; }
 
     @Override
+    @JsonIgnore
     public boolean isEnabled() { return isActive; }
 }

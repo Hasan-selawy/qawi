@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Plus, Search } from 'lucide-react';
+import { Loader2, Plus, Search, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { getSubStatus } from '@/lib/sub-status';
@@ -43,6 +43,15 @@ export default function AdminMembers() {
       toast.success('Member added successfully');
     },
     onError: (err: any) => toast.error(lang === 'ar' ? err.messageAr : err.error || 'Failed'),
+  });
+
+  const deleteMember = useMutation({
+    mutationFn: (id: string) => apiFetch(`/admin/users/${id}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'members'] });
+      toast.success(t('admin.user_deleted'));
+    },
+    onError: (err: any) => toast.error((lang === 'ar' ? err.messageAr : err.error) || t('admin.delete_failed')),
   });
 
   const filteredMembers = (members || []).filter((m: any) => {
@@ -129,14 +138,27 @@ export default function AdminMembers() {
                         <StatusBadge status={status as BadgeStatus} label={t(`common.${status.toLowerCase()}`)} />
                       </TableCell>
                       <TableCell className="text-right">
-                        <Sheet>
-                          <SheetTrigger asChild>
-                            <Button variant="ghost" size="sm">Details</Button>
-                          </SheetTrigger>
-                          <SheetContent className="glass-card border-l-white/10 sm:max-w-md w-full p-0">
-                            <MemberDetailsSheet member={member} coaches={coaches || []} />
-                          </SheetContent>
-                        </Sheet>
+                        <div className="flex items-center justify-end gap-1">
+                          <Sheet>
+                            <SheetTrigger asChild>
+                              <Button variant="ghost" size="sm">Details</Button>
+                            </SheetTrigger>
+                            <SheetContent className="glass-card border-l-white/10 sm:max-w-md w-full p-0">
+                              <MemberDetailsSheet member={member} coaches={coaches || []} />
+                            </SheetContent>
+                          </Sheet>
+                          <button
+                            onClick={() => {
+                              const msg = t('admin.delete_user_confirm').replace('{name}', member.name);
+                              if (confirm(msg)) deleteMember.mutate(member.id);
+                            }}
+                            disabled={deleteMember.isPending}
+                            title={t('common.delete')}
+                            className="text-red-500 hover:text-red-400 transition-colors p-1.5 bg-red-500/10 rounded-full hover:bg-red-500/20 disabled:opacity-50"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );

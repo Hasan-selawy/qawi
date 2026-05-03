@@ -41,7 +41,8 @@ public class GymAdminService {
 
     public List<User> getCoaches(String adminEmail) {
         UUID gymId = getAdmin(adminEmail).getGymId();
-        return userRepository.findByGymIdAndRole(gymId, Role.COACH);
+        return userRepository.findByGymIdAndRole(gymId, Role.COACH).stream()
+                .filter(User::isActive).toList();
     }
 
     // ── MEMBER CRUD ──────────────────────────────────────────────────────────
@@ -60,27 +61,65 @@ public class GymAdminService {
 
     public List<User> getMembers(String adminEmail) {
         UUID gymId = getAdmin(adminEmail).getGymId();
-        return userRepository.findByGymIdAndRole(gymId, Role.MEMBER);
+        return userRepository.findByGymIdAndRole(gymId, Role.MEMBER).stream()
+                .filter(User::isActive).toList();
     }
 
     @Transactional
     public CoachMember assignCoach(UUID memberId, AssignCoachRequest req, String adminEmail) {
-        getAdmin(adminEmail);
-        userRepository.findById(memberId)
+        User admin = getAdmin(adminEmail);
+        User member = userRepository.findById(memberId)
                 .orElseThrow(() -> new AppException("Member not found", "العضو غير موجود", HttpStatus.NOT_FOUND));
-        userRepository.findById(req.getCoachId())
+        User coach = userRepository.findById(req.getCoachId())
                 .orElseThrow(() -> new AppException("Coach not found", "المدرب غير موجود", HttpStatus.NOT_FOUND));
+        if (member.getRole() != Role.MEMBER || !admin.getGymId().equals(member.getGymId()) || !member.isActive()) {
+            throw new AppException("Member not found", "العضو غير موجود", HttpStatus.NOT_FOUND);
+        }
+        if (coach.getRole() != Role.COACH || !admin.getGymId().equals(coach.getGymId()) || !coach.isActive()) {
+            throw new AppException("Coach not found", "المدرب غير موجود", HttpStatus.NOT_FOUND);
+        }
         return coachMemberRepository.save(CoachMember.builder()
                 .coachId(req.getCoachId()).memberId(memberId).build());
     }
 
     @Transactional
     public void softDelete(UUID userId, String adminEmail) {
-        getAdmin(adminEmail);
+        User admin = getAdmin(adminEmail);
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException("User not found", "المستخدم غير موجود", HttpStatus.NOT_FOUND));
+        if (user.getGymId() == null || !user.getGymId().equals(admin.getGymId())) {
+            throw new AppException("User is not in your gym", "المستخدم ليس في صالتك", HttpStatus.FORBIDDEN);
+        }
+        if (user.getRole() == Role.GYM_ADMIN) {
+            throw new AppException("Cannot delete a gym admin", "لا يمكن حذف مسؤول الصالة", HttpStatus.FORBIDDEN);
+        }
+        if (user.getId().equals(admin.getId())) {
+            throw new AppException("You cannot delete yourself", "لا يمكنك حذف نفسك", HttpStatus.FORBIDDEN);
+        }
+        if (user.getRole() == Role.COACH) {
+            coachMemberRepository.deleteByCoachId(user.getId());
+        } else if (user.getRole() == Role.MEMBER) {
+            coachMemberRepository.deleteByMemberId(user.getId());
+        }
         user.setActive(false);
         userRepository.save(user);
+    }
+
+    @Transactional(readOnly = true)
+    public List<User> getCoachMembers(UUID coachId, String adminEmail) {
+        User admin = getAdmin(adminEmail);
+        User coach = userRepository.findById(coachId)
+                .orElseThrow(() -> new AppException("Coach not found", "المدرب غير موجود", HttpStatus.NOT_FOUND));
+        if (coach.getRole() != Role.COACH || !admin.getGymId().equals(coach.getGymId())) {
+            throw new AppException("Coach not found", "المدرب غير موجود", HttpStatus.NOT_FOUND);
+        }
+        List<UUID> memberIds = coachMemberRepository.findByCoachId(coachId).stream()
+                .map(CoachMember::getMemberId).toList();
+        if (memberIds.isEmpty()) return List.of();
+        UUID gymId = admin.getGymId();
+        return userRepository.findAllById(memberIds).stream()
+                .filter(u -> u.getRole() == Role.MEMBER && u.isActive() && gymId.equals(u.getGymId()))
+                .toList();
     }
 
     // ── SUBSCRIPTIONS ─────────────────────────────────────────────────────────
