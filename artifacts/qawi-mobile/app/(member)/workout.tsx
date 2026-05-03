@@ -2,10 +2,9 @@ import { Feather } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, ScrollView, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, Linking, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 import { RoleHeader } from "@/components/RoleHeader";
-import { VideoThumbnail } from "@/components/VideoThumbnail";
 import { Button, Card, EmptyState, Screen } from "@/components/ui";
 import { useLanguage, pickName } from "@/context/LanguageContext";
 import { useColors } from "@/hooks/useColors";
@@ -137,7 +136,14 @@ export default function WorkoutScreen() {
             const isDone = !!done[ex.id];
             return (
               <Card key={ex.id}>
-                <VideoThumbnail videoUrl={ex.videoUrl} />
+                {ex.videoUrl && (
+                  <TouchableOpacity
+                    onPress={() => Linking.openURL(ex.videoUrl!)}
+                    style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#CC0000", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, marginBottom: 10, alignSelf: "flex-start" }}
+                  >
+                    <Text style={{ color: "white", fontSize: 12 }}>▶ {lang === "ar" ? "شاهد الفيديو" : "Watch Video"}</Text>
+                  </TouchableOpacity>
+                )}
                 <View style={{ flexDirection: isRTL ? "row-reverse" : "row", alignItems: "center", gap: 10 }}>
                   <View style={{ flex: 1 }}>
                     <Text style={{ color: c.foreground, fontSize: 16, fontWeight: "700", textAlign: isRTL ? "right" : "left" }}>

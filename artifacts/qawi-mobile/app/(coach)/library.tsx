@@ -5,17 +5,18 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Linking,
   Modal,
   Pressable,
   ScrollView,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from "react-native";
 
 import { RoleHeader } from "@/components/RoleHeader";
 import { useToast } from "@/components/Toast";
-import { VideoThumbnail } from "@/components/VideoThumbnail";
 import { Button, Card, EmptyState, Input, Screen } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage, pickName } from "@/context/LanguageContext";
@@ -166,7 +167,14 @@ export default function CoachLibrary() {
           ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
           renderItem={({ item }) => (
             <Card>
-              <VideoThumbnail videoUrl={item.videoUrl} />
+              {item.videoUrl && (
+                <TouchableOpacity
+                  onPress={() => Linking.openURL(item.videoUrl!)}
+                  style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#CC0000", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, marginBottom: 10, alignSelf: "flex-start" }}
+                >
+                  <Text style={{ color: "white", fontSize: 12 }}>▶ {lang === "ar" ? "شاهد الفيديو" : "Watch Video"}</Text>
+                </TouchableOpacity>
+              )}
               <View style={{ flexDirection: isRTL ? "row-reverse" : "row", alignItems: "center", gap: 12 }}>
                 <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: c.muted, alignItems: "center", justifyContent: "center" }}>
                   <Feather name="activity" size={20} color={c.primary} />
