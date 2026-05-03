@@ -116,8 +116,20 @@ export default function CoachPlans() {
         ))}
       </View>
 
-      <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>
-        <Button title={t("coach.createPlan")} icon="plus" onPress={onCreate} />
+      <View style={{ paddingHorizontal: 16, paddingTop: 12, flexDirection: isRTL ? "row-reverse" : "row", gap: 8 }}>
+        <View style={{ flex: 2 }}>
+          <Button title={t("coach.createPlan")} icon="plus" onPress={onCreate} />
+        </View>
+        {tab === "workout" ? (
+          <View style={{ flex: 1 }}>
+            <Button
+              title={lang === "ar" ? "القوالب" : "Templates"}
+              icon="layers"
+              variant="secondary"
+              onPress={() => router.push("/coach/templates" as never)}
+            />
+          </View>
+        ) : null}
       </View>
 
       {loading ? (

@@ -50,12 +50,16 @@ export default function CreatePlan() {
   const toast = useToast();
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [memberId, setMemberId] = useState<string | null>(null);
+  const [memberIds, setMemberIds] = useState<string[]>([]);
   const [name, setName] = useState("");
   const [startDate, setStartDate] = useState(todayISO());
   const [endDate, setEndDate] = useState(addDaysISO(todayISO(), 28));
   const [days, setDays] = useState<DraftDay[]>([]);
   const [pickerForDay, setPickerForDay] = useState<string | null>(null);
+  const [saveAsTemplate, setSaveAsTemplate] = useState(false);
+
+  const toggleMember = (id: string) =>
+    setMemberIds((arr) => arr.includes(id) ? arr.filter((x) => x !== id) : [...arr, id]);
 
   const members = useQuery({
     queryKey: ["coach", "members"],
@@ -64,42 +68,73 @@ export default function CreatePlan() {
 
   const save = useMutation({
     mutationFn: async () => {
-      const plan = await apiFetch<any>("/workouts", {
-        method: "POST",
-        data: { name, memberId, startDate, endDate },
-      });
-      const planId = plan.id;
-      for (let i = 0; i < days.length; i++) {
-        const d = days[i];
-        const created = await apiFetch<any>(`/workouts/${planId}/days`, {
+      for (const memberId of memberIds) {
+        const plan = await apiFetch<any>("/workouts", {
           method: "POST",
-          data: {
-            dayDate: d.dayDate,
-            dayName: d.dayName,
-            dayNameAr: d.dayName,
-            isRestDay: d.restDay,
-          },
+          data: { name, memberId, startDate, endDate },
         });
-        if (!d.restDay) {
-          for (let j = 0; j < d.exercises.length; j++) {
-            const ex = d.exercises[j];
-            await apiFetch(`/workouts/days/${created.id}/exercises`, {
-              method: "POST",
-              data: {
-                exerciseTemplateId: ex.templateId,
-                sets: ex.sets,
-                reps: ex.reps,
-                orderIndex: j,
-              },
-            });
+        const planId = plan.id;
+        for (let i = 0; i < days.length; i++) {
+          const d = days[i];
+          const created = await apiFetch<any>(`/workouts/${planId}/days`, {
+            method: "POST",
+            data: {
+              dayDate: d.dayDate,
+              dayName: d.dayName,
+              dayNameAr: d.dayName,
+              isRestDay: d.restDay,
+            },
+          });
+          if (!d.restDay) {
+            for (let j = 0; j < d.exercises.length; j++) {
+              const ex = d.exercises[j];
+              await apiFetch(`/workouts/days/${created.id}/exercises`, {
+                method: "POST",
+                data: {
+                  exerciseTemplateId: ex.templateId,
+                  sets: ex.sets,
+                  reps: ex.reps,
+                  orderIndex: j,
+                },
+              });
+            }
           }
         }
       }
+
+      if (saveAsTemplate) {
+        await apiFetch("/templates", {
+          method: "POST",
+          data: {
+            name,
+            nameAr: name,
+            description: `${days.length} days`,
+            days: days.map((d, i) => ({
+              dayNumber: i + 1,
+              dayName: d.dayName,
+              dayNameAr: d.dayName,
+              isRestDay: d.restDay,
+              exercises: d.restDay ? [] : d.exercises.map((ex) => ({
+                exerciseTemplateId: ex.templateId,
+                sets: ex.sets,
+                reps: ex.reps,
+              })),
+            })),
+          },
+        });
+      }
     },
     onSuccess: () => {
-      toast.show(lang === "ar" ? "✅ تم حفظ خطة التمرين" : "✅ Workout plan saved successfully!", "success");
+      const count = memberIds.length;
+      const tplNote = saveAsTemplate ? (lang === "ar" ? " + قالب" : " + template") : "";
+      toast.show(
+        lang === "ar"
+          ? `✅ تم إنشاء ${count} خطة${tplNote}`
+          : `✅ ${count} plan${count === 1 ? "" : "s"} created${tplNote}!`,
+        "success",
+      );
       qc.invalidateQueries({ queryKey: ["coach"] });
-      setTimeout(() => router.back(), 400);
+      setTimeout(() => router.back(), 500);
     },
     onError: (e: any) => {
       console.error("[create-plan] save failed", e?.status, e?.body, e?.message);
@@ -108,7 +143,7 @@ export default function CreatePlan() {
     },
   });
 
-  const canStep1 = !!memberId && !!name && !!startDate && !!endDate;
+  const canStep1 = memberIds.length > 0 && !!name && !!startDate && !!endDate;
   const canSave = canStep1 && days.length > 0;
 
   const addDay = (dateISO: string) => {
@@ -148,8 +183,8 @@ export default function CreatePlan() {
           <Step1
             members={members.data ?? []}
             loading={members.isLoading}
-            memberId={memberId}
-            setMemberId={setMemberId}
+            memberIds={memberIds}
+            toggleMember={toggleMember}
             name={name}
             setName={setName}
             startDate={startDate}
@@ -166,7 +201,14 @@ export default function CreatePlan() {
             addDay={addDay}
           />
         ) : (
-          <Step3 days={days} setDays={setDays} onPickFor={setPickerForDay} />
+          <Step3
+            days={days}
+            setDays={setDays}
+            onPickFor={setPickerForDay}
+            saveAsTemplate={saveAsTemplate}
+            setSaveAsTemplate={setSaveAsTemplate}
+            memberCount={memberIds.length}
+          />
         )}
       </ScrollView>
 
@@ -240,8 +282,8 @@ export default function CreatePlan() {
 function Step1(props: {
   members: CoachMember[];
   loading: boolean;
-  memberId: string | null;
-  setMemberId: (v: string) => void;
+  memberIds: string[];
+  toggleMember: (id: string) => void;
   name: string; setName: (v: string) => void;
   startDate: string; setStartDate: (v: string) => void;
   endDate: string; setEndDate: (v: string) => void;
@@ -250,32 +292,43 @@ function Step1(props: {
   const { lang } = useLanguage();
   return (
     <>
-      <Field label={lang === "ar" ? "العضو" : "Select member"}>
+      <Field
+        label={
+          lang === "ar"
+            ? `الأعضاء (يمكن اختيار أكثر من واحد) ${props.memberIds.length ? `— ${props.memberIds.length} مُختار` : ""}`
+            : `Members (pick one or more) ${props.memberIds.length ? `— ${props.memberIds.length} selected` : ""}`
+        }
+      >
         {props.loading ? (
           <ActivityIndicator color={c.primary} />
         ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={{ flexDirection: "row", gap: 8 }}>
-              {props.members.map((m) => (
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+            {props.members.map((m) => {
+              const active = props.memberIds.includes(m.id);
+              return (
                 <Pressable
                   key={m.id}
-                  onPress={() => props.setMemberId(m.id)}
+                  onPress={() => props.toggleMember(m.id)}
                   style={{
                     paddingHorizontal: 14,
                     paddingVertical: 10,
                     borderRadius: 999,
-                    backgroundColor: props.memberId === m.id ? c.primary : c.surface,
+                    backgroundColor: active ? c.primary : c.surface,
                     borderWidth: 1,
-                    borderColor: props.memberId === m.id ? c.primary : c.border,
+                    borderColor: active ? c.primary : c.border,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 6,
                   }}
                 >
-                  <Text style={{ color: props.memberId === m.id ? c.primaryForeground : c.foreground, fontWeight: "700", fontSize: 13 }}>
+                  {active ? <Feather name="check" size={12} color={c.primaryForeground} /> : null}
+                  <Text style={{ color: active ? c.primaryForeground : c.foreground, fontWeight: "700", fontSize: 13 }}>
                     {m.name}
                   </Text>
                 </Pressable>
-              ))}
-            </View>
-          </ScrollView>
+              );
+            })}
+          </View>
         )}
       </Field>
       <Field label={lang === "ar" ? "اسم الخطة" : "Plan name"}>
@@ -447,6 +500,9 @@ function Step3(props: {
   days: DraftDay[];
   setDays: React.Dispatch<React.SetStateAction<DraftDay[]>>;
   onPickFor: (tempId: string) => void;
+  saveAsTemplate: boolean;
+  setSaveAsTemplate: (v: boolean) => void;
+  memberCount: number;
 }) {
   const c = useColors();
   const { lang, isRTL } = useLanguage();
@@ -457,6 +513,46 @@ function Step3(props: {
           ? "اضغط على «إضافة تمرين» في اليوم الذي تريد"
           : "Tap “Add exercise” on the day you want it added to"}
       </Text>
+
+      <Card>
+        <Pressable
+          onPress={() => props.setSaveAsTemplate(!props.saveAsTemplate)}
+          style={{ flexDirection: isRTL ? "row-reverse" : "row", alignItems: "center", gap: 12 }}
+        >
+          <View
+            style={{
+              width: 22, height: 22, borderRadius: 6,
+              borderWidth: 2,
+              borderColor: props.saveAsTemplate ? c.primary : c.border,
+              backgroundColor: props.saveAsTemplate ? c.primary : "transparent",
+              alignItems: "center", justifyContent: "center",
+            }}
+          >
+            {props.saveAsTemplate ? <Feather name="check" size={14} color={c.primaryForeground} /> : null}
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: c.foreground, fontWeight: "800", fontSize: 14, textAlign: isRTL ? "right" : "left" }}>
+              {lang === "ar" ? "حفظ كقالب أيضًا" : "Also save as template"}
+            </Text>
+            <Text style={{ color: c.mutedForeground, fontSize: 11, marginTop: 2, textAlign: isRTL ? "right" : "left" }}>
+              {lang === "ar"
+                ? "لإعادة استخدامه لاحقًا للأعضاء الجدد"
+                : "Reuse it later for new members in one tap"}
+            </Text>
+          </View>
+        </Pressable>
+        {props.memberCount > 1 ? (
+          <View style={{ marginTop: 10, padding: 10, borderRadius: 10, backgroundColor: c.primary + "1A", flexDirection: "row", gap: 8, alignItems: "center" }}>
+            <Feather name="users" size={14} color={c.primary} />
+            <Text style={{ color: c.primary, fontSize: 12, fontWeight: "700", flex: 1 }}>
+              {lang === "ar"
+                ? `سيتم إنشاء نسخة لكل من ${props.memberCount} أعضاء`
+                : `Will create a copy for each of the ${props.memberCount} selected members`}
+            </Text>
+          </View>
+        ) : null}
+      </Card>
+
       {props.days.map((d, idx) => (
         <Card key={d.tempId}>
           <View style={{ flexDirection: isRTL ? "row-reverse" : "row", alignItems: "center", gap: 10 }}>
