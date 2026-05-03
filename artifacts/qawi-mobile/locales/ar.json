@@ -67,7 +67,7 @@
     "bodyFat": "نسبة الدهون"
   },
   "coach": {
-    "tabs": { "members": "الأعضاء", "plans": "الخطط", "notes": "الملاحظات", "library": "المكتبة", "profile": "الملف" },
+    "tabs": { "members": "الأعضاء", "plans": "الخطط", "nutrition": "التغذية", "notes": "الملاحظات", "library": "المكتبة", "profile": "الملف" },
     "searchMembers": "ابحث عن عضو",
     "filters": { "all": "الكل", "active": "نشط", "inactive": "غير نشط", "expiring": "ينتهي قريباً" },
     "noMembers": "لا يوجد أعضاء بعد",

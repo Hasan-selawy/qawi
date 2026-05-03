@@ -4,7 +4,7 @@ import { useLanguage } from '@/hooks/use-language';
 import { useGymConfig } from '@/hooks/use-gym-config';
 import { 
   LayoutDashboard, Users, UserSquare2, CreditCard, BarChart3, 
-  Dumbbell, Library, ChevronLeft, ChevronRight, Activity, Building2 
+  Dumbbell, Library, ChevronLeft, ChevronRight, Activity, Building2, UtensilsCrossed
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -31,12 +31,17 @@ export function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (v:
         ];
         return links;
       }
-      case 'COACH':
-        return [
+      case 'COACH': {
+        const coachLinks: { href: string; icon: any; label: string }[] = [
           { href: '/coach/dashboard', icon: LayoutDashboard, label: 'dashboard' },
           { href: '/coach/templates', icon: Dumbbell, label: 'templates' },
           { href: '/coach/library', icon: Library, label: 'library' },
         ];
+        if (features.nutritionEnabled) {
+          coachLinks.splice(1, 0, { href: '/coach/nutrition', icon: UtensilsCrossed, label: 'nutrition' });
+        }
+        return coachLinks;
+      }
       case 'SUPER_ADMIN':
         // Backend admin/coach endpoints are role-locked (GYM_ADMIN / COACH only) and
         // will return 403 for SUPER_ADMIN. Only expose links whose data the super

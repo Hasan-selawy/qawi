@@ -28,7 +28,8 @@
     "templates": "Templates",
     "library": "Library",
     "notes": "Notes",
-    "gyms": "Gyms"
+    "gyms": "Gyms",
+    "nutrition": "Nutrition"
   },
   "auth": {
     "login": "Login",

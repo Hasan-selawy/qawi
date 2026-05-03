@@ -24,6 +24,7 @@ import MemberDetail from "@/pages/coach/member-detail";
 import CreatePlan from "@/pages/coach/create-plan";
 import Templates from "@/pages/coach/templates";
 import Library from "@/pages/coach/library";
+import CoachNutrition from "@/pages/coach/nutrition";
 
 import SuperDashboard from "@/pages/super/dashboard";
 import SuperGyms from "@/pages/super/gyms";
@@ -70,6 +71,9 @@ function Router() {
       </Route>
       <Route path="/coach/library">
         <RoleRoute role={["COACH", "GYM_ADMIN"]}><AppShell><Library /></AppShell></RoleRoute>
+      </Route>
+      <Route path="/coach/nutrition">
+        <RoleRoute role="COACH"><AppShell><CoachNutrition /></AppShell></RoleRoute>
       </Route>
 
       {/* Super Admin Routes */}

@@ -67,7 +67,7 @@
     "bodyFat": "Body Fat"
   },
   "coach": {
-    "tabs": { "members": "Members", "plans": "Plans", "notes": "Notes", "library": "Library", "profile": "Profile" },
+    "tabs": { "members": "Members", "plans": "Plans", "nutrition": "Nutrition", "notes": "Notes", "library": "Library", "profile": "Profile" },
     "searchMembers": "Search members",
     "filters": { "all": "All", "active": "Active", "inactive": "Inactive", "expiring": "Expiring" },
     "noMembers": "No members yet",
