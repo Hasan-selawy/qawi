@@ -1,0 +1,80 @@
+BUG — Member check-in button does nothing when pressed.
+
+Fix the check-in screen completely:
+
+1. THE CHECK-IN BUTTON must call this API when pressed:
+POST /api/v1/attendance/checkin
+Headers: { Authorization: Bearer {token} }
+No body needed — gymId comes from the JWT token
+
+Full implementation:
+const handleCheckIn = async () => {
+  try {
+    setLoading(true);
+    const token = await AsyncStorage.getItem('token');
+    
+    console.log('Checking in with token:', token);
+    
+    const response = await axios.post(
+      `${API_URL}/attendance/checkin`,
+      {},
+      { headers: { Authorization: `Bearer ${token}` }}
+    );
+    
+    console.log('Checkin response:', response.data);
+    
+    const { streak, attendance, notification } = response.data;
+    
+    // Update streak display
+    setStreak(streak);
+    
+    // Show success animation
+    setCheckedIn(true);
+    
+    // Show streak animation with new number
+    animateStreak(streak);
+    
+  } catch (error) {
+    console.error('Checkin error:', error.response?.data);
+    console.error('Checkin status:', error.response?.status);
+    
+    if (error.response?.status === 400) {
+      // Already checked in today
+      setAlreadyCheckedIn(true);
+    } else {
+      showToast('Check-in failed. Please try again.', 'error');
+    }
+  } finally {
+    setLoading(false);
+  }
+};
+
+2. AFTER SUCCESSFUL CHECK-IN show:
+- 🔥 Streak number animates/counts up to new value
+- Green success message: "You're checked in! 🎉"
+- Arabic: "تم تسجيل حضورك! 🎉"
+- If streak > 1: "🔥 X day streak! Keep it up!"
+- If already checked in today: 
+  Show "Already checked in today ✅" 
+  and display current streak without error
+
+3. LOAD CURRENT STREAK on screen mount:
+const loadStreak = async () => {
+  const token = await AsyncStorage.getItem('token');
+  const user = JSON.parse(await AsyncStorage.getItem('user'));
+  
+  const response = await axios.get(
+    `${API_URL}/attendance/member/${user.id}/streak`,
+    { headers: { Authorization: `Bearer ${token}` }}
+  );
+  
+  setStreak(response.data.streak);
+  setLastCheckIn(response.data.lastCheckIn);
+};
+
+Call loadStreak() in useEffect on screen mount.
+
+4. The check-in button must show:
+- Loading spinner while API call is in progress
+- Disabled state while loading (prevent double tap)
+- Success state after check-in (change color/icon)

@@ -1,0 +1,83 @@
+CRITICAL — Nothing is being saved in the mobile app.
+Plans, notes, measurements all appear to save but show blank.
+
+This is likely one root cause — the API calls are failing silently.
+
+Do this first — ADD ERROR LOGGING everywhere:
+
+1. In every service file, wrap ALL axios calls in try/catch
+   and console.error the full error response:
+
+async function createPlan(data) {
+  try {
+    const token = await AsyncStorage.getItem('token');
+    console.log('TOKEN:', token); // check token exists
+    const response = await axios.post(
+      `${API_URL}/workouts`,
+      data,
+      { headers: { Authorization: `Bearer ${token}` }}
+    );
+    console.log('SUCCESS:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('ERROR STATUS:', error.response?.status);
+    console.error('ERROR DATA:', error.response?.data);
+    console.error('ERROR MSG:', error.message);
+    throw error;
+  }
+}
+
+Apply this pattern to EVERY API call in:
+- workout.service.ts
+- nutrition.service.ts  
+- measurements.service.ts
+- notes (coach notes)
+
+2. FIX THE TOKEN ISSUE:
+The most common cause of silent failures is the token
+not being retrieved correctly from AsyncStorage.
+AsyncStorage.getItem() is async — make sure you AWAIT it.
+
+Wrong: const token = AsyncStorage.getItem('token')
+Right: const token = await AsyncStorage.getItem('token')
+
+Check every single API call in every service file.
+If token is null → redirect user to login screen.
+
+3. FIX DATA REFRESH after save:
+After any successful save, the list screen must 
+refetch data from the API.
+Use React Query's invalidateQueries or call refetch():
+
+// After successful plan creation:
+queryClient.invalidateQueries(['plans']);
+queryClient.invalidateQueries(['coach-members']);
+
+// After successful note creation:
+queryClient.invalidateQueries(['notes', memberId]);
+
+// After successful measurement:
+queryClient.invalidateQueries(['measurements', memberId]);
+
+4. FIX PLAN DETAIL showing blank page:
+When coach taps a plan from the list, the detail page 
+shows blank. Fix:
+- Pass the plan ID correctly to the detail screen
+- Call GET /api/v1/workouts/member/{memberId} to get 
+  full plan with days and exercises
+- Display each day with its exercises list
+- If no days yet → show "+ Add Day" button
+
+5. FIX MEASUREMENTS showing "No data yet":
+Sam has measurements in the database (added during testing).
+Call GET /api/v1/measurements/member/{memberId} 
+with the correct memberId from the coach overview.
+Make sure memberId is not null or undefined.
+
+6. FIX NOTES showing "No data yet":
+Sam has notes in the database.
+Call GET /api/v1/notes/member/{memberId}
+with correct memberId and auth token.
+
+After fixing, open Replit console/logs and show me 
+any error messages that appear when saving.

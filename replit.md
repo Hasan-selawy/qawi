@@ -65,6 +65,13 @@ com.qawi
 - `POST /api/v1/auth/login` — public; blocks expired members; alerts if ≤7 days left
 - `GET  /api/v1/auth/me` — protected (JWT)
 
+### Member self endpoints (`/api/v1/member/*`, MEMBER role, JWT-resolved self)
+- `POST /attendance/checkin`, `GET /attendance`, `GET /attendance/stats` (streak, thisWeek, totalDays)
+- `GET /workouts/today` — latest active plan (max createdAt in [start,end]); 204 if none
+- `GET /nutrition/active` — latest plan + meals + totals; 204 if none
+- `GET+POST /measurements` — POST sets memberId from JWT; GET aliases `bodyFat`/`takenAt`
+- `GET+POST /photos` — POST accepts `imageBase64` or `photoUrl`
+
 ## Error format
 All errors: `{ error, messageAr, timestamp }`
 

@@ -6,10 +6,10 @@ com/qawi/entity/SubscriptionPlan.class
 com/qawi/entity/ExerciseTemplate$ExerciseTemplateBuilder.class
 com/qawi/entity/Attendance$AttendanceBuilder.class
 com/qawi/service/WorkoutPlanService.class
-com/qawi/entity/CoachMember$CoachMemberBuilder.class
 com/qawi/entity/ProgressPhoto.class
-com/qawi/service/NotificationService.class
+com/qawi/entity/CoachMember$CoachMemberBuilder.class
 com/qawi/service/AttendanceService.class
+com/qawi/service/NotificationService.class
 com/qawi/entity/PlanExercise.class
 com/qawi/repository/CoachNoteRepository.class
 com/qawi/dto/CreateNutritionPlanRequest.class
@@ -56,8 +56,8 @@ com/qawi/controller/NutritionController.class
 com/qawi/dto/GymDetailResponse$GymDetailResponseBuilder.class
 com/qawi/dto/RegisterGymResponse$RegisterGymResponseBuilder.class
 com/qawi/repository/PlanExerciseRepository.class
-com/qawi/repository/NotificationRepository.class
 com/qawi/repository/ProgressPhotoRepository.class
+com/qawi/repository/NotificationRepository.class
 com/qawi/entity/Gym$GymBuilder.class
 com/qawi/service/AuthService.class
 com/qawi/service/PublicGymService.class
@@ -74,11 +74,12 @@ com/qawi/entity/Notification$NotificationBuilder.class
 com/qawi/entity/ExerciseCategory.class
 com/qawi/exception/GlobalExceptionHandler.class
 com/qawi/entity/User.class
+com/qawi/controller/MemberController.class
 com/qawi/dto/UserDto.class
 com/qawi/dto/AddScheduleDayRequest.class
 com/qawi/entity/WorkoutTemplate.class
-com/qawi/dto/MemberSubscriptionRequest.class
 com/qawi/dto/CreateProgressPhotoRequest.class
+com/qawi/dto/MemberSubscriptionRequest.class
 com/qawi/entity/Gym.class
 com/qawi/dto/CreateTemplateRequest$TemplateDayRequest.class
 com/qawi/repository/ExerciseCategoryRepository.class
@@ -90,8 +91,8 @@ com/qawi/dto/CheckInResponse.class
 com/qawi/entity/WorkoutTemplateDayExercise.class
 com/qawi/security/JwtService.class
 com/qawi/dto/GymDetailResponse.class
-com/qawi/entity/ProgressPhoto$ProgressPhotoBuilder.class
 com/qawi/entity/PlanExercise$PlanExerciseBuilder.class
+com/qawi/entity/ProgressPhoto$ProgressPhotoBuilder.class
 com/qawi/controller/AuthController.class
 com/qawi/entity/NutritionPlan$NutritionPlanBuilder.class
 com/qawi/dto/PlatformStatsResponse.class
@@ -128,8 +129,8 @@ com/qawi/repository/SubscriptionHistoryRepository.class
 com/qawi/service/ExerciseService.class
 com/qawi/dto/CreateMealRequest.class
 com/qawi/repository/MealRepository.class
-com/qawi/entity/BodyMeasurement.class
 com/qawi/entity/ExerciseTemplate.class
+com/qawi/entity/BodyMeasurement.class
 com/qawi/dto/CheckEmailRequest.class
 com/qawi/service/ProgressPhotoService.class
 com/qawi/entity/WorkoutTemplateDay.class
@@ -137,8 +138,8 @@ com/qawi/controller/CoachNoteController.class
 com/qawi/entity/WorkoutPlan$WorkoutPlanBuilder.class
 com/qawi/exception/AppException.class
 com/qawi/controller/WorkoutPlanController.class
-com/qawi/dto/UpdateSubscriptionRequest.class
 com/qawi/dto/StreakResponse$StreakResponseBuilder.class
+com/qawi/dto/UpdateSubscriptionRequest.class
 com/qawi/controller/ExerciseController.class
 com/qawi/dto/RegisterGymRequest.class
 com/qawi/service/MeasurementService.class

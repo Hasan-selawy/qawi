@@ -56,6 +56,7 @@
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/repository/CoachNoteRepository.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/WorkoutTemplate.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/CreateGymRequest.java
+/home/runner/workspace/qawi-backend/src/main/java/com/qawi/controller/MemberController.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/PlanInfo.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/controller/NotificationController.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/repository/ExerciseCategoryRepository.java
