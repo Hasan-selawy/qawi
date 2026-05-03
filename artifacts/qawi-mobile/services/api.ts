@@ -35,8 +35,23 @@ export async function apiFetch<T = any>(
 
   const text = await res.text();
   let body: any = text;
-  try { body = text ? JSON.parse(text) : null; } catch { /* keep as text */ }
+  let parsed = false;
+  try {
+    body = text ? JSON.parse(text) : null;
+    parsed = true;
+  } catch { /* keep as text */ }
 
   if (!res.ok) throw new ApiError(res.status, body);
+
+  // If server returned 2xx but the body isn't JSON, the request was almost
+  // certainly intercepted by a proxy/interstitial page (e.g. an auth gate).
+  if (text && !parsed) {
+    const snippet = String(text).slice(0, 200).replace(/\s+/g, " ");
+    console.warn(`[api] Non-JSON ${res.status} response from ${path}: ${snippet}`);
+    throw new ApiError(res.status, {
+      error: `Server returned non-JSON response (likely a proxy/interstitial page). First 200 chars: ${snippet}`,
+    });
+  }
+
   return body as T;
 }
