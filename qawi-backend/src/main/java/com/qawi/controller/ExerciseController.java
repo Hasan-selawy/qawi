@@ -49,4 +49,13 @@ public class ExerciseController {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(exerciseService.addCustomExercise(request, userDetails.getUsername()));
     }
+
+    @DeleteMapping("/library/{id}")
+    @PreAuthorize("hasRole('COACH')")
+    public ResponseEntity<Void> deleteExercise(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        exerciseService.deleteCustomExercise(id, userDetails.getUsername());
+        return ResponseEntity.noContent().build();
+    }
 }

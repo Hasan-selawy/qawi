@@ -11,4 +11,5 @@ import java.util.UUID;
 public interface WorkoutTemplateDayExerciseRepository extends JpaRepository<WorkoutTemplateDayExercise, UUID> {
     List<WorkoutTemplateDayExercise> findByTemplateDayIdOrderByOrderIndex(UUID templateDayId);
     void deleteByTemplateDayId(UUID templateDayId);
+    boolean existsByExerciseTemplateId(UUID exerciseTemplateId);
 }

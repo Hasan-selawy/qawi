@@ -9,13 +9,15 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Plus, Play, Search } from 'lucide-react';
+import { Loader2, Plus, Play, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/use-auth';
 
 export default function Library() {
   const { t, lang } = useLanguage();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [activeCategory, setActiveCategory] = useState<string>('');
   const [search, setSearch] = useState('');
 
@@ -49,6 +51,15 @@ export default function Library() {
       toast.success('Exercise added to library');
     },
     onError: (err: any) => toast.error(err.error || 'Failed'),
+  });
+
+  const deleteExercise = useMutation({
+    mutationFn: (id: string) => apiFetch(`/exercises/library/${id}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['exercises', 'library'] });
+      toast.success(t('coach.exercise_deleted'));
+    },
+    onError: (err: any) => toast.error(err.error || err.message || t('coach.delete_exercise_failed')),
   });
 
   const categoryById = useMemo(() => {
@@ -158,11 +169,29 @@ export default function Library() {
                   <span className="bg-black/40 text-muted-foreground px-2 py-1 rounded-md text-xs font-bold font-mono">
                     {ex.defaultSets} × {ex.defaultReps}
                   </span>
-                  {ex.videoUrl && (
-                    <a href={ex.videoUrl} target="_blank" rel="noreferrer" className="text-red-500 hover:text-red-400 transition-colors p-1 bg-red-500/10 rounded-full hover:bg-red-500/20">
-                      <Play size={20} className="fill-current" />
-                    </a>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {ex.videoUrl && (
+                      <a href={ex.videoUrl} target="_blank" rel="noreferrer" className="text-red-500 hover:text-red-400 transition-colors p-1 bg-red-500/10 rounded-full hover:bg-red-500/20">
+                        <Play size={20} className="fill-current" />
+                      </a>
+                    )}
+                    {ex.isCustom && user?.id && ex.createdByCoachId === user.id && (
+                      <button
+                        onClick={() => {
+                          const name = pickName(lang, ex);
+                          const msg = t('coach.delete_exercise_confirm').replace('{name}', name);
+                          if (confirm(msg)) {
+                            deleteExercise.mutate(ex.id);
+                          }
+                        }}
+                        disabled={deleteExercise.isPending}
+                        title={t('coach.delete_exercise_title')}
+                        className="text-red-500 hover:text-red-400 transition-colors p-1.5 bg-red-500/10 rounded-full hover:bg-red-500/20 disabled:opacity-50"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             );

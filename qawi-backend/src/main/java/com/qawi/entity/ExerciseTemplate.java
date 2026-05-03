@@ -1,5 +1,6 @@
 package com.qawi.entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -41,6 +42,7 @@ public class ExerciseTemplate {
 
     @Column(name = "is_custom", nullable = false)
     @Builder.Default
+    @JsonProperty("isCustom")
     private boolean isCustom = false;
 
     @Column(name = "created_by_coach_id")

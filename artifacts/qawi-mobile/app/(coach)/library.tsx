@@ -16,6 +16,7 @@ import {
 import { RoleHeader } from "@/components/RoleHeader";
 import { useToast } from "@/components/Toast";
 import { Button, Card, EmptyState, Input, Screen } from "@/components/ui";
+import { useAuth } from "@/context/AuthContext";
 import { useLanguage, pickName } from "@/context/LanguageContext";
 import { useColors } from "@/hooks/useColors";
 import { apiFetch } from "@/services/api";
@@ -28,6 +29,8 @@ type ExerciseTemplate = {
   defaultSets?: number;
   defaultReps?: number;
   defaultWeight?: number;
+  isCustom?: boolean;
+  createdByCoachId?: string | null;
 };
 type Category = { id: string; name: string; nameAr?: string };
 type CoachMember = { id: string; name: string };
@@ -35,6 +38,9 @@ type CoachMember = { id: string; name: string };
 export default function CoachLibrary() {
   const c = useColors();
   const { t, lang, isRTL } = useLanguage();
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const toast = useToast();
   const [catId, setCatId] = useState<string>("all");
   const [q, setQ] = useState("");
   const [pickFor, setPickFor] = useState<ExerciseTemplate | null>(null);
@@ -43,6 +49,38 @@ export default function CoachLibrary() {
     queryKey: ["exercises", "library"],
     queryFn: () => apiFetch<ExerciseTemplate[]>("/exercises/library").catch(() => []),
   });
+
+  const del = useMutation({
+    mutationFn: (id: string) => apiFetch(`/exercises/library/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["exercises", "library"] });
+      toast.show(lang === "ar" ? "تم حذف التمرين" : "Exercise deleted", "success");
+    },
+    onError: (e: any) => {
+      const msg =
+        (typeof e?.body === "object" && (e.body.error || e.body.message)) ||
+        e?.message ||
+        (lang === "ar" ? "تعذر حذف التمرين" : "Could not delete exercise");
+      toast.show(String(msg), "error");
+    },
+  });
+
+  const confirmDelete = (item: ExerciseTemplate) => {
+    Alert.alert(
+      lang === "ar" ? "حذف التمرين" : "Delete exercise",
+      lang === "ar"
+        ? `هل تريد حذف "${pickName(lang, item)}"؟ لا يمكن التراجع.`
+        : `Delete "${pickName(lang, item)}"? This cannot be undone.`,
+      [
+        { text: lang === "ar" ? "إلغاء" : "Cancel", style: "cancel" },
+        {
+          text: lang === "ar" ? "حذف" : "Delete",
+          style: "destructive",
+          onPress: () => del.mutate(item.id),
+        },
+      ]
+    );
+  };
   const cats = useQuery({
     queryKey: ["exercises", "categories"],
     queryFn: () => apiFetch<Category[]>("/exercises/categories").catch(() => []),
@@ -130,6 +168,24 @@ export default function CoachLibrary() {
                   <Feather name="plus" size={14} color={c.primaryForeground} />
                   <Text style={{ color: c.primaryForeground, fontWeight: "700", fontSize: 12 }}>{t("common.add")}</Text>
                 </Pressable>
+                {item.isCustom && user?.id && item.createdByCoachId === user.id ? (
+                  <Pressable
+                    onPress={() => confirmDelete(item)}
+                    disabled={del.isPending}
+                    hitSlop={8}
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 10,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      backgroundColor: "rgba(239,68,68,0.12)",
+                      opacity: del.isPending ? 0.5 : 1,
+                    }}
+                  >
+                    <Feather name="trash-2" size={16} color="#ef4444" />
+                  </Pressable>
+                ) : null}
               </View>
             </Card>
           )}

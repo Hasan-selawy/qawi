@@ -50,7 +50,11 @@
   "coach": {
     "welcome": "Welcome",
     "workouts_this_week": "workouts this week",
-    "view_profile": "View Profile"
+    "view_profile": "View Profile",
+    "delete_exercise_confirm": "Delete \"{name}\"? This cannot be undone.",
+    "exercise_deleted": "Exercise deleted",
+    "delete_exercise_title": "Delete custom exercise",
+    "delete_exercise_failed": "Failed to delete exercise"
   },
   "super": {
     "total_gyms": "Total Gyms",

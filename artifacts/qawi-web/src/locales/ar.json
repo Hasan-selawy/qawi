@@ -50,7 +50,11 @@
   "coach": {
     "welcome": "مرحباً",
     "workouts_this_week": "تمارين هذا الأسبوع",
-    "view_profile": "عرض الملف"
+    "view_profile": "عرض الملف",
+    "delete_exercise_confirm": "حذف \"{name}\"؟ لا يمكن التراجع.",
+    "exercise_deleted": "تم حذف التمرين",
+    "delete_exercise_title": "حذف تمرين مخصص",
+    "delete_exercise_failed": "تعذر حذف التمرين"
   },
   "super": {
     "total_gyms": "إجمالي الصالات",

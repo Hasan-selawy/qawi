@@ -115,6 +115,6 @@
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/CreateMealRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/service/WorkoutPlanService.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/UpdateSubscriptionRequest.java
-/home/runner/workspace/qawi-backend/src/main/java/com/qawi/repository/WorkoutTemplateDayExerciseRepository.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/repository/ScheduleDayRepository.java
+/home/runner/workspace/qawi-backend/src/main/java/com/qawi/repository/WorkoutTemplateDayExerciseRepository.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/repository/BodyMeasurementRepository.java
