@@ -106,10 +106,14 @@ export function useProtectedRoute() {
   const segments = useSegments();
   const router = useRouter();
 
+  // Use only the first segment string as dep, not the array reference.
+  // The array is a new object every render; depending on it causes an
+  // infinite loop: effect fires → router.replace → re-render → repeat.
+  const firstSegment = segments[0] as string | undefined;
+
   useEffect(() => {
     if (loading) return;
-    const first = segments[0] as string | undefined;
-    const inAuth = first === "(auth)" || first === undefined;
+    const inAuth = firstSegment === "(auth)" || firstSegment === undefined;
 
     if (!user && !inAuth) {
       router.replace("/(auth)/login");
@@ -119,5 +123,6 @@ export function useProtectedRoute() {
       const target = ROLE_ROUTES[user.role] || "/(auth)/login";
       router.replace(target as any);
     }
-  }, [user, loading, segments, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, loading, firstSegment]);
 }

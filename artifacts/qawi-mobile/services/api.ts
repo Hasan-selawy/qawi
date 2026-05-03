@@ -9,7 +9,7 @@ export const API_BASE =
     ? `https://${process.env["EXPO_PUBLIC_DOMAIN"]}/api/v1`
     : HARDCODED_API_URL);
 
-console.log("[api] API_BASE =", API_BASE);
+console.log("=== API URL ===", API_BASE);
 
 export const TOKEN_KEY = "qawi_token";
 
