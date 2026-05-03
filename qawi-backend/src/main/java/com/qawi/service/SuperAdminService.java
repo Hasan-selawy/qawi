@@ -2,6 +2,7 @@ package com.qawi.service;
 
 import com.qawi.dto.ContactRequestDto;
 import com.qawi.dto.ContactResponse;
+import com.qawi.dto.CreateGymRequest;
 import com.qawi.dto.CreateGymResponse;
 import com.qawi.dto.GymBrandingRequest;
 import com.qawi.dto.GymDetailResponse;

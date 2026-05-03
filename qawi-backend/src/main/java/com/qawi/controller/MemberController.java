@@ -31,6 +31,7 @@ public class MemberController {
     private final org.springframework.transaction.support.TransactionTemplate txTemplate;
     private final PlanExerciseRepository planExerciseRepository;
     private final ExerciseTemplateRepository exerciseTemplateRepository;
+    private final WorkoutPlanService workoutPlanService;
     private final NutritionService nutritionService;
     private final com.qawi.service.GymFeatureService gymFeatureService;
     private final NutritionPlanRepository nutritionPlanRepository;
@@ -144,13 +145,16 @@ public class MemberController {
         return planExerciseRepository.findByScheduleDayIdOrderByOrderIndex(scheduleDayId).stream().map(ex -> {
             Map<String, Object> m = new LinkedHashMap<>();
             m.put("id", ex.getId());
+            m.put("exerciseTemplateId", ex.getExerciseTemplateId());
             String name = ex.getCustomName();
             String nameAr = ex.getCustomNameAr();
-            if ((name == null || nameAr == null) && ex.getExerciseTemplateId() != null) {
+            String videoUrl = ex.getVideoUrl();
+            if (ex.getExerciseTemplateId() != null) {
                 ExerciseTemplate t = exerciseTemplateRepository.findById(ex.getExerciseTemplateId()).orElse(null);
                 if (t != null) {
                     if (name == null) name = t.getName();
                     if (nameAr == null) nameAr = t.getNameAr();
+                    if (videoUrl == null || videoUrl.isBlank()) videoUrl = t.getVideoUrl();
                 }
             }
             m.put("name", name);
@@ -158,9 +162,23 @@ public class MemberController {
             m.put("sets", ex.getSets());
             m.put("reps", ex.getReps());
             m.put("weight", ex.getTargetWeight());
-            m.put("videoUrl", ex.getVideoUrl());
+            m.put("videoUrl", videoUrl);
             return m;
         }).toList();
+    }
+
+    @GetMapping("/workouts/history")
+    public ResponseEntity<List<Map<String, Object>>> myWorkoutHistory(@AuthenticationPrincipal UserDetails ud) {
+        User me = self(ud);
+        return ResponseEntity.ok(workoutPlanService.getMemberHistoryAsSelf(me.getId()));
+    }
+
+    @GetMapping("/workouts/exercise/{templateId}/history")
+    public ResponseEntity<List<Map<String, Object>>> myExerciseHistory(
+            @PathVariable UUID templateId,
+            @AuthenticationPrincipal UserDetails ud) {
+        User me = self(ud);
+        return ResponseEntity.ok(workoutPlanService.getExerciseHistoryAsSelf(templateId, me.getId()));
     }
 
     @GetMapping("/workouts/upcoming")
