@@ -1,0 +1,114 @@
+Finalize Docker configuration for the entire Qawi project.
+
+Create and verify these files:
+
+1. docker-compose.yml in project root:
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: qawi-db
+    environment:
+      POSTGRES_DB: qawi
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./artifacts/qawi-backend
+    container_name: qawi-backend
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/qawi
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      PORT: 9000
+    ports:
+      - "9000:9000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    build: ./artifacts/qawi-web
+    container_name: qawi-web
+    environment:
+      VITE_API_URL: http://backend:9000/api/v1
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+2. Dockerfile in artifacts/qawi-backend/:
+FROM eclipse-temurin:17-jdk-alpine AS builder
+WORKDIR /app
+COPY pom.xml .
+COPY src ./src
+RUN mvn clean package -DskipTests
+
+FROM eclipse-temurin:17-jre-alpine
+WORKDIR /app
+COPY --from=builder /app/target/*.jar app.jar
+EXPOSE 9000
+ENTRYPOINT ["java", "-jar", "app.jar"]
+
+3. Dockerfile in artifacts/qawi-web/:
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
+
+FROM nginx:alpine
+COPY --from=builder /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80
+
+4. nginx.conf in artifacts/qawi-web/:
+server {
+    listen 80;
+    location / {
+        root /usr/share/nginx/html;
+        index index.html;
+        try_files $uri $uri/ /index.html;
+    }
+}
+
+5. .env.example in project root:
+DB_USERNAME=postgres
+DB_PASSWORD=yourpassword
+JWT_SECRET=your-super-secret-jwt-key-minimum-32-characters
+DB_URL=jdbc:postgresql://postgres:5432/qawi
+
+6. .dockerignore in artifacts/qawi-backend/:
+target/
+*.md
+.git/
+
+7. .dockerignore in artifacts/qawi-web/:
+node_modules/
+dist/
+.env
+
+After creating all files run:
+docker-compose config
+to validate the configuration is correct.
+
+Also verify by running:
+docker-compose build --no-cache
+to make sure all 3 images build successfully.
