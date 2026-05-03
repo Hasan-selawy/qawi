@@ -1,7 +1,15 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const RAW_DOMAIN = process.env["EXPO_PUBLIC_DOMAIN"] || "";
-export const API_BASE = `https://${RAW_DOMAIN}/api/v1`;
+const HARDCODED_API_URL =
+  "https://d4769cb1-1efe-49e8-bc76-43e3163caa75-00-sdutkzkwul7u.pike.replit.dev/api/v1";
+
+export const API_BASE =
+  process.env["EXPO_PUBLIC_API_URL"] ||
+  (process.env["EXPO_PUBLIC_DOMAIN"]
+    ? `https://${process.env["EXPO_PUBLIC_DOMAIN"]}/api/v1`
+    : HARDCODED_API_URL);
+
+console.log("[api] API_BASE =", API_BASE);
 
 export const TOKEN_KEY = "qawi_token";
 
