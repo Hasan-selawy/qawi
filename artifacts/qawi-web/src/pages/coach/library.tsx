@@ -217,8 +217,33 @@ export default function Library() {
               <div
                 key={ex.id}
                 onClick={() => setUsageTarget(ex)}
-                className="glass-card p-5 border-white/5 hover:border-primary/30 transition-colors flex flex-col relative overflow-hidden group cursor-pointer"
+                className="glass-card border-white/5 hover:border-primary/30 transition-colors flex flex-col relative overflow-hidden group cursor-pointer"
               >
+                {ex.videoUrl && (() => {
+                  const ytId = ex.videoUrl?.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/)?.[1];
+                  return ytId ? (
+                    <a
+                      href={ex.videoUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="relative block w-full overflow-hidden rounded-t-[inherit]"
+                      style={{ aspectRatio: '16/9' }}
+                    >
+                      <img
+                        src={`https://img.youtube.com/vi/${ytId}/hqdefault.jpg`}
+                        alt="Exercise video"
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(255,0,0,0.85)' }}>
+                          <Play size={20} className="fill-white text-white ml-0.5" />
+                        </div>
+                      </div>
+                    </a>
+                  ) : null;
+                })()}
+                <div className="p-5 flex flex-col flex-1">
                 <div className="absolute -right-6 -top-6 text-9xl opacity-5 pointer-events-none group-hover:scale-110 transition-transform">
                   {getEmojiForCategory(cat?.name)}
                 </div>
@@ -271,6 +296,7 @@ export default function Library() {
                       </button>
                     )}
                   </div>
+                </div>
                 </div>
               </div>
             );

@@ -15,6 +15,7 @@ import {
 
 import { RoleHeader } from "@/components/RoleHeader";
 import { useToast } from "@/components/Toast";
+import { VideoThumbnail } from "@/components/VideoThumbnail";
 import { Button, Card, EmptyState, Input, Screen } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage, pickName } from "@/context/LanguageContext";
@@ -29,6 +30,7 @@ type ExerciseTemplate = {
   defaultSets?: number;
   defaultReps?: number;
   defaultWeight?: number;
+  videoUrl?: string | null;
   isCustom?: boolean;
   createdByCoachId?: string | null;
 };
@@ -164,6 +166,7 @@ export default function CoachLibrary() {
           ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
           renderItem={({ item }) => (
             <Card>
+              <VideoThumbnail videoUrl={item.videoUrl} />
               <View style={{ flexDirection: isRTL ? "row-reverse" : "row", alignItems: "center", gap: 12 }}>
                 <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: c.muted, alignItems: "center", justifyContent: "center" }}>
                   <Feather name="activity" size={20} color={c.primary} />
