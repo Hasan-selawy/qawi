@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { useToast } from "@/components/Toast";
 import { Button, Card, EmptyState, Screen } from "@/components/ui";
 import { useLanguage, pickName } from "@/context/LanguageContext";
 import { useColors } from "@/hooks/useColors";
@@ -46,6 +47,7 @@ export default function CreatePlan() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const qc = useQueryClient();
+  const toast = useToast();
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [memberId, setMemberId] = useState<string | null>(null);
@@ -67,20 +69,27 @@ export default function CreatePlan() {
         data: { name, memberId, startDate, endDate },
       });
       const planId = plan.id;
-      for (const d of days) {
+      for (let i = 0; i < days.length; i++) {
+        const d = days[i];
         const created = await apiFetch<any>(`/workouts/${planId}/days`, {
           method: "POST",
-          data: { dayName: d.dayName, dayDate: d.dayDate, restDay: d.restDay },
+          data: {
+            dayDate: d.dayDate,
+            dayName: d.dayName,
+            dayNameAr: d.dayName,
+            isRestDay: d.restDay,
+          },
         });
         if (!d.restDay) {
-          for (const ex of d.exercises) {
+          for (let j = 0; j < d.exercises.length; j++) {
+            const ex = d.exercises[j];
             await apiFetch(`/workouts/days/${created.id}/exercises`, {
               method: "POST",
               data: {
                 exerciseTemplateId: ex.templateId,
                 sets: ex.sets,
                 reps: ex.reps,
-                note: ex.note || undefined,
+                orderIndex: j,
               },
             });
           }
@@ -88,11 +97,15 @@ export default function CreatePlan() {
       }
     },
     onSuccess: () => {
-      Alert.alert("Qawi", lang === "ar" ? "تم إنشاء الخطة" : "Plan created");
+      toast.show(lang === "ar" ? "✅ تم حفظ خطة التمرين" : "✅ Workout plan saved successfully!", "success");
       qc.invalidateQueries({ queryKey: ["coach"] });
-      router.back();
+      setTimeout(() => router.back(), 400);
     },
-    onError: (e: any) => Alert.alert("Qawi", e?.message || "Could not save plan"),
+    onError: (e: any) => {
+      console.error("[create-plan] save failed", e?.status, e?.body, e?.message);
+      const detail = typeof e?.body === "object" ? JSON.stringify(e.body) : (e?.message || "Could not save plan");
+      toast.show(lang === "ar" ? `فشل الحفظ: ${detail}` : `Save failed: ${detail}`, "error");
+    },
   });
 
   const canStep1 = !!memberId && !!name && !!startDate && !!endDate;

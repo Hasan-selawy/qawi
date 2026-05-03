@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { useToast } from "@/components/Toast";
 import { Button, Card, EmptyState, Screen } from "@/components/ui";
 import { useLanguage } from "@/context/LanguageContext";
 import { useColors } from "@/hooks/useColors";
@@ -23,12 +24,10 @@ type MealType = "BREAKFAST" | "LUNCH" | "DINNER" | "SNACK";
 type DraftMeal = {
   tempId: string;
   mealType: MealType;
-  name: string;
-  nameAr: string;
+  description: string;
+  descriptionAr: string;
   calories: string;
   protein: string;
-  carbs: string;
-  fats: string;
 };
 
 const MEAL_TYPES: MealType[] = ["BREAKFAST", "LUNCH", "DINNER", "SNACK"];
@@ -39,6 +38,7 @@ export default function CreateNutrition() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const qc = useQueryClient();
+  const toast = useToast();
 
   const [memberId, setMemberId] = useState<string | null>(null);
   const [meals, setMeals] = useState<DraftMeal[]>([]);
@@ -54,12 +54,10 @@ export default function CreateNutrition() {
       {
         tempId: Math.random().toString(36).slice(2, 9),
         mealType: "BREAKFAST",
-        name: "",
-        nameAr: "",
+        description: "",
+        descriptionAr: "",
         calories: "",
         protein: "",
-        carbs: "",
-        fats: "",
       },
     ]);
 
@@ -75,25 +73,27 @@ export default function CreateNutrition() {
           method: "POST",
           data: {
             mealType: m.mealType,
-            name: m.name,
-            nameAr: m.nameAr || undefined,
+            description: m.description,
+            descriptionAr: m.descriptionAr || m.description,
             calories: parseInt(m.calories, 10) || 0,
-            protein: parseFloat(m.protein) || 0,
-            carbs: parseFloat(m.carbs) || 0,
-            fats: parseFloat(m.fats) || 0,
+            protein: parseInt(m.protein, 10) || 0,
           },
         });
       }
     },
     onSuccess: () => {
-      Alert.alert("Qawi", lang === "ar" ? "تم إنشاء خطة الغذاء" : "Nutrition plan created");
+      toast.show(lang === "ar" ? "✅ تم حفظ خطة الغذاء" : "✅ Nutrition plan saved!", "success");
       qc.invalidateQueries({ queryKey: ["coach"] });
-      router.back();
+      setTimeout(() => router.back(), 400);
     },
-    onError: (e: any) => Alert.alert("Qawi", e?.message || "Could not save plan"),
+    onError: (e: any) => {
+      console.error("[create-nutrition] save failed", e?.status, e?.body, e?.message);
+      const detail = typeof e?.body === "object" ? JSON.stringify(e.body) : (e?.message || "Could not save plan");
+      toast.show(lang === "ar" ? `فشل الحفظ: ${detail}` : `Save failed: ${detail}`, "error");
+    },
   });
 
-  const canSave = !!memberId && meals.length > 0 && meals.every((m) => m.name);
+  const canSave = !!memberId && meals.length > 0 && meals.every((m) => m.description);
 
   return (
     <Screen>
@@ -172,13 +172,11 @@ export default function CreateNutrition() {
                 </Pressable>
               </View>
               <View style={{ gap: 8 }}>
-                <Box value={meal.name} onChangeText={(v) => updateMeal(meal.tempId, { name: v })} placeholder={lang === "ar" ? "الوصف بالإنجليزية" : "Description (EN)"} />
-                <Box value={meal.nameAr} onChangeText={(v) => updateMeal(meal.tempId, { nameAr: v })} placeholder={lang === "ar" ? "الوصف بالعربية" : "Description (AR)"} />
+                <Box value={meal.description} onChangeText={(v) => updateMeal(meal.tempId, { description: v })} placeholder={lang === "ar" ? "الوصف بالإنجليزية" : "Description (EN)"} />
+                <Box value={meal.descriptionAr} onChangeText={(v) => updateMeal(meal.tempId, { descriptionAr: v })} placeholder={lang === "ar" ? "الوصف بالعربية" : "Description (AR)"} />
                 <View style={{ flexDirection: "row", gap: 8 }}>
                   <Box value={meal.calories} onChangeText={(v) => updateMeal(meal.tempId, { calories: v.replace(/[^0-9]/g, "") })} keyboardType="number-pad" placeholder="kcal" style={{ flex: 1 }} />
-                  <Box value={meal.protein} onChangeText={(v) => updateMeal(meal.tempId, { protein: v.replace(/[^0-9.]/g, "") })} keyboardType="decimal-pad" placeholder="P (g)" style={{ flex: 1 }} />
-                  <Box value={meal.carbs} onChangeText={(v) => updateMeal(meal.tempId, { carbs: v.replace(/[^0-9.]/g, "") })} keyboardType="decimal-pad" placeholder="C (g)" style={{ flex: 1 }} />
-                  <Box value={meal.fats} onChangeText={(v) => updateMeal(meal.tempId, { fats: v.replace(/[^0-9.]/g, "") })} keyboardType="decimal-pad" placeholder="F (g)" style={{ flex: 1 }} />
+                  <Box value={meal.protein} onChangeText={(v) => updateMeal(meal.tempId, { protein: v.replace(/[^0-9]/g, "") })} keyboardType="number-pad" placeholder="Protein (g)" style={{ flex: 1 }} />
                 </View>
               </View>
             </Card>

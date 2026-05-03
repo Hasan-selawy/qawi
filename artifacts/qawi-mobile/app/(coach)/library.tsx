@@ -14,6 +14,7 @@ import {
 } from "react-native";
 
 import { RoleHeader } from "@/components/RoleHeader";
+import { useToast } from "@/components/Toast";
 import { Button, Card, EmptyState, Input, Screen } from "@/components/ui";
 import { useLanguage, pickName } from "@/context/LanguageContext";
 import { useColors } from "@/hooks/useColors";
@@ -144,6 +145,7 @@ function AddToPlanModal({ exercise, onClose }: { exercise: ExerciseTemplate | nu
   const c = useColors();
   const { t, lang, isRTL } = useLanguage();
   const qc = useQueryClient();
+  const toast = useToast();
 
   const [memberId, setMemberId] = useState<string | null>(null);
   const [dayId, setDayId] = useState<string | null>(null);
@@ -199,18 +201,23 @@ function AddToPlanModal({ exercise, onClose }: { exercise: ExerciseTemplate | nu
           exerciseTemplateId: exercise!.id,
           sets: parseInt(sets, 10) || (exercise?.defaultSets ?? 3),
           reps: parseInt(reps, 10) || (exercise?.defaultReps ?? 10),
-          note: note || undefined,
+          orderIndex: 0,
+          ...(note ? { customName: note } : {}),
         },
       }),
     onSuccess: () => {
-      Alert.alert(
-        "Qawi",
-        lang === "ar" ? `تمت الإضافة لخطة ${memberName}!` : `Added to ${memberName}'s plan!`
+      toast.show(
+        lang === "ar" ? `✅ تمت الإضافة لخطة ${memberName}` : `✅ Added to ${memberName}'s plan!`,
+        "success"
       );
       qc.invalidateQueries({ queryKey: ["coach"] });
       onClose();
     },
-    onError: (e: any) => Alert.alert("Qawi", e?.message || "Could not add exercise"),
+    onError: (e: any) => {
+      console.error("[library/add] failed", e?.status, e?.body, e?.message);
+      const detail = typeof e?.body === "object" ? JSON.stringify(e.body) : (e?.message || "Could not add exercise");
+      toast.show(detail, "error");
+    },
   });
 
   const canSubmit = !!memberId && !!dayId && !!sets && !!reps;

@@ -17,6 +17,7 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { ToastProvider } from "@/components/Toast";
 import { AuthProvider, useProtectedRoute } from "@/context/AuthContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 
@@ -65,8 +66,10 @@ export default function RootLayout() {
             <KeyboardProvider>
               <LanguageProvider>
                 <AuthProvider>
-                  <StatusBar style="light" />
-                  <RootLayoutNav />
+                  <ToastProvider>
+                    <StatusBar style="light" />
+                    <RootLayoutNav />
+                  </ToastProvider>
                 </AuthProvider>
               </LanguageProvider>
             </KeyboardProvider>
