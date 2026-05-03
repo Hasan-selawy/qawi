@@ -1,0 +1,84 @@
+CRITICAL BUG — App crashes on real iPhone with error:
+"Unable to resolve module react-native-webview from 
+react-native-youtube-iframe"
+
+The react-native-youtube-iframe package requires 
+react-native-webview as a peer dependency but it's not installed.
+
+Fix with TWO options — do BOTH:
+
+OPTION 1 — Install the missing dependency:
+Run in terminal:
+npx expo install react-native-webview
+
+This is the proper fix for iOS and Android.
+
+OPTION 2 — Add to app.json plugins (required for Expo):
+{
+  "expo": {
+    "plugins": [
+      "react-native-webview"
+    ]
+  }
+}
+
+After installing, run:
+npx expo start --clear
+
+This clears the Metro cache and forces a fresh bundle.
+
+If the error still persists after installing react-native-webview,
+replace react-native-youtube-iframe entirely with a simpler approach:
+
+FALLBACK — Use Linking to open YouTube instead of embedding:
+import { Linking, TouchableOpacity, Image, View } from 'react-native';
+
+const VideoThumbnail = ({ videoUrl }) => {
+  const videoId = videoUrl?.match(
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/
+  )?.[1];
+  
+  if (!videoId) return null;
+  
+  return (
+    <TouchableOpacity 
+      onPress={() => Linking.openURL(videoUrl)}
+      style={{ marginTop: 8 }}
+    >
+      <View style={{ position: 'relative' }}>
+        <Image
+          source={{ 
+            uri: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` 
+          }}
+          style={{ 
+            width: '100%', 
+            height: 180, 
+            borderRadius: 12 
+          }}
+          resizeMode="cover"
+        />
+        <View style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: [{ translateX: -24 }, { translateY: -24 }],
+          width: 48,
+          height: 48,
+          borderRadius: 24,
+          backgroundColor: 'rgba(255,0,0,0.85)',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <Text style={{ color: 'white', fontSize: 18 }}>▶</Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+};
+
+This shows the YouTube thumbnail with a play button.
+Tapping it opens YouTube app or browser.
+No dependency issues. Works on all platforms.
+
+Use this fallback everywhere videos were shown.
+Remove react-native-youtube-iframe completely.
