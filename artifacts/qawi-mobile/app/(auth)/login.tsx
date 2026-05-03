@@ -100,25 +100,20 @@ function FloatingInput({
 
 function GlowingArabicLogo({ fontFamily }: { fontFamily: string }) {
   return (
-    <View style={styles.logoStack}>
-      <Text
-        style={[
-          styles.logoText,
-          { fontFamily, fontSize: 108, color: "rgba(34,197,94,0.25)", top: -2 },
-        ]}
-      >
-        قوي
-      </Text>
-      <Text
-        style={[
-          styles.logoText,
-          { fontFamily, fontSize: 102, color: "rgba(34,197,94,0.55)", top: 1 },
-        ]}
-      >
-        قوي
-      </Text>
-      <Text style={[styles.logoText, { fontFamily, fontSize: 100, color: C.primary, top: 2 }]}>قوي</Text>
-    </View>
+    <Text
+      allowFontScaling={false}
+      style={[
+        styles.logoText,
+        {
+          fontFamily,
+          textShadowColor: "rgba(34,197,94,0.85)",
+          textShadowOffset: { width: 0, height: 0 },
+          textShadowRadius: 24,
+        },
+      ]}
+    >
+      قوي
+    </Text>
   );
 }
 
@@ -162,10 +157,10 @@ export default function LoginScreen() {
       />
 
       {/* Soft ambient green halo behind logo (layered for diffuse falloff) */}
-      <View pointerEvents="none" style={[styles.glow1, { top: insets.top + 40 }]} />
-      <View pointerEvents="none" style={[styles.glow2, { top: insets.top + 90 }]} />
-      <View pointerEvents="none" style={[styles.glow3, { top: insets.top + 140 }]} />
-      <View pointerEvents="none" style={[styles.glow4, { top: insets.top + 180 }]} />
+      <View style={[styles.glow1, { top: insets.top + 40 }]} />
+      <View style={[styles.glow2, { top: insets.top + 90 }]} />
+      <View style={[styles.glow3, { top: insets.top + 140 }]} />
+      <View style={[styles.glow4, { top: insets.top + 180 }]} />
 
       <KeyboardAvoidingView style={styles.kav} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <ScrollView
@@ -301,39 +296,52 @@ const styles = StyleSheet.create({
   langDivider: { color: C.divider, fontSize: 12 },
   glow1: {
     position: "absolute",
-    alignSelf: "center",
+    left: "50%",
+    marginLeft: -210,
     width: 420,
     height: 420,
     borderRadius: 210,
     backgroundColor: "rgba(34,197,94,0.04)",
+    pointerEvents: "none",
   },
   glow2: {
     position: "absolute",
-    alignSelf: "center",
+    left: "50%",
+    marginLeft: -160,
     width: 320,
     height: 320,
     borderRadius: 160,
     backgroundColor: "rgba(34,197,94,0.05)",
+    pointerEvents: "none",
   },
   glow3: {
     position: "absolute",
-    alignSelf: "center",
+    left: "50%",
+    marginLeft: -110,
     width: 220,
     height: 220,
     borderRadius: 110,
     backgroundColor: "rgba(34,197,94,0.06)",
+    pointerEvents: "none",
   },
   glow4: {
     position: "absolute",
-    alignSelf: "center",
+    left: "50%",
+    marginLeft: -70,
     width: 140,
     height: 140,
     borderRadius: 70,
     backgroundColor: "rgba(34,197,94,0.07)",
+    pointerEvents: "none",
   },
   logoBlock: { alignItems: "center", marginBottom: 48 },
-  logoStack: { width: 200, height: 130, alignItems: "center", justifyContent: "center" },
-  logoText: { position: "absolute", textAlign: "center", lineHeight: 120 },
+  logoText: {
+    fontSize: 100,
+    lineHeight: 120,
+    color: C.primary,
+    textAlign: "center",
+    includeFontPadding: false,
+  },
   brand: { color: C.text, fontSize: 18, letterSpacing: 8, marginTop: 6, marginLeft: 8 },
   divider: { width: 60, height: 2, backgroundColor: C.primary, marginTop: 18, marginBottom: 14, borderRadius: 1 },
   tagline: { color: C.muted, fontSize: 13, letterSpacing: 0.4 },
