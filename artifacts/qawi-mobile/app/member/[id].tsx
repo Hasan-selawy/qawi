@@ -79,7 +79,6 @@ export default function MemberDetail() {
   const [showNote, setShowNote] = useState(false);
   const [showMeasure, setShowMeasure] = useState(false);
   const [selectedDay, setSelectedDay] = useState<ScheduleDay | null>(null);
-  const [showExPicker, setShowExPicker] = useState(false);
 
   const overview = useQuery({
     queryKey: ["coach", "member-overview", id],
@@ -116,25 +115,6 @@ export default function MemberDetail() {
       Alert.alert(lang === "ar" ? "قوي" : "Qawi", e?.message || (lang === "ar" ? "تعذر التراجع" : "Could not undo completion")),
   });
 
-  const addEx = useMutation({
-    mutationFn: (payload: { dayId: string; exerciseTemplateId: string; sets: number; reps: number; targetWeight?: number }) =>
-      apiFetch(`/workouts/days/${payload.dayId}/exercises`, {
-        method: "POST",
-        data: {
-          exerciseTemplateId: payload.exerciseTemplateId,
-          sets: payload.sets,
-          reps: payload.reps,
-          orderIndex: 0,
-          ...(payload.targetWeight ? { targetWeight: payload.targetWeight } : {}),
-        },
-      }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["coach", "member-overview", id] });
-      setShowExPicker(false);
-    },
-    onError: (e: any) =>
-      Alert.alert(lang === "ar" ? "قوي" : "Qawi", e?.message || (lang === "ar" ? "تعذر إضافة التمرين" : "Could not add exercise")),
-  });
 
   return (
     <Screen>
@@ -359,7 +339,6 @@ export default function MemberDetail() {
           day={selectedDay}
           planId={plan?.id ?? ""}
           onClose={() => setSelectedDay(null)}
-          onAddExercise={() => setShowExPicker(true)}
           onDeleteExercise={(exId) =>
             Alert.alert(
               lang === "ar" ? "حذف التمرين" : "Delete exercise",
@@ -392,16 +371,7 @@ export default function MemberDetail() {
           }
           deletePending={deleteEx.isPending}
           uncompletePending={uncompleteDay.isPending}
-        />
-      )}
-
-      {selectedDay && showExPicker && (
-        <ExPickerModal
-          dayId={selectedDay.id}
-          visible={showExPicker}
-          onClose={() => setShowExPicker(false)}
-          onAdd={(payload) => addEx.mutate(payload)}
-          addPending={addEx.isPending}
+          onExerciseAdded={() => qc.invalidateQueries({ queryKey: ["coach", "member-overview", id] })}
         />
       )}
     </Screen>
@@ -415,27 +385,92 @@ function DayModal({
   day,
   planId: _planId,
   onClose,
-  onAddExercise,
   onDeleteExercise,
   onUncomplete,
   deletePending,
   uncompletePending,
+  onExerciseAdded,
 }: {
   day: ScheduleDay;
   planId: string;
   onClose: () => void;
-  onAddExercise: () => void;
   onDeleteExercise: (exId: string) => void;
   onUncomplete: () => void;
   deletePending: boolean;
   uncompletePending: boolean;
+  onExerciseAdded?: () => void;
 }) {
   const c = useColors();
   const { lang, isRTL } = useLanguage();
   const exercises = day.exercises ?? [];
 
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [picked, setPicked] = useState<ExerciseTemplate | null>(null);
+  const [pickerQ, setPickerQ] = useState("");
+  const [pSets, setPSets] = useState("3");
+  const [pReps, setPReps] = useState("10");
+  const [pWeight, setPWeight] = useState("");
+
+  const library = useQuery({
+    queryKey: ["exercises", "library"],
+    queryFn: () => apiFetch<ExerciseTemplate[]>("/exercises/library").catch(() => []),
+    enabled: pickerOpen,
+  });
+
+  const filtered = useMemo(() => {
+    const data = library.data ?? [];
+    if (!pickerQ) return data;
+    return data.filter(
+      (e) =>
+        (e.name ?? "").toLowerCase().includes(pickerQ.toLowerCase()) ||
+        (e.nameAr ?? "").includes(pickerQ)
+    );
+  }, [library.data, pickerQ]);
+
+  const addEx = useMutation({
+    mutationFn: (payload: { exerciseTemplateId: string; sets: number; reps: number; targetWeight?: number }) =>
+      apiFetch(`/workouts/days/${day.id}/exercises`, {
+        method: "POST",
+        data: { ...payload, orderIndex: 0 },
+      }),
+    onSuccess: () => {
+      onExerciseAdded?.();
+      setPickerOpen(false);
+      setPicked(null);
+      setPickerQ("");
+    },
+    onError: (e: any) =>
+      Alert.alert(lang === "ar" ? "قوي" : "Qawi", e?.message || (lang === "ar" ? "تعذر إضافة التمرين" : "Could not add exercise")),
+  });
+
+  function openPicker() {
+    setPicked(null);
+    setPickerQ("");
+    setPSets("3");
+    setPReps("10");
+    setPWeight("");
+    setPickerOpen(true);
+  }
+
+  function handlePick(ex: ExerciseTemplate) {
+    setPicked(ex);
+    setPSets(String(ex.defaultSets ?? 3));
+    setPReps(String(ex.defaultReps ?? 10));
+    setPWeight(ex.defaultWeight ? String(ex.defaultWeight) : "");
+  }
+
+  function handleAdd() {
+    if (!picked) return;
+    addEx.mutate({
+      exerciseTemplateId: picked.id,
+      sets: parseInt(pSets, 10) || 3,
+      reps: parseInt(pReps, 10) || 10,
+      ...(pWeight ? { targetWeight: parseFloat(pWeight) } : {}),
+    });
+  }
+
   return (
-    <Modal visible animationType="slide" transparent onRequestClose={onClose}>
+    <Modal visible animationType="slide" transparent onRequestClose={pickerOpen ? () => { if (picked) { setPicked(null); } else { setPickerOpen(false); } } : onClose}>
       <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" }}>
         <View
           style={{
@@ -443,7 +478,7 @@ function DayModal({
             borderTopLeftRadius: 24,
             borderTopRightRadius: 24,
             paddingBottom: 32,
-            maxHeight: "85%",
+            maxHeight: "92%",
           }}
         >
           {/* Header */}
@@ -457,17 +492,31 @@ function DayModal({
               gap: 10,
             }}
           >
+            {pickerOpen && (
+              <Pressable
+                onPress={() => { if (picked) { setPicked(null); } else { setPickerOpen(false); } }}
+                hitSlop={10}
+              >
+                <Feather name={isRTL ? "arrow-right" : "arrow-left"} size={22} color={c.foreground} />
+              </Pressable>
+            )}
             <View style={{ flex: 1 }}>
               <Text style={{ color: c.foreground, fontSize: 17, fontWeight: "800", textAlign: isRTL ? "right" : "left" }}>
-                {lang === "ar" ? (day.dayNameAr ?? day.dayName ?? "") : (day.dayName ?? "")}
+                {pickerOpen
+                  ? picked
+                    ? lang === "ar" ? "تفاصيل التمرين" : "Exercise Details"
+                    : lang === "ar" ? "اختر تمريناً" : "Pick an exercise"
+                  : lang === "ar"
+                  ? (day.dayNameAr ?? day.dayName ?? "")
+                  : (day.dayName ?? "")}
               </Text>
-              {day.dayDate ? (
+              {!pickerOpen && day.dayDate ? (
                 <Text style={{ color: c.mutedForeground, fontSize: 12, textAlign: isRTL ? "right" : "left" }}>
                   {String(day.dayDate).slice(0, 10)}
                 </Text>
               ) : null}
             </View>
-            {day.isCompleted && (
+            {!pickerOpen && day.isCompleted && (
               <View style={{ flexDirection: isRTL ? "row-reverse" : "row", alignItems: "center", gap: 8 }}>
                 <View style={{ backgroundColor: `${c.primary}20`, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
                   <Text style={{ color: c.primary, fontSize: 12, fontWeight: "700" }}>
@@ -495,249 +544,18 @@ function DayModal({
                 </Pressable>
               </View>
             )}
-            <Pressable onPress={onClose} hitSlop={10}>
+            <Pressable onPress={pickerOpen ? () => { if (picked) { setPicked(null); } else { setPickerOpen(false); } } : onClose} hitSlop={10}>
               <Feather name="x" size={22} color={c.foreground} />
             </Pressable>
           </View>
 
-          {/* Content */}
-          {day.isRestDay ? (
-            <View style={{ padding: 40, alignItems: "center", gap: 8 }}>
-              <Text style={{ fontSize: 48 }}>😴</Text>
-              <Text style={{ color: c.mutedForeground, fontSize: 16, fontWeight: "600" }}>
-                {lang === "ar" ? "يوم راحة" : "Rest Day"}
-              </Text>
-            </View>
-          ) : exercises.length === 0 ? (
-            <View style={{ padding: 40, alignItems: "center", gap: 8 }}>
-              <Feather name="inbox" size={40} color={c.mutedForeground} />
-              <Text style={{ color: c.mutedForeground, fontSize: 14 }}>
-                {lang === "ar" ? "لا يوجد تمارين" : "No exercises yet"}
-              </Text>
-            </View>
-          ) : (
-            <FlatList
-              data={exercises}
-              keyExtractor={(e) => e.id}
-              contentContainerStyle={{ padding: 14, gap: 8 }}
-              ItemSeparatorComponent={() => <View style={{ height: 6 }} />}
-              renderItem={({ item: ex }) => (
-                <View
-                  style={{
-                    backgroundColor: c.surface,
-                    borderRadius: 12,
-                    borderWidth: 1,
-                    borderColor: c.border,
-                    padding: 12,
-                    flexDirection: isRTL ? "row-reverse" : "row",
-                    alignItems: "center",
-                    gap: 10,
-                  }}
-                >
-                  <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: `${c.primary}15`, alignItems: "center", justifyContent: "center" }}>
-                    <Feather name="activity" size={16} color={c.primary} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ color: c.foreground, fontWeight: "700", fontSize: 14, textAlign: isRTL ? "right" : "left" }}>
-                      {lang === "ar" ? (ex.exerciseNameAr ?? ex.exerciseName ?? "") : (ex.exerciseName ?? "")}
-                    </Text>
-                    <Text style={{ color: c.mutedForeground, fontSize: 12, textAlign: isRTL ? "right" : "left" }}>
-                      {ex.sets ?? 3} × {ex.reps ?? 10}
-                      {ex.targetWeight ? (lang === "ar" ? `  @  ${ex.targetWeight} كغ` : `  @  ${ex.targetWeight} kg`) : ""}
-                    </Text>
-                  </View>
-                  <Pressable
-                    onPress={() => onDeleteExercise(ex.id)}
-                    disabled={deletePending}
-                    hitSlop={8}
-                    style={{
-                      width: 34,
-                      height: 34,
-                      borderRadius: 8,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      backgroundColor: "rgba(239,68,68,0.12)",
-                      opacity: deletePending ? 0.5 : 1,
-                    }}
-                  >
-                    <Feather name="trash-2" size={15} color="#ef4444" />
-                  </Pressable>
-                </View>
-              )}
-            />
-          )}
-
-          {/* Add exercise button */}
-          {!day.isRestDay && (
-            <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
-              <Pressable
-                onPress={onAddExercise}
-                style={{
-                  backgroundColor: c.primary,
-                  borderRadius: 14,
-                  height: 50,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 8,
-                }}
-              >
-                <Feather name="plus" size={18} color={c.primaryForeground} />
-                <Text style={{ color: c.primaryForeground, fontWeight: "700", fontSize: 15 }}>
-                  {lang === "ar" ? "إضافة تمرين" : "Add Exercise"}
-                </Text>
-              </Pressable>
-            </View>
-          )}
-        </View>
-      </View>
-    </Modal>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────
-// Exercise picker modal
-// ─────────────────────────────────────────────────────────────
-function ExPickerModal({
-  dayId,
-  visible,
-  onClose,
-  onAdd,
-  addPending,
-}: {
-  dayId: string;
-  visible: boolean;
-  onClose: () => void;
-  onAdd: (payload: { dayId: string; exerciseTemplateId: string; sets: number; reps: number; targetWeight?: number }) => void;
-  addPending: boolean;
-}) {
-  const c = useColors();
-  const { lang, isRTL } = useLanguage();
-  const [q, setQ] = useState("");
-  const [picked, setPicked] = useState<ExerciseTemplate | null>(null);
-  const [sets, setSets] = useState("3");
-  const [reps, setReps] = useState("10");
-  const [weight, setWeight] = useState("");
-
-  const library = useQuery({
-    queryKey: ["exercises", "library"],
-    queryFn: () => apiFetch<ExerciseTemplate[]>("/exercises/library").catch(() => []),
-    enabled: visible,
-  });
-
-  const filtered = useMemo(() => {
-    const data = library.data ?? [];
-    if (!q) return data;
-    return data.filter((e) =>
-      (e.name ?? "").toLowerCase().includes(q.toLowerCase()) ||
-      (e.nameAr ?? "").includes(q)
-    );
-  }, [library.data, q]);
-
-  function handlePick(ex: ExerciseTemplate) {
-    setPicked(ex);
-    setSets(String(ex.defaultSets ?? 3));
-    setReps(String(ex.defaultReps ?? 10));
-    setWeight(ex.defaultWeight ? String(ex.defaultWeight) : "");
-  }
-
-  function handleAdd() {
-    if (!picked) return;
-    onAdd({
-      dayId,
-      exerciseTemplateId: picked.id,
-      sets: parseInt(sets, 10) || 3,
-      reps: parseInt(reps, 10) || 10,
-      ...(weight ? { targetWeight: parseFloat(weight) } : {}),
-    });
-  }
-
-  return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.7)", justifyContent: "flex-end" }}>
-        <View
-          style={{
-            backgroundColor: c.background,
-            borderTopLeftRadius: 24,
-            borderTopRightRadius: 24,
-            paddingBottom: 32,
-            maxHeight: "92%",
-          }}
-        >
-          {/* Header */}
-          <View style={{ flexDirection: isRTL ? "row-reverse" : "row", alignItems: "center", padding: 16, gap: 10 }}>
-            {picked ? (
-              <Pressable onPress={() => setPicked(null)} hitSlop={8}>
-                <Feather name={isRTL ? "arrow-right" : "arrow-left"} size={22} color={c.foreground} />
-              </Pressable>
-            ) : null}
-            <Text style={{ color: c.foreground, fontSize: 17, fontWeight: "800", flex: 1, textAlign: isRTL ? "right" : "left" }}>
-              {picked
-                ? lang === "ar"
-                  ? "تفاصيل التمرين"
-                  : "Exercise Details"
-                : lang === "ar"
-                ? "اختر تمريناً"
-                : "Pick an exercise"}
-            </Text>
-            <Pressable onPress={onClose} hitSlop={10}>
-              <Feather name="x" size={22} color={c.foreground} />
-            </Pressable>
-          </View>
-
-          {picked ? (
-            /* ── Sets / Reps / Weight form ── */
-            <View style={{ padding: 16, gap: 14 }}>
-              <View
-                style={{
-                  backgroundColor: c.surface,
-                  borderRadius: 12,
-                  padding: 12,
-                  flexDirection: isRTL ? "row-reverse" : "row",
-                  alignItems: "center",
-                  gap: 10,
-                }}
-              >
-                <Feather name="activity" size={20} color={c.primary} />
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: c.foreground, fontWeight: "700", textAlign: isRTL ? "right" : "left" }}>
-                    {lang === "ar" ? (picked.nameAr ?? picked.name) : picked.name}
-                  </Text>
-                </View>
-              </View>
-              <View style={{ flexDirection: "row", gap: 10 }}>
-                <NumField label={lang === "ar" ? "مجموعات" : "Sets"} value={sets} onChange={setSets} />
-                <NumField label={lang === "ar" ? "تكرارات" : "Reps"} value={reps} onChange={setReps} />
-                <NumField label={lang === "ar" ? "وزن (كغ)" : "Weight (kg)"} value={weight} onChange={setWeight} decimal placeholder="0" />
-              </View>
-              <Pressable
-                onPress={handleAdd}
-                disabled={addPending}
-                style={{
-                  backgroundColor: c.primary,
-                  borderRadius: 14,
-                  height: 52,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  opacity: addPending ? 0.6 : 1,
-                }}
-              >
-                {addPending ? (
-                  <ActivityIndicator color={c.primaryForeground} />
-                ) : (
-                  <Text style={{ color: c.primaryForeground, fontWeight: "700", fontSize: 16 }}>
-                    {lang === "ar" ? "إضافة للخطة ✓" : "Add to Plan ✓"}
-                  </Text>
-                )}
-              </Pressable>
-            </View>
-          ) : (
-            /* ── Exercise list ── */
+          {/* ── Picker: exercise list ── */}
+          {pickerOpen && !picked && (
             <>
-              <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
+              <View style={{ paddingHorizontal: 16, paddingVertical: 10 }}>
                 <TextInput
-                  value={q}
-                  onChangeText={setQ}
+                  value={pickerQ}
+                  onChangeText={setPickerQ}
                   placeholder={lang === "ar" ? "بحث عن تمرين…" : "Search exercises…"}
                   placeholderTextColor={c.mutedForeground}
                   style={{
@@ -766,7 +584,6 @@ function ExPickerModal({
                   data={filtered}
                   keyExtractor={(e) => e.id}
                   contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16, gap: 6 }}
-                  ItemSeparatorComponent={() => <View style={{ height: 6 }} />}
                   keyboardShouldPersistTaps="handled"
                   renderItem={({ item: ex }) => (
                     <Pressable
@@ -798,6 +615,147 @@ function ExPickerModal({
                     </Pressable>
                   )}
                 />
+              )}
+            </>
+          )}
+
+          {/* ── Picker: sets/reps form ── */}
+          {pickerOpen && picked && (
+            <View style={{ padding: 16, gap: 14 }}>
+              <View
+                style={{
+                  backgroundColor: c.surface,
+                  borderRadius: 12,
+                  padding: 12,
+                  flexDirection: isRTL ? "row-reverse" : "row",
+                  alignItems: "center",
+                  gap: 10,
+                }}
+              >
+                <Feather name="activity" size={20} color={c.primary} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: c.foreground, fontWeight: "700", textAlign: isRTL ? "right" : "left" }}>
+                    {lang === "ar" ? (picked.nameAr ?? picked.name) : picked.name}
+                  </Text>
+                </View>
+              </View>
+              <View style={{ flexDirection: "row", gap: 10 }}>
+                <NumField label={lang === "ar" ? "مجموعات" : "Sets"} value={pSets} onChange={setPSets} />
+                <NumField label={lang === "ar" ? "تكرارات" : "Reps"} value={pReps} onChange={setPReps} />
+                <NumField label={lang === "ar" ? "وزن (كغ)" : "Weight (kg)"} value={pWeight} onChange={setPWeight} decimal placeholder="0" />
+              </View>
+              <Pressable
+                onPress={handleAdd}
+                disabled={addEx.isPending}
+                style={{
+                  backgroundColor: c.primary,
+                  borderRadius: 14,
+                  height: 52,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  opacity: addEx.isPending ? 0.6 : 1,
+                }}
+              >
+                {addEx.isPending ? (
+                  <ActivityIndicator color={c.primaryForeground} />
+                ) : (
+                  <Text style={{ color: c.primaryForeground, fontWeight: "700", fontSize: 16 }}>
+                    {lang === "ar" ? "إضافة للخطة ✓" : "Add to Plan ✓"}
+                  </Text>
+                )}
+              </Pressable>
+            </View>
+          )}
+
+          {/* ── Day view: exercises list ── */}
+          {!pickerOpen && (
+            <>
+              {day.isRestDay ? (
+                <View style={{ padding: 40, alignItems: "center", gap: 8 }}>
+                  <Text style={{ fontSize: 48 }}>😴</Text>
+                  <Text style={{ color: c.mutedForeground, fontSize: 16, fontWeight: "600" }}>
+                    {lang === "ar" ? "يوم راحة" : "Rest Day"}
+                  </Text>
+                </View>
+              ) : exercises.length === 0 ? (
+                <View style={{ padding: 40, alignItems: "center", gap: 8 }}>
+                  <Feather name="inbox" size={40} color={c.mutedForeground} />
+                  <Text style={{ color: c.mutedForeground, fontSize: 14 }}>
+                    {lang === "ar" ? "لا يوجد تمارين" : "No exercises yet"}
+                  </Text>
+                </View>
+              ) : (
+                <FlatList
+                  data={exercises}
+                  keyExtractor={(e) => e.id}
+                  contentContainerStyle={{ padding: 14, gap: 8 }}
+                  ItemSeparatorComponent={() => <View style={{ height: 6 }} />}
+                  renderItem={({ item: ex }) => (
+                    <View
+                      style={{
+                        backgroundColor: c.surface,
+                        borderRadius: 12,
+                        borderWidth: 1,
+                        borderColor: c.border,
+                        padding: 12,
+                        flexDirection: isRTL ? "row-reverse" : "row",
+                        alignItems: "center",
+                        gap: 10,
+                      }}
+                    >
+                      <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: `${c.primary}15`, alignItems: "center", justifyContent: "center" }}>
+                        <Feather name="activity" size={16} color={c.primary} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ color: c.foreground, fontWeight: "700", fontSize: 14, textAlign: isRTL ? "right" : "left" }}>
+                          {lang === "ar" ? (ex.exerciseNameAr ?? ex.exerciseName ?? "") : (ex.exerciseName ?? "")}
+                        </Text>
+                        <Text style={{ color: c.mutedForeground, fontSize: 12, textAlign: isRTL ? "right" : "left" }}>
+                          {ex.sets ?? 3} × {ex.reps ?? 10}
+                          {ex.targetWeight ? (lang === "ar" ? `  @  ${ex.targetWeight} كغ` : `  @  ${ex.targetWeight} kg`) : ""}
+                        </Text>
+                      </View>
+                      <Pressable
+                        onPress={() => onDeleteExercise(ex.id)}
+                        disabled={deletePending}
+                        hitSlop={8}
+                        style={{
+                          width: 34,
+                          height: 34,
+                          borderRadius: 8,
+                          alignItems: "center",
+                          justifyContent: "center",
+                          backgroundColor: "rgba(239,68,68,0.12)",
+                          opacity: deletePending ? 0.5 : 1,
+                        }}
+                      >
+                        <Feather name="trash-2" size={15} color="#ef4444" />
+                      </Pressable>
+                    </View>
+                  )}
+                />
+              )}
+
+              {!day.isRestDay && (
+                <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
+                  <Pressable
+                    onPress={openPicker}
+                    style={{
+                      backgroundColor: c.primary,
+                      borderRadius: 14,
+                      height: 50,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                    }}
+                  >
+                    <Feather name="plus" size={18} color={c.primaryForeground} />
+                    <Text style={{ color: c.primaryForeground, fontWeight: "700", fontSize: 15 }}>
+                      {lang === "ar" ? "إضافة تمرين" : "Add Exercise"}
+                    </Text>
+                  </Pressable>
+                </View>
               )}
             </>
           )}

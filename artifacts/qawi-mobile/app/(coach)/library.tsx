@@ -473,22 +473,20 @@ function AddToPlanModal({ exercise, onClose }: { exercise: ExerciseTemplate | nu
     queryFn: () => apiFetch<CoachMember[]>("/coach/members").catch(() => []),
     enabled: open,
   });
-  const plans = useQuery({
-    queryKey: ["coach", "member-workouts", memberId],
-    queryFn: () => apiFetch<any[]>(`/workouts/member/${memberId}`).catch(() => []),
+  const overview = useQuery({
+    queryKey: ["coach", "member-overview-lib", memberId],
+    queryFn: () => apiFetch<any>(`/coach/members/${memberId}/overview`).catch(() => null),
     enabled: !!memberId,
   });
 
   const days: { id: string; label: string }[] = useMemo(() => {
-    const list = plans.data ?? [];
-    if (list.length === 0) return [];
-    const latest = list[list.length - 1];
-    const ds = latest.days ?? latest.scheduleDays ?? [];
-    return ds.map((d: any) => ({
+    const plan = overview.data?.currentWorkoutPlan;
+    if (!plan) return [];
+    return (plan.scheduleDays ?? []).map((d: any) => ({
       id: d.id,
-      label: `${d.dayName ?? d.name ?? d.dayDate ?? ""}${d.restDay ? " (Rest)" : ""}`,
+      label: `${d.dayName ?? d.dayDate ?? ""}${d.isRestDay ? " (Rest)" : ""}`,
     }));
-  }, [plans.data]);
+  }, [overview.data]);
 
   useEffect(() => {
     if (days.length > 0 && !dayId) setDayId(days[0].id);
@@ -578,7 +576,7 @@ function AddToPlanModal({ exercise, onClose }: { exercise: ExerciseTemplate | nu
 
             {memberId ? (
               <Field label={lang === "ar" ? "اليوم" : "Select Day"}>
-                {plans.isLoading ? (
+                {overview.isLoading ? (
                   <ActivityIndicator color={c.primary} />
                 ) : days.length === 0 ? (
                   <Text style={{ color: c.mutedForeground, fontSize: 12 }}>
