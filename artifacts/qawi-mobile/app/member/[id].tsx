@@ -144,7 +144,35 @@ export default function MemberDetail() {
           ) : (
             notes.map((n: any) => (
               <Card key={n.id}>
-                <Text style={{ color: c.mutedForeground, fontSize: 11 }}>{(n.createdAt ?? "").slice(0, 10)}</Text>
+                <View style={{ flexDirection: isRTL ? "row-reverse" : "row", justifyContent: "space-between", alignItems: "center" }}>
+                  <Text style={{ color: c.mutedForeground, fontSize: 11 }}>{(n.createdAt ?? "").slice(0, 10)}</Text>
+                  <Pressable
+                    hitSlop={10}
+                    onPress={() => {
+                      Alert.alert(
+                        lang === "ar" ? "حذف الملاحظة" : "Delete note",
+                        lang === "ar" ? "هل أنت متأكد من حذف هذه الملاحظة؟" : "Are you sure you want to delete this note?",
+                        [
+                          { text: lang === "ar" ? "إلغاء" : "Cancel", style: "cancel" },
+                          {
+                            text: lang === "ar" ? "حذف" : "Delete",
+                            style: "destructive",
+                            onPress: async () => {
+                              try {
+                                await apiFetch(`/notes/${n.id}`, { method: "DELETE" });
+                                qc.invalidateQueries({ queryKey: ["coach", "member-overview", id] });
+                              } catch (e: any) {
+                                Alert.alert("Qawi", e?.message || (lang === "ar" ? "تعذر حذف الملاحظة" : "Could not delete note"));
+                              }
+                            },
+                          },
+                        ],
+                      );
+                    }}
+                  >
+                    <Feather name="trash-2" size={16} color={c.mutedForeground} />
+                  </Pressable>
+                </View>
                 <Text style={{ color: c.foreground, marginTop: 4, textAlign: isRTL ? "right" : "left" }}>
                   {n.note ?? n.content}
                 </Text>
