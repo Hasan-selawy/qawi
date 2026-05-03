@@ -88,6 +88,15 @@ public class WorkoutPlanController {
                 .body(workoutPlanService.logWorkout(request, userDetails.getUsername()));
     }
 
+    @DeleteMapping("/{planId}")
+    @PreAuthorize("hasRole('COACH')")
+    public ResponseEntity<Void> deletePlan(
+            @PathVariable UUID planId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        workoutPlanService.deletePlan(planId, userDetails.getUsername());
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/logs/member/{memberId}")
     public ResponseEntity<List<WorkoutLog>> getLogsByMember(@PathVariable UUID memberId) {
         return ResponseEntity.ok(workoutPlanService.getLogsByMember(memberId));

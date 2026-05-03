@@ -204,6 +204,22 @@ public class WorkoutPlanService {
         return result;
     }
 
+    @Transactional
+    public void deletePlan(UUID planId, String coachEmail) {
+        User coach = getUser(coachEmail);
+        WorkoutPlan plan = planRepository.findById(planId)
+                .orElseThrow(() -> new AppException("Plan not found", "الخطة غير موجودة", HttpStatus.NOT_FOUND));
+        if (!plan.getCoachId().equals(coach.getId())) {
+            throw new AppException("Forbidden", "غير مصرح", HttpStatus.FORBIDDEN);
+        }
+        List<ScheduleDay> days = scheduleDayRepository.findByWorkoutPlanIdOrderByDayDate(planId);
+        for (ScheduleDay d : days) {
+            planExerciseRepository.deleteByScheduleDayId(d.getId());
+        }
+        scheduleDayRepository.deleteByWorkoutPlanId(planId);
+        planRepository.deleteById(planId);
+    }
+
     private User getUser(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException("User not found", "المستخدم غير موجود", HttpStatus.NOT_FOUND));

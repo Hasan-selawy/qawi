@@ -1,14 +1,26 @@
 import { Feather } from "@expo/vector-icons";
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { ActivityIndicator, Alert, FlatList, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Alert, FlatList, Platform, Pressable, Text, View } from "react-native";
 
 import { RoleHeader } from "@/components/RoleHeader";
+import { useToast } from "@/components/Toast";
 import { Button, Card, EmptyState, Screen } from "@/components/ui";
 import { useLanguage, pickName } from "@/context/LanguageContext";
 import { useColors } from "@/hooks/useColors";
 import { apiFetch } from "@/services/api";
+
+function confirmDelete(title: string, message: string, confirmLabel: string, cancelLabel: string, onConfirm: () => void) {
+  if (Platform.OS === "web") {
+    if (typeof window !== "undefined" && window.confirm(`${title}\n\n${message}`)) onConfirm();
+    return;
+  }
+  Alert.alert(title, message, [
+    { text: cancelLabel, style: "cancel" },
+    { text: confirmLabel, style: "destructive", onPress: onConfirm },
+  ]);
+}
 
 type CoachMember = { id: string; name: string; email: string };
 
@@ -16,7 +28,37 @@ export default function CoachPlans() {
   const c = useColors();
   const { t, lang, isRTL } = useLanguage();
   const router = useRouter();
+  const qc = useQueryClient();
+  const toast = useToast();
   const [tab, setTab] = useState<"workout" | "nutrition">("workout");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const deletePlan = useMutation({
+    mutationFn: (planId: string) =>
+      apiFetch(tab === "workout" ? `/workouts/${planId}` : `/nutrition/${planId}`, { method: "DELETE" }),
+    onMutate: (planId: string) => setDeletingId(planId),
+    onSuccess: () => {
+      toast.show(lang === "ar" ? "🗑️ تم حذف الخطة" : "🗑️ Plan deleted", "success");
+      qc.invalidateQueries({ queryKey: ["coach"] });
+    },
+    onError: (e: any) => {
+      console.error("[delete-plan] failed", e?.status, e?.body, e?.message);
+      const detail = typeof e?.body === "object" ? JSON.stringify(e.body) : (e?.message || "Could not delete");
+      toast.show(lang === "ar" ? `فشل الحذف: ${detail}` : `Delete failed: ${detail}`, "error");
+    },
+    onSettled: () => setDeletingId(null),
+  });
+
+  const onDelete = (plan: any) => {
+    const label = pickName(lang, plan) || plan.name || "Plan";
+    confirmDelete(
+      lang === "ar" ? "حذف الخطة" : "Delete plan",
+      lang === "ar" ? `هل تريد حذف "${label}"؟ لا يمكن التراجع.` : `Delete "${label}"? This cannot be undone.`,
+      lang === "ar" ? "حذف" : "Delete",
+      lang === "ar" ? "إلغاء" : "Cancel",
+      () => deletePlan.mutate(plan.id),
+    );
+  };
 
   const members = useQuery({
     queryKey: ["coach", "members"],
@@ -90,11 +132,15 @@ export default function CoachPlans() {
           keyExtractor={(p, i) => `${p.id ?? i}`}
           contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 100 }}
           ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-          renderItem={({ item }) => (
-            <Pressable onPress={() => router.push(`/member/${item._member.id}` as never)}>
+          renderItem={({ item }) => {
+            const isDeleting = deletingId === item.id;
+            return (
               <Card>
-                <View style={{ flexDirection: isRTL ? "row-reverse" : "row", justifyContent: "space-between", alignItems: "center" }}>
-                  <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: isRTL ? "row-reverse" : "row", alignItems: "center", gap: 8 }}>
+                  <Pressable
+                    onPress={() => router.push(`/member/${item._member.id}` as never)}
+                    style={{ flex: 1 }}
+                  >
                     <Text style={{ color: c.foreground, fontWeight: "700", fontSize: 15, textAlign: isRTL ? "right" : "left" }}>
                       {pickName(lang, item) || item.name || "Plan"}
                     </Text>
@@ -102,12 +148,33 @@ export default function CoachPlans() {
                       {item._member?.name}
                       {item.startDate ? `  •  ${String(item.startDate).slice(0, 10)}` : ""}
                     </Text>
-                  </View>
-                  <Feather name="chevron-right" size={18} color={c.mutedForeground} />
+                  </Pressable>
+                  <Pressable
+                    onPress={() => onDelete(item)}
+                    disabled={isDeleting}
+                    hitSlop={10}
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 18,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      backgroundColor: c.surface,
+                      borderWidth: 1,
+                      borderColor: c.border,
+                      opacity: isDeleting ? 0.5 : 1,
+                    }}
+                  >
+                    {isDeleting ? (
+                      <ActivityIndicator size="small" color={c.destructive} />
+                    ) : (
+                      <Feather name="trash-2" size={16} color={c.destructive} />
+                    )}
+                  </Pressable>
                 </View>
               </Card>
-            </Pressable>
-          )}
+            );
+          }}
         />
       )}
     </Screen>

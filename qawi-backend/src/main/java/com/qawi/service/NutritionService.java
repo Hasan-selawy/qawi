@@ -68,6 +68,18 @@ public class NutritionService {
     }
 
     @Transactional
+    public void deletePlan(UUID planId, String coachEmail) {
+        User coach = getUser(coachEmail);
+        NutritionPlan plan = planRepository.findById(planId)
+                .orElseThrow(() -> new AppException("Plan not found", "الخطة غير موجودة", HttpStatus.NOT_FOUND));
+        if (!plan.getCoachId().equals(coach.getId())) {
+            throw new AppException("Forbidden", "غير مصرح", HttpStatus.FORBIDDEN);
+        }
+        mealRepository.deleteByNutritionPlanId(planId);
+        planRepository.deleteById(planId);
+    }
+
+    @Transactional
     public void deleteMeal(UUID mealId, String coachEmail) {
         mealRepository.findById(mealId)
                 .orElseThrow(() -> new AppException("Meal not found", "الوجبة غير موجودة", HttpStatus.NOT_FOUND));

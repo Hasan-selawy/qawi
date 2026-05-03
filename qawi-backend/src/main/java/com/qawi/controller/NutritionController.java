@@ -57,6 +57,15 @@ public class NutritionController {
         return ResponseEntity.ok(nutritionService.updateMeal(mealId, request, userDetails.getUsername()));
     }
 
+    @DeleteMapping("/{planId}")
+    @PreAuthorize("hasRole('COACH')")
+    public ResponseEntity<Void> deletePlan(
+            @PathVariable UUID planId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        nutritionService.deletePlan(planId, userDetails.getUsername());
+        return ResponseEntity.noContent().build();
+    }
+
     @DeleteMapping("/meals/{mealId}")
     @PreAuthorize("hasRole('COACH')")
     public ResponseEntity<Void> deleteMeal(

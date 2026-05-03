@@ -11,4 +11,5 @@ import java.util.UUID;
 public interface MealRepository extends JpaRepository<Meal, UUID> {
     List<Meal> findByNutritionPlanIdOrderByOrderIndex(UUID nutritionPlanId);
     long countByNutritionPlanId(UUID nutritionPlanId);
+    void deleteByNutritionPlanId(UUID nutritionPlanId);
 }

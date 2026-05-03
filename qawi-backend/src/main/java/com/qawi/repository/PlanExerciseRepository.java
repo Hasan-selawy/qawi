@@ -10,4 +10,5 @@ import java.util.UUID;
 @Repository
 public interface PlanExerciseRepository extends JpaRepository<PlanExercise, UUID> {
     List<PlanExercise> findByScheduleDayIdOrderByOrderIndex(UUID scheduleDayId);
+    void deleteByScheduleDayId(UUID scheduleDayId);
 }
