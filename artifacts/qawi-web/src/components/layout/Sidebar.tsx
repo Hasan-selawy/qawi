@@ -12,7 +12,9 @@ export function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (v:
   const { user } = useAuth();
   const { t, lang } = useLanguage();
   const [location] = useLocation();
-  const { features } = useGymConfig();
+  const { features, branding, gymName } = useGymConfig();
+  const showLogo = features.customBrandingEnabled && !!branding.logoUrl;
+  const showGymName = !!gymName && (user?.role === 'GYM_ADMIN' || user?.role === 'COACH');
 
   const getLinks = () => {
     switch (user?.role) {
@@ -56,10 +58,24 @@ export function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (v:
       "fixed top-0 bottom-0 z-40 bg-sidebar border-r rtl:border-l rtl:border-r-0 border-sidebar-border transition-all duration-300 flex flex-col",
       isOpen ? "w-[260px]" : "w-[72px]"
     )}>
-      <div className="h-16 flex items-center justify-center border-b border-sidebar-border">
-        <h1 className={cn("font-bold text-primary tracking-tight transition-all", isOpen ? "text-2xl" : "text-xl")} style={{ textShadow: '0 0 20px rgba(34,197,94,0.3)' }}>
-          {isOpen ? 'قوي' : 'ق'}
-        </h1>
+      <div className="h-16 flex items-center justify-center border-b border-sidebar-border px-3 gap-2 overflow-hidden">
+        {showLogo ? (
+          <img
+            src={branding.logoUrl!}
+            alt={gymName || 'Gym'}
+            className={cn("object-contain shrink-0", isOpen ? "h-10 w-10" : "h-8 w-8")}
+            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+          />
+        ) : (
+          <h1 className={cn("font-bold text-primary tracking-tight transition-all shrink-0", isOpen ? "text-2xl" : "text-xl")} style={{ textShadow: '0 0 20px rgba(34,197,94,0.3)' }}>
+            {isOpen ? 'قوي' : 'ق'}
+          </h1>
+        )}
+        {isOpen && showGymName && (
+          <span className="text-sm font-medium text-muted-foreground truncate" title={gymName!}>
+            {showLogo ? gymName : `· ${gymName}`}
+          </span>
+        )}
       </div>
 
       <nav className="flex-1 py-4 flex flex-col gap-2 px-3 overflow-y-auto">

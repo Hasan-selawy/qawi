@@ -1,5 +1,6 @@
 import { useAuth } from '@/hooks/use-auth';
 import { useLanguage } from '@/hooks/use-language';
+import { useGymConfig } from '@/hooks/use-gym-config';
 import { GradientAvatar } from '../GradientAvatar';
 import { NotificationBell } from '../NotificationBell';
 import { LogOut, User } from 'lucide-react';
@@ -12,6 +13,7 @@ import { Button } from '@/components/ui/button';
 export function Navbar() {
   const { user, logout } = useAuth();
   const { lang, setLang, t } = useLanguage();
+  const { features } = useGymConfig();
 
   return (
     <header className="h-16 border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-30 px-6 flex items-center justify-between">
@@ -27,7 +29,7 @@ export function Navbar() {
           {lang === "ar" ? "EN" : "AR"}
         </button>
 
-        <NotificationBell />
+        {features.pushNotificationsEnabled && <NotificationBell />}
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

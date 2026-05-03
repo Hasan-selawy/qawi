@@ -1,13 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '@/services/api';
 import { useLanguage } from '@/hooks/use-language';
+import { useGymConfig } from '@/hooks/use-gym-config';
 import { useLocation } from 'wouter';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { PageWrapper } from '@/components/layout/PageWrapper';
 import { StatCard } from '@/components/StatCard';
 import { AttendanceChart } from '@/components/charts/AttendanceChart';
 import { MemberGrowthChart } from '@/components/charts/MemberGrowthChart';
-import { Loader2, Users, Activity, Clock, UserSquare2, Medal } from 'lucide-react';
+import { Loader2, Users, Activity, Clock, UserSquare2, Medal, Lock } from 'lucide-react';
 import { GradientAvatar } from '@/components/GradientAvatar';
 import { Button } from '@/components/ui/button';
 import { getDaysRemaining } from '@/lib/sub-status';
@@ -15,6 +16,8 @@ import { getDaysRemaining } from '@/lib/sub-status';
 export default function AdminDashboard() {
   const { t } = useLanguage();
   const [, setLocation] = useLocation();
+  const { features } = useGymConfig();
+  const advanced = features.analyticsAdvancedEnabled;
 
   const { data: stats, isLoading } = useQuery<any>({
     queryKey: ['admin', 'analytics'],
@@ -50,18 +53,29 @@ export default function AdminDashboard() {
         <StatCard title={t('admin.total_coaches')} value={stats?.totalCoaches ?? 0} icon={<UserSquare2 size={24} />} glowColor="purple" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
-        <div className="glass-card p-6 lg:col-span-3">
-          <h3 className="text-lg font-semibold mb-6">Attendance (This Week)</h3>
-          <AttendanceChart data={attendanceData} />
+      {advanced ? (
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+          <div className="glass-card p-6 lg:col-span-3">
+            <h3 className="text-lg font-semibold mb-6">Attendance (This Week)</h3>
+            <AttendanceChart data={attendanceData} />
+          </div>
+          <div className="glass-card p-6 lg:col-span-2">
+            <h3 className="text-lg font-semibold mb-6">Member Growth</h3>
+            <MemberGrowthChart data={growthData} />
+          </div>
         </div>
-        <div className="glass-card p-6 lg:col-span-2">
-          <h3 className="text-lg font-semibold mb-6">Member Growth</h3>
-          <MemberGrowthChart data={growthData} />
+      ) : (
+        <div className="glass-card p-8 mb-8 border-dashed border-primary/30 text-center">
+          <Lock className="h-8 w-8 mx-auto mb-3 text-primary/70" />
+          <h3 className="text-lg font-semibold mb-1">Charts available on the Pro plan</h3>
+          <p className="text-sm text-muted-foreground">
+            Attendance trends and member growth charts unlock with Advanced Analytics.
+          </p>
         </div>
-      </div>
+      )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className={`grid grid-cols-1 ${advanced ? 'lg:grid-cols-2' : ''} gap-6`}>
+        {advanced && (
         <div className="glass-card p-6">
           <h3 className="text-lg font-semibold mb-6">{t('admin.top_performers')}</h3>
           <div className="space-y-4">
@@ -86,8 +100,9 @@ export default function AdminDashboard() {
             )}
           </div>
         </div>
+        )}
 
-        <div className="glass-card p-6">
+        <div className={`glass-card p-6 ${advanced ? '' : 'lg:max-w-2xl lg:mx-auto w-full'}`}>
           <h3 className="text-lg font-semibold mb-6">{t('admin.expiring_subscriptions')}</h3>
           <div className="space-y-4">
             {(!expiring || expiring.length === 0) ? (
