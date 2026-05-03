@@ -24,12 +24,13 @@ public class WorkoutPlanService {
     private final WorkoutTemplateRepository templateRepository;
     private final WorkoutTemplateDayRepository templateDayRepository;
     private final WorkoutTemplateDayExerciseRepository templateDayExerciseRepository;
-    private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final AccessGuard accessGuard;
 
     @Transactional
     public WorkoutPlan createPlan(CreateWorkoutPlanRequest req, String coachEmail) {
-        User coach = getUser(coachEmail);
+        User coach = accessGuard.loadUserByEmail(coachEmail);
+        accessGuard.assertCoachManagesMember(coachEmail, req.getMemberId());
         return planRepository.save(WorkoutPlan.builder()
                 .name(req.getName())
                 .coachId(coach.getId())
@@ -41,7 +42,8 @@ public class WorkoutPlanService {
 
     @Transactional
     public Map<String, Object> createFromTemplate(CreateFromTemplateRequest req, String coachEmail) {
-        User coach = getUser(coachEmail);
+        User coach = accessGuard.loadUserByEmail(coachEmail);
+        accessGuard.assertCoachManagesMember(coachEmail, req.getMemberId());
 
         WorkoutTemplate template = templateRepository.findById(req.getTemplateId())
                 .orElseThrow(() -> new AppException("Template not found", "القالب غير موجود", HttpStatus.NOT_FOUND));
@@ -92,21 +94,22 @@ public class WorkoutPlanService {
     }
 
     @Transactional(readOnly = true)
-    public List<WorkoutPlan> getPlansByMember(UUID memberId) {
+    public List<WorkoutPlan> getPlansByMember(UUID memberId, String callerEmail) {
+        accessGuard.assertCanAccessMember(callerEmail, memberId);
         return planRepository.findByMemberId(memberId);
     }
 
     @Transactional(readOnly = true)
-    public Map<String, Object> getPlanDetail(UUID planId) {
+    public Map<String, Object> getPlanDetail(UUID planId, String callerEmail) {
         WorkoutPlan plan = planRepository.findById(planId)
                 .orElseThrow(() -> new AppException("Plan not found", "الخطة غير موجودة", HttpStatus.NOT_FOUND));
+        accessGuard.assertCanAccessMember(callerEmail, plan.getMemberId());
         return buildPlanDetail(plan);
     }
 
     @Transactional
     public ScheduleDay addDay(UUID planId, AddScheduleDayRequest req, String coachEmail) {
-        planRepository.findById(planId)
-                .orElseThrow(() -> new AppException("Plan not found", "الخطة غير موجودة", HttpStatus.NOT_FOUND));
+        assertCoachOwnsPlan(planId, coachEmail);
         return scheduleDayRepository.save(ScheduleDay.builder()
                 .workoutPlanId(planId)
                 .dayDate(req.getDayDate())
@@ -118,8 +121,9 @@ public class WorkoutPlanService {
 
     @Transactional
     public PlanExercise addExerciseToDay(UUID dayId, AddPlanExerciseRequest req, String coachEmail) {
-        scheduleDayRepository.findById(dayId)
+        ScheduleDay day = scheduleDayRepository.findById(dayId)
                 .orElseThrow(() -> new AppException("Day not found", "اليوم غير موجود", HttpStatus.NOT_FOUND));
+        assertCoachOwnsPlan(day.getWorkoutPlanId(), coachEmail);
 
         int idx = req.getOrderIndex();
         if (idx == 0) {
@@ -141,9 +145,14 @@ public class WorkoutPlanService {
 
     @Transactional
     public ScheduleDay completeDay(UUID dayId, String memberEmail) {
-        User member = getUser(memberEmail);
+        User member = accessGuard.loadUserByEmail(memberEmail);
         ScheduleDay day = scheduleDayRepository.findById(dayId)
                 .orElseThrow(() -> new AppException("Day not found", "اليوم غير موجود", HttpStatus.NOT_FOUND));
+        WorkoutPlan plan = planRepository.findById(day.getWorkoutPlanId())
+                .orElseThrow(() -> new AppException("Plan not found", "الخطة غير موجودة", HttpStatus.NOT_FOUND));
+        if (!plan.getMemberId().equals(member.getId())) {
+            throw new AppException("Access denied", "غير مصرح لك", HttpStatus.FORBIDDEN);
+        }
         day.setCompleted(true);
         day.setCompletedAt(LocalDateTime.now());
         ScheduleDay saved = scheduleDayRepository.save(day);
@@ -158,9 +167,16 @@ public class WorkoutPlanService {
 
     @Transactional
     public WorkoutLog logWorkout(LogWorkoutRequest req, String memberEmail) {
-        User member = getUser(memberEmail);
-        planExerciseRepository.findById(req.getPlanExerciseId())
+        User member = accessGuard.loadUserByEmail(memberEmail);
+        PlanExercise exercise = planExerciseRepository.findById(req.getPlanExerciseId())
                 .orElseThrow(() -> new AppException("Exercise not found", "التمرين غير موجود", HttpStatus.NOT_FOUND));
+        ScheduleDay day = scheduleDayRepository.findById(exercise.getScheduleDayId())
+                .orElseThrow(() -> new AppException("Day not found", "اليوم غير موجود", HttpStatus.NOT_FOUND));
+        WorkoutPlan plan = planRepository.findById(day.getWorkoutPlanId())
+                .orElseThrow(() -> new AppException("Plan not found", "الخطة غير موجودة", HttpStatus.NOT_FOUND));
+        if (!plan.getMemberId().equals(member.getId())) {
+            throw new AppException("Access denied", "غير مصرح لك", HttpStatus.FORBIDDEN);
+        }
 
         return logRepository.save(WorkoutLog.builder()
                 .memberId(member.getId())
@@ -172,7 +188,8 @@ public class WorkoutPlanService {
     }
 
     @Transactional(readOnly = true)
-    public List<WorkoutLog> getLogsByMember(UUID memberId) {
+    public List<WorkoutLog> getLogsByMember(UUID memberId, String callerEmail) {
+        accessGuard.assertCanAccessMember(callerEmail, memberId);
         return logRepository.findByMemberIdOrderByLoggedAtDesc(memberId);
     }
 
@@ -206,12 +223,7 @@ public class WorkoutPlanService {
 
     @Transactional
     public void deletePlan(UUID planId, String coachEmail) {
-        User coach = getUser(coachEmail);
-        WorkoutPlan plan = planRepository.findById(planId)
-                .orElseThrow(() -> new AppException("Plan not found", "الخطة غير موجودة", HttpStatus.NOT_FOUND));
-        if (!plan.getCoachId().equals(coach.getId())) {
-            throw new AppException("Forbidden", "غير مصرح", HttpStatus.FORBIDDEN);
-        }
+        assertCoachOwnsPlan(planId, coachEmail);
         List<ScheduleDay> days = scheduleDayRepository.findByWorkoutPlanIdOrderByDayDate(planId);
         for (ScheduleDay d : days) {
             planExerciseRepository.deleteByScheduleDayId(d.getId());
@@ -220,8 +232,13 @@ public class WorkoutPlanService {
         planRepository.deleteById(planId);
     }
 
-    private User getUser(String email) {
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new AppException("User not found", "المستخدم غير موجود", HttpStatus.NOT_FOUND));
+    private WorkoutPlan assertCoachOwnsPlan(UUID planId, String coachEmail) {
+        User coach = accessGuard.loadUserByEmail(coachEmail);
+        WorkoutPlan plan = planRepository.findById(planId)
+                .orElseThrow(() -> new AppException("Plan not found", "الخطة غير موجودة", HttpStatus.NOT_FOUND));
+        if (!plan.getCoachId().equals(coach.getId())) {
+            throw new AppException("Access denied", "غير مصرح لك", HttpStatus.FORBIDDEN);
+        }
+        return plan;
     }
 }

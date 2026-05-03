@@ -6,7 +6,6 @@ import com.qawi.entity.*;
 import com.qawi.exception.AppException;
 import com.qawi.repository.MealRepository;
 import com.qawi.repository.NutritionPlanRepository;
-import com.qawi.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -20,11 +19,12 @@ public class NutritionService {
 
     private final NutritionPlanRepository planRepository;
     private final MealRepository mealRepository;
-    private final UserRepository userRepository;
+    private final AccessGuard accessGuard;
 
     @Transactional
     public Map<String, Object> createPlan(CreateNutritionPlanRequest req, String coachEmail) {
-        User coach = getUser(coachEmail);
+        User coach = accessGuard.loadUserByEmail(coachEmail);
+        accessGuard.assertCoachManagesMember(coachEmail, req.getMemberId());
         NutritionPlan plan = planRepository.save(NutritionPlan.builder()
                 .memberId(req.getMemberId())
                 .coachId(coach.getId())
@@ -33,15 +33,15 @@ public class NutritionService {
     }
 
     @Transactional(readOnly = true)
-    public List<Map<String, Object>> getPlansByMember(UUID memberId) {
+    public List<Map<String, Object>> getPlansByMember(UUID memberId, String callerEmail) {
+        accessGuard.assertCanAccessMember(callerEmail, memberId);
         return planRepository.findByMemberId(memberId).stream()
                 .map(this::buildPlanDetail).toList();
     }
 
     @Transactional
     public Meal addMeal(UUID planId, CreateMealRequest req, String coachEmail) {
-        planRepository.findById(planId)
-                .orElseThrow(() -> new AppException("Plan not found", "الخطة غير موجودة", HttpStatus.NOT_FOUND));
+        assertCoachOwnsPlan(planId, coachEmail);
 
         int idx = (int) mealRepository.countByNutritionPlanId(planId);
         return mealRepository.save(Meal.builder()
@@ -59,6 +59,7 @@ public class NutritionService {
     public Meal updateMeal(UUID mealId, CreateMealRequest req, String coachEmail) {
         Meal meal = mealRepository.findById(mealId)
                 .orElseThrow(() -> new AppException("Meal not found", "الوجبة غير موجودة", HttpStatus.NOT_FOUND));
+        assertCoachOwnsPlan(meal.getNutritionPlanId(), coachEmail);
         meal.setMealType(req.getMealType());
         meal.setDescription(req.getDescription());
         meal.setDescriptionAr(req.getDescriptionAr());
@@ -69,20 +70,16 @@ public class NutritionService {
 
     @Transactional
     public void deletePlan(UUID planId, String coachEmail) {
-        User coach = getUser(coachEmail);
-        NutritionPlan plan = planRepository.findById(planId)
-                .orElseThrow(() -> new AppException("Plan not found", "الخطة غير موجودة", HttpStatus.NOT_FOUND));
-        if (!plan.getCoachId().equals(coach.getId())) {
-            throw new AppException("Forbidden", "غير مصرح", HttpStatus.FORBIDDEN);
-        }
+        assertCoachOwnsPlan(planId, coachEmail);
         mealRepository.deleteByNutritionPlanId(planId);
         planRepository.deleteById(planId);
     }
 
     @Transactional
     public void deleteMeal(UUID mealId, String coachEmail) {
-        mealRepository.findById(mealId)
+        Meal meal = mealRepository.findById(mealId)
                 .orElseThrow(() -> new AppException("Meal not found", "الوجبة غير موجودة", HttpStatus.NOT_FOUND));
+        assertCoachOwnsPlan(meal.getNutritionPlanId(), coachEmail);
         mealRepository.deleteById(mealId);
     }
 
@@ -96,8 +93,13 @@ public class NutritionService {
         return result;
     }
 
-    private User getUser(String email) {
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new AppException("User not found", "المستخدم غير موجود", HttpStatus.NOT_FOUND));
+    private NutritionPlan assertCoachOwnsPlan(UUID planId, String coachEmail) {
+        User coach = accessGuard.loadUserByEmail(coachEmail);
+        NutritionPlan plan = planRepository.findById(planId)
+                .orElseThrow(() -> new AppException("Plan not found", "الخطة غير موجودة", HttpStatus.NOT_FOUND));
+        if (!plan.getCoachId().equals(coach.getId())) {
+            throw new AppException("Access denied", "غير مصرح لك", HttpStatus.FORBIDDEN);
+        }
+        return plan;
     }
 }

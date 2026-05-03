@@ -1,5 +1,6 @@
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/controller/AuthController.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/QawiApplication.java
+/home/runner/workspace/qawi-backend/src/main/java/com/qawi/service/AccessGuard.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/service/ProgressPhotoService.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/repository/MealRepository.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/repository/PlanExerciseRepository.java
@@ -43,8 +44,8 @@
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/WorkoutPlan.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/AuthResponse.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/repository/NotificationRepository.java
-/home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/RegisterRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/StreakResponse.java
+/home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/RegisterRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/MealLog.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/CreateProgressPhotoRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/controller/ProgressPhotoController.java

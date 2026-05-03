@@ -34,8 +34,10 @@ public class CoachNoteController {
 
     @GetMapping("/member/{memberId}")
     @PreAuthorize("hasRole('COACH')")
-    public ResponseEntity<List<CoachNote>> getNotesByMember(@PathVariable UUID memberId) {
-        return ResponseEntity.ok(noteService.getNotesByMember(memberId));
+    public ResponseEntity<List<CoachNote>> getNotesByMember(
+            @PathVariable UUID memberId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(noteService.getNotesByMember(memberId, userDetails.getUsername()));
     }
 
     @PutMapping("/{noteId}")

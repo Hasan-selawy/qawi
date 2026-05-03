@@ -35,7 +35,9 @@ public class NotificationController {
     public ResponseEntity<Notification> markRead(
             @PathVariable UUID id,
             @AuthenticationPrincipal UserDetails userDetails) {
-        return ResponseEntity.ok(notificationService.markRead(id));
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new AppException("User not found", "المستخدم غير موجود", HttpStatus.NOT_FOUND));
+        return ResponseEntity.ok(notificationService.markRead(id, user.getId()));
     }
 
     @PutMapping("/read-all")

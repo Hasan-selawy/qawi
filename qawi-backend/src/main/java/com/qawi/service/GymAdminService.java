@@ -129,6 +129,11 @@ public class GymAdminService {
         User admin = getAdmin(adminEmail);
         User member = userRepository.findById(memberId)
                 .orElseThrow(() -> new AppException("Member not found", "العضو غير موجود", HttpStatus.NOT_FOUND));
+        if (member.getRole() != Role.MEMBER
+                || admin.getGymId() == null
+                || !admin.getGymId().equals(member.getGymId())) {
+            throw new AppException("Member not found", "العضو غير موجود", HttpStatus.NOT_FOUND);
+        }
 
         member.setSubscriptionStartDate(req.getStartDate());
         member.setSubscriptionEndDate(req.getEndDate());
@@ -157,7 +162,14 @@ public class GymAdminService {
     }
 
     public List<SubscriptionHistory> getSubscriptionHistory(UUID memberId, String adminEmail) {
-        getAdmin(adminEmail);
+        User admin = getAdmin(adminEmail);
+        User member = userRepository.findById(memberId)
+                .orElseThrow(() -> new AppException("Member not found", "العضو غير موجود", HttpStatus.NOT_FOUND));
+        if (member.getRole() != Role.MEMBER
+                || admin.getGymId() == null
+                || !admin.getGymId().equals(member.getGymId())) {
+            throw new AppException("Member not found", "العضو غير موجود", HttpStatus.NOT_FOUND);
+        }
         return subscriptionHistoryRepository.findByMemberIdOrderByCreatedAtDesc(memberId);
     }
 

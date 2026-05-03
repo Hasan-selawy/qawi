@@ -30,11 +30,16 @@ public class NotificationService {
     }
 
     @Transactional
-    public Notification markRead(UUID notificationId) {
+    public Notification markRead(UUID notificationId, UUID callerUserId) {
         Notification n = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new com.qawi.exception.AppException(
                         "Notification not found", "الإشعار غير موجود",
                         org.springframework.http.HttpStatus.NOT_FOUND));
+        if (!n.getUserId().equals(callerUserId)) {
+            throw new com.qawi.exception.AppException(
+                    "Access denied", "غير مصرح لك",
+                    org.springframework.http.HttpStatus.FORBIDDEN);
+        }
         n.setRead(true);
         return notificationRepository.save(n);
     }

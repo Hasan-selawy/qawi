@@ -21,10 +21,13 @@ public class CoachNoteService {
 
     private final CoachNoteRepository noteRepository;
     private final UserRepository userRepository;
+    private final AccessGuard accessGuard;
 
     @Transactional
     public CoachNote createNote(CreateCoachNoteRequest req, String coachEmail) {
         User coach = getUser(coachEmail);
+        // Coach must be assigned to the member and in the same gym.
+        accessGuard.assertCoachManagesMember(coachEmail, req.getMemberId());
         return noteRepository.save(CoachNote.builder()
                 .coachId(coach.getId())
                 .memberId(req.getMemberId())
@@ -32,8 +35,18 @@ public class CoachNoteService {
                 .build());
     }
 
-    public List<CoachNote> getNotesByMember(UUID memberId) {
-        return noteRepository.findByMemberIdOrderByCreatedAtDesc(memberId);
+    public List<CoachNote> getNotesByMember(UUID memberId, String coachEmail) {
+        User coach = getUser(coachEmail);
+        User member = userRepository.findById(memberId).orElse(null);
+        // Coaches only see their own notes for members in the same gym.
+        if (member == null
+                || member.getRole() != Role.MEMBER
+                || (coach.getGymId() != null && !coach.getGymId().equals(member.getGymId()))) {
+            return List.of();
+        }
+        return noteRepository.findByMemberIdOrderByCreatedAtDesc(memberId).stream()
+                .filter(n -> n.getCoachId().equals(coach.getId()))
+                .toList();
     }
 
     @Transactional

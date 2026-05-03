@@ -2,11 +2,8 @@ package com.qawi.service;
 
 import com.qawi.dto.CreateMeasurementRequest;
 import com.qawi.entity.*;
-import com.qawi.exception.AppException;
 import com.qawi.repository.BodyMeasurementRepository;
-import com.qawi.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,13 +16,18 @@ import java.util.UUID;
 public class MeasurementService {
 
     private final BodyMeasurementRepository measurementRepository;
-    private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final AccessGuard accessGuard;
 
     @Transactional
     public BodyMeasurement addMeasurement(CreateMeasurementRequest req, String recorderEmail) {
-        User recorder = userRepository.findByEmail(recorderEmail)
-                .orElseThrow(() -> new AppException("User not found", "المستخدم غير موجود", HttpStatus.NOT_FOUND));
+        User recorder = accessGuard.loadUserByEmail(recorderEmail);
+        // Coach must be assigned; admin must be in same gym.
+        if (recorder.getRole() == Role.COACH) {
+            accessGuard.assertCoachManagesMember(recorderEmail, req.getMemberId());
+        } else {
+            accessGuard.assertCanAccessMember(recorderEmail, req.getMemberId());
+        }
 
         BodyMeasurement measurement = measurementRepository.save(BodyMeasurement.builder()
                 .memberId(req.getMemberId())
@@ -51,11 +53,15 @@ public class MeasurementService {
         return measurement;
     }
 
-    public List<BodyMeasurement> getByMember(UUID memberId) {
+    @Transactional(readOnly = true)
+    public List<BodyMeasurement> getByMember(UUID memberId, String callerEmail) {
+        accessGuard.assertCanAccessMember(callerEmail, memberId);
         return measurementRepository.findByMemberIdOrderByRecordedAtDesc(memberId);
     }
 
-    public Optional<BodyMeasurement> getLatest(UUID memberId) {
+    @Transactional(readOnly = true)
+    public Optional<BodyMeasurement> getLatest(UUID memberId, String callerEmail) {
+        accessGuard.assertCanAccessMember(callerEmail, memberId);
         return measurementRepository.findFirstByMemberIdOrderByRecordedAtDesc(memberId);
     }
 }

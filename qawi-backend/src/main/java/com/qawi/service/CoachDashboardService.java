@@ -63,9 +63,18 @@ public class CoachDashboardService {
 
     @Transactional(readOnly = true)
     public Map<String, Object> getMemberOverview(UUID memberId, String coachEmail) {
-        getCoach(coachEmail);
+        User coach = getCoach(coachEmail);
         User member = userRepository.findById(memberId)
                 .orElseThrow(() -> new AppException("Member not found", "العضو غير موجود", HttpStatus.NOT_FOUND));
+        boolean assigned = coachMemberRepository.findByCoachId(coach.getId()).stream()
+                .anyMatch(cm -> cm.getMemberId().equals(memberId));
+        if (!assigned
+                || coach.getGymId() == null
+                || !coach.getGymId().equals(member.getGymId())
+                || !member.isActive()
+                || member.getRole() != Role.MEMBER) {
+            throw new AppException("Member not found", "العضو غير موجود", HttpStatus.NOT_FOUND);
+        }
 
         // Current workout plan (most recent)
         List<WorkoutPlan> plans = workoutPlanRepository.findByMemberId(memberId);

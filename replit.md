@@ -95,5 +95,17 @@ All errors: `{ error, messageAr, timestamp }`
 | `DATABASE_URL` | JDBC PostgreSQL URL (required) |
 | `DB_USERNAME` | DB user (default: postgres) |
 | `DB_PASSWORD` | DB password (default: postgres) |
-| `JWT_SECRET` | JWT signing secret (default: dev value) |
+| `JWT_SECRET` | JWT signing secret (>=32 bytes; falls back to SESSION_SECRET; startup fails if both empty/short) |
+| `SESSION_SECRET` | Fallback for `JWT_SECRET` in dev |
 | `PORT` | Server port (default: 8080) |
+
+## Security model
+Authorization is enforced by `service/AccessGuard`:
+- `assertCanAccessMember(callerEmail, memberId)` — passes for member-self, an assigned COACH in the same gym, a same-gym GYM_ADMIN, or any SUPER_ADMIN; throws 403 otherwise.
+- `assertCoachManagesMember(coachEmail, memberId)` — write-side check; coach must be assigned to the member and in the same gym.
+
+Applied across: WorkoutPlan, Nutrition, Measurement, ProgressPhoto, CoachNote (read + write), CoachDashboard.getMemberOverview, GymAdmin subscription endpoints, Notification.markRead (IDOR check).
+
+Other guarantees:
+- Self-registration (`POST /auth/register`) always creates `Role.MEMBER` with `gymId=null`. Coach/admin accounts are only created via `/api/v1/admin/*`.
+- JWT secret is validated at startup (`>=32 bytes`); CORS uses `allowCredentials=false` (Bearer-token auth, no cookies).

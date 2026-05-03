@@ -34,8 +34,10 @@ public class NutritionController {
     }
 
     @GetMapping("/member/{memberId}")
-    public ResponseEntity<List<Map<String, Object>>> getPlansByMember(@PathVariable UUID memberId) {
-        return ResponseEntity.ok(nutritionService.getPlansByMember(memberId));
+    public ResponseEntity<List<Map<String, Object>>> getPlansByMember(
+            @PathVariable UUID memberId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(nutritionService.getPlansByMember(memberId, userDetails.getUsername()));
     }
 
     @PostMapping("/{planId}/meals")

@@ -4,6 +4,7 @@ import com.qawi.dto.AuthResponse;
 import com.qawi.dto.LoginRequest;
 import com.qawi.dto.RegisterRequest;
 import com.qawi.dto.UserDto;
+import com.qawi.entity.Role;
 import com.qawi.entity.User;
 import com.qawi.exception.AppException;
 import com.qawi.repository.UserRepository;
@@ -36,12 +37,16 @@ public class AuthService {
             );
         }
 
+        // Self-registration is restricted to MEMBER. Coach/Admin accounts are
+        // only created by a GYM_ADMIN through /api/v1/admin/* endpoints, which
+        // also assign the gymId. New self-registered members have no gym until
+        // an admin associates them.
         User user = User.builder()
                 .name(req.getName())
                 .email(req.getEmail())
                 .password(passwordEncoder.encode(req.getPassword()))
-                .role(req.getRole())
-                .gymId(req.getGymId())
+                .role(Role.MEMBER)
+                .gymId(null)
                 .build();
 
         userRepository.save(user);

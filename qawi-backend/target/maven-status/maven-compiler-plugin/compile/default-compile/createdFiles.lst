@@ -45,6 +45,7 @@ com/qawi/dto/LoginRequest.class
 com/qawi/entity/ExerciseCategory$ExerciseCategoryBuilder.class
 com/qawi/repository/UserRepository.class
 com/qawi/entity/BodyMeasurement$BodyMeasurementBuilder.class
+com/qawi/service/AccessGuard.class
 com/qawi/dto/AssignCoachRequest.class
 com/qawi/entity/WorkoutTemplateDayExercise$WorkoutTemplateDayExerciseBuilder.class
 com/qawi/dto/ErrorResponse.class
@@ -91,6 +92,7 @@ com/qawi/dto/AuthResponse$AuthResponseBuilder.class
 com/qawi/entity/SubscriptionHistory$SubscriptionHistoryBuilder.class
 com/qawi/dto/CheckInResponse.class
 com/qawi/entity/WorkoutTemplateDayExercise.class
+com/qawi/service/AccessGuard$1.class
 com/qawi/repository/MealLogRepository.class
 com/qawi/security/JwtService.class
 com/qawi/dto/GymDetailResponse.class

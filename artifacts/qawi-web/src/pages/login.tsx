@@ -36,7 +36,7 @@ export default function LoginPage() {
       if (role === 'GYM_ADMIN') setLocation('/admin/dashboard');
       else if (role === 'COACH') setLocation('/coach/dashboard');
       else if (role === 'SUPER_ADMIN') setLocation('/super/dashboard');
-      else setLocation('/login');
+      else setLocation('/');
     } catch (error: any) {
       toast.error(lang === 'ar' ? error.messageAr : error.error);
       const formEl = document.getElementById("login-card");

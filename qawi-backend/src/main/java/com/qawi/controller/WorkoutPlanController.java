@@ -42,13 +42,17 @@ public class WorkoutPlanController {
     }
 
     @GetMapping("/member/{memberId}")
-    public ResponseEntity<List<WorkoutPlan>> getPlansByMember(@PathVariable UUID memberId) {
-        return ResponseEntity.ok(workoutPlanService.getPlansByMember(memberId));
+    public ResponseEntity<List<WorkoutPlan>> getPlansByMember(
+            @PathVariable UUID memberId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(workoutPlanService.getPlansByMember(memberId, userDetails.getUsername()));
     }
 
     @GetMapping("/{planId}")
-    public ResponseEntity<Map<String, Object>> getPlanDetail(@PathVariable UUID planId) {
-        return ResponseEntity.ok(workoutPlanService.getPlanDetail(planId));
+    public ResponseEntity<Map<String, Object>> getPlanDetail(
+            @PathVariable UUID planId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(workoutPlanService.getPlanDetail(planId, userDetails.getUsername()));
     }
 
     @PostMapping("/{planId}/days")
@@ -98,7 +102,9 @@ public class WorkoutPlanController {
     }
 
     @GetMapping("/logs/member/{memberId}")
-    public ResponseEntity<List<WorkoutLog>> getLogsByMember(@PathVariable UUID memberId) {
-        return ResponseEntity.ok(workoutPlanService.getLogsByMember(memberId));
+    public ResponseEntity<List<WorkoutLog>> getLogsByMember(
+            @PathVariable UUID memberId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(workoutPlanService.getLogsByMember(memberId, userDetails.getUsername()));
     }
 }

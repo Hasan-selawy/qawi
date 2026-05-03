@@ -32,8 +32,10 @@ public class ProgressPhotoController {
     }
 
     @GetMapping("/member/{memberId}")
-    public ResponseEntity<List<ProgressPhoto>> getByMember(@PathVariable UUID memberId) {
-        return ResponseEntity.ok(photoService.getByMember(memberId));
+    public ResponseEntity<List<ProgressPhoto>> getByMember(
+            @PathVariable UUID memberId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(photoService.getByMember(memberId, userDetails.getUsername()));
     }
 
     @DeleteMapping("/{photoId}")
