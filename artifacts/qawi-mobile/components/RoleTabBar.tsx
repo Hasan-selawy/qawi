@@ -26,6 +26,7 @@ export function RoleTabBar({ state, descriptors, navigation }: any) {
       {state.routes.map((route: any, index: number) => {
         const focused = state.index === index;
         const { options } = descriptors[route.key];
+        if (options.href === null) return null;
         const label = options.title ?? route.name;
         const icon = (options as any).tabBarIcon?.({ focused, color: focused ? c.primary : c.mutedForeground, size: 22 });
         const onPress = () => {
