@@ -345,6 +345,21 @@ public class GymAdminService {
         return getAdmin(email).getGymId();
     }
 
+    @Transactional
+    public void resetPassword(UUID userId, String newPassword, String adminEmail) {
+        User admin = getAdmin(adminEmail);
+        User target = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException("User not found", "المستخدم غير موجود", HttpStatus.NOT_FOUND));
+        if (target.getRole() == Role.GYM_ADMIN || target.getRole() == Role.SUPER_ADMIN) {
+            throw new AppException("Cannot reset password for admin accounts", "لا يمكن إعادة تعيين كلمة مرور حسابات المسؤولين", HttpStatus.FORBIDDEN);
+        }
+        if (!admin.getGymId().equals(target.getGymId())) {
+            throw new AppException("User not in your gym", "المستخدم ليس في صالتك", HttpStatus.FORBIDDEN);
+        }
+        target.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(target);
+    }
+
     // ── HELPERS ───────────────────────────────────────────────────────────────
 
     private User getAdmin(String email) {

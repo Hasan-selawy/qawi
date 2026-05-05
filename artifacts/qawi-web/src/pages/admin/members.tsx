@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { PageWrapper } from '@/components/layout/PageWrapper';
 import { GradientAvatar } from '@/components/GradientAvatar';
 import { StatusBadge, BadgeStatus } from '@/components/StatusBadge';
+import { ResetPasswordModal } from '@/components/ResetPasswordModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -16,7 +17,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RenewSubscriptionForm } from '@/components/RenewSubscriptionForm';
-import { Plus, Search, Trash2, Users } from 'lucide-react';
+import { Plus, Search, Trash2, Users, KeyRound } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { getSubStatus } from '@/lib/sub-status';
@@ -59,6 +60,7 @@ export default function AdminMembers() {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [resetTarget, setResetTarget] = useState<{ id: string; name: string } | null>(null);
 
   const { data: members, isLoading } = useQuery<any[]>({
     queryKey: ['admin', 'members'],
@@ -178,6 +180,16 @@ export default function AdminMembers() {
         }
       />
 
+      {resetTarget && (
+        <ResetPasswordModal
+          userId={resetTarget.id}
+          userName={resetTarget.name}
+          endpoint={`/admin/users/${resetTarget.id}/reset-password`}
+          open={!!resetTarget}
+          onOpenChange={(v) => { if (!v) setResetTarget(null); }}
+        />
+      )}
+
       {isLoading ? (
         <MembersTableSkeleton />
       ) : (
@@ -242,6 +254,13 @@ export default function AdminMembers() {
                                 <MemberDetailsSheet member={member} coaches={coaches || []} />
                               </SheetContent>
                             </Sheet>
+                            <button
+                              onClick={() => setResetTarget({ id: member.id, name: member.name })}
+                              title={lang === 'ar' ? 'إعادة تعيين كلمة المرور' : 'Reset Password'}
+                              className="text-primary hover:text-primary/80 transition-colors p-1.5 bg-primary/10 rounded-full hover:bg-primary/20"
+                            >
+                              <KeyRound size={16} />
+                            </button>
                             <button
                               onClick={() => {
                                 const msg = t('admin.delete_user_confirm').replace('{name}', member.name);

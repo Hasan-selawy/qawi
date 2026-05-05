@@ -120,6 +120,22 @@ public class GymAdminController {
         return ResponseEntity.ok(memberReportService.getReportsForGym(gymId));
     }
 
+    @PutMapping("/users/{userId}/reset-password")
+    public ResponseEntity<Void> resetPassword(
+            @PathVariable UUID userId,
+            @RequestBody Map<String, String> body,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        String newPassword = body.get("newPassword");
+        if (newPassword == null || newPassword.length() < 8) {
+            throw new com.qawi.exception.AppException(
+                    "Password must be at least 8 characters",
+                    "كلمة المرور يجب أن تكون 8 أحرف على الأقل",
+                    org.springframework.http.HttpStatus.BAD_REQUEST);
+        }
+        gymAdminService.resetPassword(userId, newPassword, userDetails.getUsername());
+        return ResponseEntity.noContent().build();
+    }
+
     @PutMapping("/reports/{reportId}/resolve")
     public ResponseEntity<Void> resolveReport(
             @PathVariable UUID reportId,

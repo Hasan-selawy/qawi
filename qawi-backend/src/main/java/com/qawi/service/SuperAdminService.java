@@ -224,4 +224,15 @@ public class SuperAdminService {
                 .primaryColor(gym.getPrimaryColor())
                 .build();
     }
+
+    @org.springframework.transaction.annotation.Transactional
+    public void resetPassword(UUID userId, String newPassword) {
+        User target = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException("User not found", "المستخدم غير موجود", HttpStatus.NOT_FOUND));
+        if (target.getRole() == Role.SUPER_ADMIN) {
+            throw new AppException("Cannot reset super admin password", "لا يمكن إعادة تعيين كلمة مرور المسؤول العام", HttpStatus.FORBIDDEN);
+        }
+        target.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(target);
+    }
 }

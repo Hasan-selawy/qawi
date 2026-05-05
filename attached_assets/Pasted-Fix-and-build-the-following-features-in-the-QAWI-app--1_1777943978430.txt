@@ -1,0 +1,129 @@
+Fix and build the following features in the QAWI app:
+
+================================================================
+1. EXERCISE EDITOR (Web — Gym Admin)
+================================================================
+
+On the exercises library page, allow the gym admin to:
+- Edit any exercise name
+- Edit or replace the video URL for any exercise
+- Changes apply only to their gym (not global)
+- This works even for built-in/default exercises
+  (store the override separately, do not modify the global exercise)
+
+UI:
+- Edit icon next to each exercise in the list
+- Opens a modal with: Name field, Video URL field, Save button
+- Show video preview after URL is entered
+- If the gym has a custom override for an exercise, show 
+  a small "Customized" badge next to it
+- Admin can reset to default (removes the gym override)
+
+================================================================
+2. COACH DASHBOARD — PLAYER NUTRITION STATUS
+================================================================
+
+On the coach's player list, next to each player show:
+- 🟢 if player logged their nutrition today
+- 🔴 if player has a nutrition plan but did not log today
+- ⚪ if no nutrition plan assigned
+
+Data logic:
+- Check today's nutrition log for each player
+- Compare against their assigned nutrition plan
+- Update status when coach opens the dashboard
+- Tooltip on hover showing: "Logged today" / "Not logged" / 
+  "No plan assigned"
+
+================================================================
+3. CLASS BOOKING — BUILD THE FEATURE
+================================================================
+
+IMPORTANT: Only show the Classes section in the sidebar and 
+mobile app if the "Class Booking" feature is enabled for that 
+gym by the super admin. If disabled, hide completely.
+If admin tries to access the URL directly while disabled, show:
+"This feature is not available on your current plan."
+
+GYM ADMIN (Web):
+- New sidebar section: "Classes"
+- Admin can create a class with:
+  - Class name (e.g., Boxing Session, Yoga, HIIT)
+  - Coach/instructor name
+  - Date and time
+  - Duration (minutes)
+  - Max capacity (number of spots)
+  - Description (optional)
+- Admin sees list of all classes with who booked each one
+- Admin can cancel or edit a class
+
+PLAYER (Mobile):
+- New "Classes" section in the app
+- Shows list of upcoming classes at their gym
+- Player can book a spot (if capacity not full)
+- Player can cancel their booking
+- Show "Full" badge if class is at capacity
+- Player sees their booked classes in a "My Bookings" tab
+- Only visible if Class Booking is enabled for the gym
+
+================================================================
+4. CUSTOM BRANDING — FIX IT (Mobile)
+================================================================
+
+Currently broken — super admin sets logo + color but nothing 
+changes in the mobile app at all. Fix this completely:
+
+- When mobile app loads, fetch the gym's branding settings
+  (logo URL + primary color) from the API using the gym ID
+- Apply the primary color as the app's accent color throughout:
+  buttons, highlights, active tab indicators, headers
+- Show the gym's logo on the login/splash screen instead of 
+  the default QAWI logo
+- Fall back to default QAWI branding if no custom branding set
+
+HOW TO TEST:
+1. Super admin → select a gym → enable Custom Branding
+2. Set primary color to #FF0000 and logo to:
+   https://placehold.co/200x200/FF0000/ffffff?text=LOGO
+3. Log in on mobile as a player from that gym
+4. Confirm the logo and red color appear on login screen 
+   and throughout the app
+
+================================================================
+5. ADVANCED ANALYTICS + TAX PRINT (Web — Super Admin)
+================================================================
+
+Build the analytics page with real data:
+
+CHARTS:
+- Revenue chart: monthly revenue bar chart (last 6 months)
+- Growth chart: new member signups per month (line chart)
+- Top performers: players with most sessions logged this month
+- Weekly attendance breakdown: bar chart by day of week
+- Filter by gym (super admin sees all gyms, gym admin sees own)
+
+FINANCIAL REPORT (Printable):
+- Separate "Financial Report" section on the page
+- Shows: total revenue, subscriptions sold, average revenue 
+  per member, cancellations, net revenue
+- Date range filter (monthly / quarterly / yearly / custom)
+- Print button → clean print layout (no sidebar, no buttons,
+  just the financial data formatted for tax filing)
+- Export as PDF and CSV
+
+ACCESS CONTROL:
+- Advanced Analytics page only visible if the feature is 
+  enabled for the gym by super admin
+- If disabled and admin accesses URL directly, show locked 
+  screen: "This feature is not available on your current plan."
+- Super admin always has full access regardless
+
+================================================================
+GENERAL NOTES FOR ALL FEATURES:
+================================================================
+- Match existing QAWI dark theme (green #00C853, dark background)
+- Support Arabic RTL layout throughout
+- Mobile features go in the Expo React Native app
+- Web features go in the web dashboard
+- Use existing DB schema where possible, extend only what needed
+- Super admin always bypasses all feature flag restrictions

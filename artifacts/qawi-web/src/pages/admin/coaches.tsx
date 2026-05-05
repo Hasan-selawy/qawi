@@ -5,12 +5,13 @@ import { useLanguage } from '@/hooks/use-language';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { PageWrapper } from '@/components/layout/PageWrapper';
 import { GradientAvatar } from '@/components/GradientAvatar';
+import { ResetPasswordModal } from '@/components/ResetPasswordModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Plus, Mail, Trash2, Users, UserSquare2 } from 'lucide-react';
+import { Plus, Mail, Trash2, Users, UserSquare2, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -39,6 +40,7 @@ export default function AdminCoaches() {
   const queryClient = useQueryClient();
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [resetTarget, setResetTarget] = useState<{ id: string; name: string } | null>(null);
 
   const { data: coaches, isLoading } = useQuery<any[]>({
     queryKey: ['admin', 'coaches'],
@@ -119,6 +121,16 @@ export default function AdminCoaches() {
         }
       />
 
+      {resetTarget && (
+        <ResetPasswordModal
+          userId={resetTarget.id}
+          userName={resetTarget.name}
+          endpoint={`/admin/users/${resetTarget.id}/reset-password`}
+          open={!!resetTarget}
+          onOpenChange={(v) => { if (!v) setResetTarget(null); }}
+        />
+      )}
+
       {isLoading ? (
         <CoachesSkeleton />
       ) : coaches?.length === 0 ? (
@@ -161,6 +173,13 @@ export default function AdminCoaches() {
                       <CoachMembersSheet coach={coach} />
                     </SheetContent>
                   </Sheet>
+                  <button
+                    onClick={() => setResetTarget({ id: coach.id, name: coach.name })}
+                    title={lang === 'ar' ? 'إعادة تعيين كلمة المرور' : 'Reset Password'}
+                    className="text-primary hover:text-primary/80 transition-colors p-1.5 bg-primary/10 rounded-full hover:bg-primary/20"
+                  >
+                    <KeyRound size={16} />
+                  </button>
                   <button
                     onClick={() => {
                       const msg = t('admin.delete_coach_confirm').replace('{name}', coach.name);

@@ -1,0 +1,55 @@
+================================================================
+NUTRITION PLAN — WEEKLY STRUCTURE + COACH VISIBILITY
+================================================================
+
+1. WEEKLY NUTRITION PLAN (Web — Coach)
+================================================================
+
+Currently nutrition plans are not structured weekly.
+Fix this to match exactly how the training plan works:
+
+- Coach can create a weekly nutrition plan for a player
+- Same UI pattern as the workout plan:
+  - 7 days (Saturday to Friday or Monday to Sunday)
+  - Each day has meals: Breakfast, Lunch, Dinner, Snacks
+  - Each meal has: food item, quantity, calories, protein, 
+    carbs, fats
+  - Coach can copy a day to another day
+  - Coach can save the plan and assign it to a player
+
+PLAYER (Mobile):
+- Player sees their nutrition plan day by day
+- Today's plan is shown by default
+- Each meal has a "Done" checkbox
+- When player checks a meal as done, it logs it with timestamp
+- At the end of the day show: "You completed X/Y meals today"
+
+================================================================
+2. COACH VISIBILITY — NUTRITION COMPLETION STATUS
+================================================================
+
+On the coach dashboard, player list:
+- 🟢 Player logged ALL meals today
+- 🟡 Player logged SOME meals today
+- 🔴 Player has nutrition plan but logged nothing today
+- ⚪ No nutrition plan assigned
+
+When coach clicks on a player, show a nutrition tab with:
+- Today's meal plan
+- Which meals are checked as done (green checkmark)
+- Which meals are not done (empty)
+- A weekly view showing completion rate per day:
+  e.g., Mon ✅ Tue ✅ Wed ❌ Thu ⚪
+
+This should update in real time when coach opens the player 
+profile.
+
+================================================================
+GENERAL NOTES:
+================================================================
+- Match existing QAWI dark theme (green #00C853, dark background)
+- Support Arabic RTL throughout
+- Match exact same UI pattern as the weekly workout plan
+- Mobile = Expo React Native
+- Web = existing dashboard
+- Extend DB schema only where needed
