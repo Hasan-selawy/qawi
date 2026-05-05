@@ -27,6 +27,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -54,7 +55,9 @@ public class SuperAdminService {
                 .name(req.getGymName())
                 .ownerId(UUID.randomUUID())
                 .subscriptionPlan(req.getSubscriptionPlan())
-                .subscriptionExpiresAt(req.getSubscriptionExpiresAt())
+                .subscriptionExpiresAt(req.getSubscriptionExpiresAt() != null
+                        ? req.getSubscriptionExpiresAt().atStartOfDay()
+                        : null)
                 .build());
 
         User admin = userRepository.save(User.builder()
@@ -90,7 +93,9 @@ public class SuperAdminService {
     public GymDetailResponse updateSubscription(UUID gymId, UpdateSubscriptionRequest req) {
         Gym gym = loadGym(gymId);
         gym.setSubscriptionPlan(req.getSubscriptionPlan());
-        gym.setSubscriptionExpiresAt(req.getSubscriptionExpiresAt());
+        if (req.getSubscriptionExpiresAt() != null) {
+            gym.setSubscriptionExpiresAt(req.getSubscriptionExpiresAt().atStartOfDay());
+        }
         return toGymDetail(gymRepository.save(gym));
     }
 
