@@ -3,6 +3,7 @@ package com.qawi.controller;
 import com.qawi.dto.*;
 import com.qawi.entity.*;
 import com.qawi.service.GymAdminService;
+import com.qawi.service.GymFeatureService;
 import com.qawi.service.MemberReportService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ import java.util.UUID;
 public class GymAdminController {
 
     private final GymAdminService gymAdminService;
+    private final GymFeatureService gymFeatureService;
     private final MemberReportService memberReportService;
 
     @PostMapping("/coaches")
@@ -106,6 +108,7 @@ public class GymAdminController {
             @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate,
             @AuthenticationPrincipal UserDetails userDetails) {
+        gymFeatureService.assertEnabled(userDetails.getUsername(), GymFeatureService.Feature.ANALYTICS_ADVANCED);
         LocalDate start = startDate != null ? LocalDate.parse(startDate) : LocalDate.now().withDayOfMonth(1);
         LocalDate end = endDate != null ? LocalDate.parse(endDate) : LocalDate.now();
         return ResponseEntity.ok(gymAdminService.getRevenueReport(userDetails.getUsername(), start, end));

@@ -2,9 +2,10 @@ import { useState, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiFetch } from '@/services/api';
 import { useLanguage } from '@/hooks/use-language';
+import { useGymConfig } from '@/hooks/use-gym-config';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { PageWrapper } from '@/components/layout/PageWrapper';
-import { Loader2, TrendingUp, Users, UserX, DollarSign, Printer, Download } from 'lucide-react';
+import { Loader2, TrendingUp, Users, UserX, DollarSign, Printer, Download, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type Summary = {
@@ -30,6 +31,7 @@ type RevenueData = {
 
 export default function AdminRevenue() {
   const { lang } = useLanguage();
+  const { features } = useGymConfig();
   const isRTL = lang === 'ar';
   const tableRef = useRef<HTMLDivElement>(null);
 
@@ -43,7 +45,31 @@ export default function AdminRevenue() {
   const { data, isLoading, refetch } = useQuery<RevenueData>({
     queryKey: ['admin', 'revenue-report', startDate, endDate],
     queryFn: () => apiFetch(`/admin/revenue-report?startDate=${startDate}&endDate=${endDate}`),
+    enabled: features.analyticsAdvancedEnabled,
   });
+
+  if (!features.analyticsAdvancedEnabled) {
+    return (
+      <PageWrapper>
+        <PageHeader title={isRTL ? 'تقرير الإيرادات' : 'Revenue Report'} />
+        <div className="flex flex-col items-center justify-center gap-6 py-24 text-center">
+          <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center">
+            <Lock size={36} className="text-muted-foreground" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-semibold">
+              {isRTL ? 'التحليلات المتقدمة غير مفعّلة' : 'Advanced Analytics Not Enabled'}
+            </h2>
+            <p className="text-muted-foreground max-w-sm">
+              {isRTL
+                ? 'تقرير الإيرادات متاح فقط ضمن خطة التحليلات المتقدمة. تواصل مع مزود النظام لتفعيل هذه الميزة.'
+                : 'Revenue Report is only available with Advanced Analytics enabled. Contact your system provider to upgrade.'}
+            </p>
+          </div>
+        </div>
+      </PageWrapper>
+    );
+  }
 
   const summary = data?.summary;
   const details = data?.details ?? [];

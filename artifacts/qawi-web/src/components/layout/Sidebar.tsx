@@ -32,10 +32,12 @@ export function Sidebar({ isOpen, setIsOpen, overlayMode }: SidebarProps) {
           { href: '/admin/coaches', icon: UserSquare2, label: 'coaches' },
           { href: '/admin/subscriptions', icon: CreditCard, label: 'subscriptions' },
           { href: '/admin/analytics', icon: BarChart3, label: 'analytics' },
-          { href: '/admin/revenue', icon: TrendingUp, label: 'revenue' },
           { href: '/admin/reports', icon: Flag, label: 'memberReports' },
           { href: '/coach/library', icon: Library, label: 'library' },
         ];
+        if (features.analyticsAdvancedEnabled) {
+          links.splice(5, 0, { href: '/admin/revenue', icon: TrendingUp, label: 'revenue' });
+        }
         return links;
       }
       case 'COACH': {
