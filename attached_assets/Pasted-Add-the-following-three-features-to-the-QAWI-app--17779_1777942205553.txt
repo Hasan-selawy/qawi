@@ -1,0 +1,99 @@
+Add the following three features to the QAWI app:
+
+================================================================
+1. REP LOGGER (Mobile — Player)
+================================================================
+
+On the workout plan screen, next to each exercise set:
+
+- Show planned reps (e.g., "10 reps")
+- Add a number input where player logs actual reps completed
+- Add a small notes field per set (e.g., "felt heavy", "did 9")
+- A "Complete Set" button that marks the set as done (green checkmark)
+
+Data to save per set:
+- Exercise ID
+- Set number
+- Planned reps
+- Actual reps logged
+- Player note (optional)
+- Timestamp
+- Session ID (group all sets in one workout session)
+
+UI behavior:
+- Completed sets are visually marked (green)
+- Player can go back and edit a set note after completing it
+- At the end of the workout, show a summary:
+  "You completed X/Y sets today 💪"
+
+================================================================
+2. PROFILE SCREEN (Mobile — Player)
+================================================================
+
+Add a Profile tab in the bottom navigation bar (last icon).
+
+Screen shows:
+- Player full name
+- Assigned coach name
+- Subscription end date (DD/MM/YYYY)
+- Warning if subscription expires within 7 days (yellow banner)
+
+Two action buttons:
+
+[ Report ]
+- Opens a form with:
+  - Category: Coach Attitude / Broken Equipment / Other
+  - Text field: "Describe what happened"
+  - Submit → saves to DB with player ID, gym ID, category, 
+    description, timestamp, status = pending
+
+[ Suggestion ]
+- Opens a form with:
+  - Text field: "Write your suggestion"
+  - Submit → saves to DB with player ID, gym ID, text, timestamp
+
+Success message after both: confirmation toast
+
+Admin Web Dashboard — add "Reports" page in sidebar:
+- List of all reports and suggestions for the gym
+- Shows: player name, type, category, description, date, 
+  status (Pending / Resolved)
+- Admin can mark as Resolved with one click
+
+================================================================
+3. REVENUE & SUBSCRIPTION REPORT (Web — Admin)
+================================================================
+
+Add a "Reports" page in the admin web dashboard sidebar.
+
+Show the following for the current month (with date range filter):
+
+SUMMARY CARDS:
+- Total Active Subscriptions
+- New Joins this month
+- Cancellations / Expired this month
+- Total Revenue collected (sum of subscription payments)
+
+DETAILED TABLE:
+- Member name
+- Plan name
+- Start date
+- End date
+- Amount paid
+- Status (Active / Expired / Cancelled)
+
+ACTIONS:
+- Print button → opens browser print dialog (clean print layout, 
+  no sidebar, no buttons — just the report)
+- Export CSV button → downloads the table as a .csv file
+
+================================================================
+GENERAL NOTES FOR ALL FEATURES:
+================================================================
+- Match existing QAWI dark theme (green #00C853, dark background)
+- Support Arabic RTL layout throughout
+- Mobile features go in the Expo React Native app
+- Web features go in the web dashboard
+- No external APIs needed
+- Use existing database schema where possible, extend only what 
+  is needed
