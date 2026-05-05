@@ -1,6 +1,7 @@
 package com.qawi.controller;
 
 import com.qawi.dto.*;
+import com.qawi.service.PlatformTierService;
 import com.qawi.service.SuperAdminService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,7 @@ import java.util.UUID;
 public class SuperAdminController {
 
     private final SuperAdminService superAdminService;
+    private final PlatformTierService platformTierService;
 
     @PostMapping("/gyms")
     public ResponseEntity<CreateGymResponse> createGym(@Valid @RequestBody CreateGymRequest request) {
@@ -97,5 +99,40 @@ public class SuperAdminController {
         }
         superAdminService.resetPassword(userId, newPassword);
         return ResponseEntity.noContent().build();
+    }
+
+    // ── PLATFORM PRICING ────────────────────────────────────────────────────
+
+    @GetMapping("/platform-tiers")
+    public ResponseEntity<List<PlatformTierDto>> getAllTiers() {
+        return ResponseEntity.ok(platformTierService.getAllTiers());
+    }
+
+    @PostMapping("/platform-tiers")
+    public ResponseEntity<PlatformTierDto> createTier(@RequestBody PlatformTierRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(platformTierService.createTier(request));
+    }
+
+    @PutMapping("/platform-tiers/{id}")
+    public ResponseEntity<PlatformTierDto> updateTier(
+            @PathVariable UUID id,
+            @RequestBody PlatformTierRequest request) {
+        return ResponseEntity.ok(platformTierService.updateTier(id, request));
+    }
+
+    @DeleteMapping("/platform-tiers/{id}")
+    public ResponseEntity<Void> deactivateTier(@PathVariable UUID id) {
+        platformTierService.deactivateTier(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/platform-page")
+    public ResponseEntity<PlatformPageDto> getPage() {
+        return ResponseEntity.ok(platformTierService.getPage());
+    }
+
+    @PutMapping("/platform-page")
+    public ResponseEntity<PlatformPageDto> updatePage(@RequestBody PlatformPageDto request) {
+        return ResponseEntity.ok(platformTierService.updatePage(request));
     }
 }

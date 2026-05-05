@@ -6,7 +6,7 @@ import { useGymConfig } from '@/hooks/use-gym-config';
 import {
   LayoutDashboard, Users, UserSquare2, CreditCard, BarChart3,
   Dumbbell, Library, ChevronLeft, ChevronRight, Activity, Building2, UtensilsCrossed,
-  TrendingUp, Flag, Calendar
+  TrendingUp, Flag, Calendar, Tag
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -107,6 +107,7 @@ export function Sidebar({ isOpen, setIsOpen, overlayMode }: SidebarProps) {
         if (features.classBookingEnabled) {
           links.push({ href: '/admin/classes', icon: Calendar, label: 'classes' });
         }
+        links.push({ href: '/admin/pricing', icon: Tag, label: 'pricing' });
         return links;
       }
       case 'COACH': {
@@ -124,6 +125,7 @@ export function Sidebar({ isOpen, setIsOpen, overlayMode }: SidebarProps) {
         return [
           { href: '/super/dashboard', icon: Activity, label: 'dashboard' },
           { href: '/super/gyms', icon: Building2, label: 'gyms' },
+          { href: '/super/pricing', icon: Tag, label: 'pricing' },
           { href: '/coach/library', icon: Library, label: 'library' },
         ];
       default:

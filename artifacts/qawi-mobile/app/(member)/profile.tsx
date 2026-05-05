@@ -1,5 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   Alert,
@@ -35,6 +36,7 @@ export default function ProfileScreen() {
   const c = useColors();
   const { t, lang, isRTL } = useLanguage();
   const { user, logout } = useAuth();
+  const router = useRouter();
 
   const [reportModal, setReportModal] = useState(false);
   const [suggestionModal, setSuggestionModal] = useState(false);
@@ -167,6 +169,23 @@ export default function ProfileScreen() {
                   {formattedEnd ?? (lang === "ar" ? "غير محدد" : "Not set")}
                 </Text>
               </View>
+              <TouchableOpacity
+                onPress={() => router.push("/(member)/renewal")}
+                style={{
+                  backgroundColor: c.primary,
+                  borderRadius: 20,
+                  paddingHorizontal: 14,
+                  paddingVertical: 7,
+                  flexDirection: isRTL ? "row-reverse" : "row",
+                  alignItems: "center",
+                  gap: 5,
+                }}
+              >
+                <Feather name="refresh-cw" size={13} color="#000" />
+                <Text style={{ color: "#000", fontWeight: "700", fontSize: 12 }}>
+                  {lang === "ar" ? "تجديد" : "Renew"}
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
         </Card>

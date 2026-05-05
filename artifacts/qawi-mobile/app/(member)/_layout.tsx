@@ -43,6 +43,10 @@ export default function MemberLayout() {
         name="profile"
         options={{ title: t("member.tabs.profile"), tabBarIcon: ({ color, size }) => <Feather name="user" size={size} color={color} /> }}
       />
+      <Tabs.Screen
+        name="renewal"
+        options={{ href: null }}
+      />
     </Tabs>
   );
 }

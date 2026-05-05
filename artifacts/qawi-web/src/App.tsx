@@ -34,6 +34,8 @@ import CoachNutrition from "@/pages/coach/nutrition";
 import SuperDashboard from "@/pages/super/dashboard";
 import SuperGyms from "@/pages/super/gyms";
 import SuperGymDetail from "@/pages/super/gym-detail";
+import SuperPricing from "@/pages/super/pricing";
+import AdminPricing from "@/pages/admin/pricing";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -73,6 +75,9 @@ function Router() {
       <Route path="/admin/classes">
         <RoleRoute role="GYM_ADMIN"><AppShell><ErrorBoundary><AdminClasses /></ErrorBoundary></AppShell></RoleRoute>
       </Route>
+      <Route path="/admin/pricing">
+        <RoleRoute role="GYM_ADMIN"><AppShell><ErrorBoundary><AdminPricing /></ErrorBoundary></AppShell></RoleRoute>
+      </Route>
 
       {/* Coach Routes */}
       <Route path="/coach/dashboard">
@@ -103,6 +108,9 @@ function Router() {
       </Route>
       <Route path="/super/gyms/:id">
         <RoleRoute role="SUPER_ADMIN"><AppShell><ErrorBoundary><SuperGymDetail /></ErrorBoundary></AppShell></RoleRoute>
+      </Route>
+      <Route path="/super/pricing">
+        <RoleRoute role="SUPER_ADMIN"><AppShell><ErrorBoundary><SuperPricing /></ErrorBoundary></AppShell></RoleRoute>
       </Route>
 
       <Route component={NotFound} />

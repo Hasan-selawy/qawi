@@ -4,6 +4,7 @@ import com.qawi.dto.*;
 import com.qawi.entity.*;
 import com.qawi.service.GymAdminService;
 import com.qawi.service.GymFeatureService;
+import com.qawi.service.GymMemberPlanService;
 import com.qawi.service.MemberReportService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ public class GymAdminController {
     private final GymAdminService gymAdminService;
     private final GymFeatureService gymFeatureService;
     private final MemberReportService memberReportService;
+    private final GymMemberPlanService gymMemberPlanService;
     private final com.qawi.repository.GymExerciseOverrideRepository gymExerciseOverrideRepository;
     private final com.qawi.repository.ExerciseTemplateRepository exerciseTemplateRepository;
 
@@ -190,5 +192,52 @@ public class GymAdminController {
         UUID gymId = gymAdminService.getGymIdForAdmin(userDetails.getUsername());
         gymExerciseOverrideRepository.deleteByGymIdAndExerciseTemplateId(gymId, exerciseId);
         return ResponseEntity.noContent().build();
+    }
+
+    // ── GYM MEMBER PLANS ────────────────────────────────────────────────────
+
+    @GetMapping("/member-plans")
+    public ResponseEntity<List<GymMemberPlanDto>> getMemberPlans(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(gymMemberPlanService.getPlansForAdmin(userDetails.getUsername()));
+    }
+
+    @PostMapping("/member-plans")
+    public ResponseEntity<GymMemberPlanDto> createMemberPlan(
+            @RequestBody GymMemberPlanRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(gymMemberPlanService.createPlan(request, userDetails.getUsername()));
+    }
+
+    @PutMapping("/member-plans/{planId}")
+    public ResponseEntity<GymMemberPlanDto> updateMemberPlan(
+            @PathVariable UUID planId,
+            @RequestBody GymMemberPlanRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(gymMemberPlanService.updatePlan(planId, request, userDetails.getUsername()));
+    }
+
+    @DeleteMapping("/member-plans/{planId}")
+    public ResponseEntity<Void> deleteMemberPlan(
+            @PathVariable UUID planId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        gymMemberPlanService.deletePlan(planId, userDetails.getUsername());
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/renewal-requests")
+    public ResponseEntity<List<RenewalRequestDto>> getRenewalRequests(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(gymMemberPlanService.getRenewalRequests(userDetails.getUsername()));
+    }
+
+    @PutMapping("/renewal-requests/{requestId}/status")
+    public ResponseEntity<RenewalRequestDto> updateRenewalStatus(
+            @PathVariable UUID requestId,
+            @RequestBody Map<String, String> body,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(gymMemberPlanService.updateRenewalStatus(
+                requestId, body.get("status"), userDetails.getUsername()));
     }
 }

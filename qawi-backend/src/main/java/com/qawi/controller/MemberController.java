@@ -1,9 +1,12 @@
 package com.qawi.controller;
 
 import com.qawi.dto.CreateMeasurementRequest;
+import com.qawi.dto.RenewalRequestDto;
+import com.qawi.dto.SubmitRenewalRequest;
 import com.qawi.entity.*;
 import com.qawi.exception.AppException;
 import com.qawi.repository.*;
+import com.qawi.service.GymMemberPlanService;
 import com.qawi.service.MeasurementService;
 import com.qawi.service.NutritionService;
 import com.qawi.service.WorkoutPlanService;
@@ -40,6 +43,7 @@ public class MemberController {
     private final BodyMeasurementRepository measurementRepository;
     private final MealLogRepository mealLogRepository;
     private final CoachMemberRepository coachMemberRepository;
+    private final GymMemberPlanService gymMemberPlanService;
 
     // ───────────────────────── WORKOUTS ─────────────────────────
 
@@ -372,6 +376,23 @@ public class MemberController {
         );
 
         return ResponseEntity.ok(result);
+    }
+
+    // ───────────────────────── RENEWAL REQUESTS ─────────────────────────
+
+    @PostMapping("/renewal-request")
+    public ResponseEntity<RenewalRequestDto> submitRenewalRequest(
+            @RequestBody SubmitRenewalRequest request,
+            @AuthenticationPrincipal UserDetails ud) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(gymMemberPlanService.submitRenewalRequest(request, ud.getUsername()));
+    }
+
+    @GetMapping("/renewal-requests")
+    public ResponseEntity<List<RenewalRequestDto>> getMyRenewalRequests(
+            @AuthenticationPrincipal UserDetails ud) {
+        User me = self(ud);
+        return ResponseEntity.ok(gymMemberPlanService.getMyRenewalRequests(me.getId()));
     }
 
     // ───────────────────────── helpers ─────────────────────────
