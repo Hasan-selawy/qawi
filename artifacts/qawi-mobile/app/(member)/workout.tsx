@@ -48,24 +48,54 @@ export default function WorkoutScreen() {
 
   // Per-set weights: exerciseId → string[] (one per set)
   const [setWeights, setSetWeights] = useState<Record<string, string[]>>({});
-  const [done, setDone] = useState<Record<string, boolean>>({});
+  // Per-set actual reps: exerciseId → string[]
+  const [setReps, setSetReps] = useState<Record<string, string[]>>({});
+  // Per-set notes: exerciseId → string[]
+  const [setNotes, setSetNotes] = useState<Record<string, string[]>>({});
+  // Per-set completion: exerciseId → boolean[]
+  const [setDone, setSetDone] = useState<Record<string, boolean[]>>({});
 
-  // Initialise weight arrays when exercises load
-  useEffect(() => {
-    const list = today.data?.exercises ?? [];
-    if (list.length === 0) return;
+  const initState = (list: PlanExercise[]) => {
     setSetWeights((prev) => {
       const next = { ...prev };
       list.forEach((ex) => {
         if (!next[ex.id]) {
-          const numSets = ex.sets ?? 3;
-          const defaultW = ex.weight != null ? String(ex.weight) : "";
-          next[ex.id] = Array(numSets).fill(defaultW);
+          const n = ex.sets ?? 3;
+          next[ex.id] = Array(n).fill(ex.weight != null ? String(ex.weight) : "");
         }
       });
       return next;
     });
+    setSetReps((prev) => {
+      const next = { ...prev };
+      list.forEach((ex) => {
+        if (!next[ex.id]) next[ex.id] = Array(ex.sets ?? 3).fill(String(ex.reps ?? 10));
+      });
+      return next;
+    });
+    setSetNotes((prev) => {
+      const next = { ...prev };
+      list.forEach((ex) => {
+        if (!next[ex.id]) next[ex.id] = Array(ex.sets ?? 3).fill("");
+      });
+      return next;
+    });
+    setSetDone((prev) => {
+      const next = { ...prev };
+      list.forEach((ex) => {
+        if (!next[ex.id]) next[ex.id] = Array(ex.sets ?? 3).fill(false);
+      });
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    const list = today.data?.exercises ?? [];
+    if (list.length > 0) initState(list);
   }, [today.data]);
+
+  const totalSets = Object.values(setDone).reduce((acc, arr) => acc + arr.length, 0);
+  const completedSets = Object.values(setDone).reduce((acc, arr) => acc + arr.filter(Boolean).length, 0);
 
   const complete = useMutation({
     mutationFn: async () => {
@@ -73,34 +103,42 @@ export default function WorkoutScreen() {
       if (!data) throw new Error("No workout loaded");
       const exercises = data.exercises ?? [];
 
-      // Log each set of each exercise as its own WorkoutLog entry
       for (const ex of exercises) {
-        const sets = setWeights[ex.id] ?? [];
-        for (let i = 0; i < sets.length; i++) {
-          const w = parseFloat(sets[i] ?? "");
+        const weights = setWeights[ex.id] ?? [];
+        const reps = setReps[ex.id] ?? [];
+        const notes = setNotes[ex.id] ?? [];
+        const done = setDone[ex.id] ?? [];
+        const numSets = ex.sets ?? 3;
+
+        for (let i = 0; i < numSets; i++) {
+          if (!done[i]) continue;
+          const w = parseFloat(weights[i] ?? "");
+          const r = parseInt(reps[i] ?? "", 10);
           await apiFetch("/workouts/logs", {
             method: "POST",
             data: {
               planExerciseId: ex.id,
               actualSets: 1,
-              actualReps: ex.reps ?? 10,
+              actualReps: Number.isFinite(r) ? r : (ex.reps ?? 10),
               actualWeight: Number.isFinite(w) ? w : (ex.weight ?? 0),
+              notes: notes[i] || null,
             },
           });
         }
       }
 
-      // Mark day complete
       if (data.dayId) {
         await apiFetch(`/workouts/days/${data.dayId}/complete`, { method: "PUT" });
       }
     },
     onSuccess: () => {
       Alert.alert(
-        lang === "ar" ? "قوي" : "Qawi",
-        lang === "ar" ? "أحسنت! تم حفظ التمرين." : "Great work! Workout saved."
+        lang === "ar" ? "قوي 💪" : "Qawi 💪",
+        lang === "ar"
+          ? `أحسنت! أنجزت ${completedSets} من ${totalSets} مجموعة اليوم.`
+          : `Great work! You completed ${completedSets}/${totalSets} sets today.`
       );
-      setDone({});
+      setSetDone({});
       qc.invalidateQueries({ queryKey: ["member"] });
       router.replace("/(member)" as never);
     },
@@ -113,6 +151,14 @@ export default function WorkoutScreen() {
 
   const list = today.data?.exercises ?? [];
 
+  const toggleSet = (exId: string, setIdx: number) => {
+    setSetDone((prev) => {
+      const arr = [...(prev[exId] ?? [])];
+      arr[setIdx] = !arr[setIdx];
+      return { ...prev, [exId]: arr };
+    });
+  };
+
   return (
     <Screen>
       <RoleHeader title={t("member.tabs.workout")} />
@@ -123,13 +169,7 @@ export default function WorkoutScreen() {
       ) : today.data?.isCompleted ? (
         <View style={{ flex: 1, padding: 20, justifyContent: "center" }}>
           <Card style={{ alignItems: "center", paddingVertical: 36 }}>
-            <View
-              style={{
-                width: 64, height: 64, borderRadius: 32,
-                backgroundColor: c.primary + "22",
-                alignItems: "center", justifyContent: "center",
-              }}
-            >
+            <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: c.primary + "22", alignItems: "center", justifyContent: "center" }}>
               <Feather name="check-circle" size={34} color={c.primary} />
             </View>
             <Text style={{ color: c.foreground, fontSize: 20, fontWeight: "800", marginTop: 14, textAlign: "center" }}>
@@ -139,29 +179,42 @@ export default function WorkoutScreen() {
               {lang === "ar" ? "أحسنت! نراك في التمرين القادم." : "Great job! See you next time."}
             </Text>
             <View style={{ marginTop: 20, width: "100%" }}>
-              <Button
-                title={lang === "ar" ? "العودة للرئيسية" : "Back to home"}
-                icon="home"
-                onPress={() => router.replace("/(member)" as never)}
-              />
+              <Button title={lang === "ar" ? "العودة للرئيسية" : "Back to home"} icon="home" onPress={() => router.replace("/(member)" as never)} />
             </View>
           </Card>
         </View>
       ) : !today.data || today.data.restDay || list.length === 0 ? (
         <View style={{ flex: 1, padding: 20 }}>
           <Card>
-            <EmptyState
-              icon="moon"
-              text={today.data?.restDay ? t("member.restDay") : t("member.noPlan")}
-            />
+            <EmptyState icon="moon" text={today.data?.restDay ? t("member.restDay") : t("member.noPlan")} />
           </Card>
         </View>
       ) : (
         <ScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 120 }}>
+          {/* Session progress bar */}
+          {totalSets > 0 && (
+            <View style={{ backgroundColor: c.muted, borderRadius: 12, padding: 14 }}>
+              <View style={{ flexDirection: isRTL ? "row-reverse" : "row", justifyContent: "space-between", marginBottom: 8 }}>
+                <Text style={{ color: c.foreground, fontWeight: "700", fontSize: 14 }}>
+                  {lang === "ar" ? "تقدم الجلسة" : "Session Progress"}
+                </Text>
+                <Text style={{ color: c.primary, fontWeight: "800", fontSize: 14 }}>
+                  {completedSets}/{totalSets} {lang === "ar" ? "مجموعة" : "sets"}
+                </Text>
+              </View>
+              <View style={{ height: 6, backgroundColor: c.border, borderRadius: 3, overflow: "hidden" }}>
+                <View style={{ height: 6, width: `${totalSets > 0 ? (completedSets / totalSets) * 100 : 0}%`, backgroundColor: c.primary, borderRadius: 3 }} />
+              </View>
+            </View>
+          )}
+
           {list.map((ex, i) => {
             const numSets = ex.sets ?? 3;
             const weights = setWeights[ex.id] ?? Array(numSets).fill("");
-            const isDone = !!done[ex.id];
+            const reps = setReps[ex.id] ?? Array(numSets).fill(String(ex.reps ?? 10));
+            const notes = setNotes[ex.id] ?? Array(numSets).fill("");
+            const done = setDone[ex.id] ?? Array(numSets).fill(false);
+            const allDone = done.every(Boolean);
 
             return (
               <Card key={ex.id}>
@@ -171,8 +224,7 @@ export default function WorkoutScreen() {
                     onPress={() => Linking.openURL(ex.videoUrl!)}
                     style={{
                       flexDirection: "row", alignItems: "center",
-                      backgroundColor: "#CC0000",
-                      paddingHorizontal: 12, paddingVertical: 6,
+                      backgroundColor: "#CC0000", paddingHorizontal: 12, paddingVertical: 6,
                       borderRadius: 8, marginBottom: 10, alignSelf: "flex-start",
                     }}
                   >
@@ -184,94 +236,198 @@ export default function WorkoutScreen() {
                 ) : null}
 
                 {/* Exercise header */}
-                <View style={{ flexDirection: isRTL ? "row-reverse" : "row", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                <View style={{ flexDirection: isRTL ? "row-reverse" : "row", alignItems: "center", gap: 10, marginBottom: 14 }}>
                   <View style={{ flex: 1 }}>
                     <Text style={{ color: c.foreground, fontSize: 16, fontWeight: "700", textAlign: isRTL ? "right" : "left" }}>
                       {pickName(lang, ex) || `Exercise ${i + 1}`}
                     </Text>
                     <Text style={{ color: c.mutedForeground, marginTop: 3, textAlign: isRTL ? "right" : "left", fontSize: 13 }}>
-                      {numSets} {lang === "ar" ? "مجموعات" : "sets"} × {ex.reps ?? 10} {lang === "ar" ? "تكرار" : "reps"}
+                      {numSets} {lang === "ar" ? "مجموعات" : "sets"} × {ex.reps ?? 10} {lang === "ar" ? "تكرار مخطط" : "planned reps"}
                     </Text>
                   </View>
+                  {/* Mark all sets done quickly */}
                   <TouchableOpacity
-                    onPress={() => setDone((d) => ({ ...d, [ex.id]: !d[ex.id] }))}
+                    onPress={() => setSetDone((prev) => ({ ...prev, [ex.id]: Array(numSets).fill(!allDone) }))}
                     style={{
-                      width: 36, height: 36, borderRadius: 18,
-                      backgroundColor: isDone ? c.primary + "22" : c.muted,
-                      alignItems: "center", justifyContent: "center",
+                      paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20,
+                      backgroundColor: allDone ? c.primary + "22" : c.muted,
+                      flexDirection: "row", alignItems: "center", gap: 4,
                     }}
                   >
-                    <Feather
-                      name={isDone ? "check-circle" : "circle"}
-                      size={22}
-                      color={isDone ? c.primary : c.mutedForeground}
-                    />
+                    <Feather name={allDone ? "check-circle" : "circle"} size={16} color={allDone ? c.primary : c.mutedForeground} />
+                    <Text style={{ color: allDone ? c.primary : c.mutedForeground, fontSize: 11, fontWeight: "600" }}>
+                      {lang === "ar" ? "الكل" : "All"}
+                    </Text>
                   </TouchableOpacity>
                 </View>
 
-                {/* Per-set weight inputs */}
-                <View style={{ gap: 8 }}>
-                  {weights.map((w, setIdx) => (
-                    <View
-                      key={setIdx}
-                      style={{
-                        flexDirection: isRTL ? "row-reverse" : "row",
-                        alignItems: "center", gap: 10,
-                        backgroundColor: c.muted + "55",
-                        borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8,
-                      }}
-                    >
-                      <View style={{
-                        width: 28, height: 28, borderRadius: 14,
-                        backgroundColor: c.primary + "33",
-                        alignItems: "center", justifyContent: "center",
-                      }}>
-                        <Text style={{ color: c.primary, fontSize: 11, fontWeight: "800" }}>
-                          {setIdx + 1}
-                        </Text>
-                      </View>
-                      <Text style={{ color: c.mutedForeground, fontSize: 12, width: 50 }}>
-                        {lang === "ar" ? `مج ${setIdx + 1}` : `Set ${setIdx + 1}`}
-                      </Text>
-                      <TextInput
-                        value={w}
-                        onChangeText={(v) => {
-                          const sanitised = v.replace(/[^0-9.]/g, "");
-                          setSetWeights((prev) => {
-                            const arr = [...(prev[ex.id] ?? Array(numSets).fill(""))];
-                            arr[setIdx] = sanitised;
-                            return { ...prev, [ex.id]: arr };
-                          });
-                        }}
-                        keyboardType="decimal-pad"
-                        placeholder="0"
-                        placeholderTextColor={c.mutedForeground}
+                {/* Per-set rows */}
+                <View style={{ gap: 10 }}>
+                  {Array.from({ length: numSets }).map((_, setIdx) => {
+                    const isDone = done[setIdx] ?? false;
+                    return (
+                      <View
+                        key={setIdx}
                         style={{
-                          flex: 1,
-                          backgroundColor: c.surface,
-                          color: c.foreground,
-                          borderRadius: 8,
-                          paddingHorizontal: 10,
-                          paddingVertical: 8,
-                          borderWidth: 1,
-                          borderColor: c.border,
-                          textAlign: isRTL ? "right" : "left",
-                          fontSize: 15,
-                          fontWeight: "600",
+                          backgroundColor: isDone ? c.primary + "11" : c.muted + "55",
+                          borderRadius: 12, padding: 12,
+                          borderWidth: 1.5,
+                          borderColor: isDone ? c.primary + "44" : c.border + "44",
                         }}
-                      />
-                      <Text style={{ color: c.mutedForeground, fontSize: 12 }}>kg</Text>
-                    </View>
-                  ))}
+                      >
+                        {/* Set header row */}
+                        <View style={{ flexDirection: isRTL ? "row-reverse" : "row", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                          <View style={{
+                            width: 28, height: 28, borderRadius: 14,
+                            backgroundColor: isDone ? c.primary : c.primary + "33",
+                            alignItems: "center", justifyContent: "center",
+                          }}>
+                            <Text style={{ color: isDone ? "white" : c.primary, fontSize: 12, fontWeight: "800" }}>
+                              {setIdx + 1}
+                            </Text>
+                          </View>
+                          <Text style={{ color: c.mutedForeground, fontSize: 13, fontWeight: "600", flex: 1, textAlign: isRTL ? "right" : "left" }}>
+                            {lang === "ar" ? `مجموعة ${setIdx + 1}` : `Set ${setIdx + 1}`}
+                            {" · "}
+                            <Text style={{ color: c.mutedForeground, fontWeight: "400" }}>
+                              {lang === "ar" ? `${ex.reps ?? 10} تكرار مخطط` : `${ex.reps ?? 10} planned`}
+                            </Text>
+                          </Text>
+                          {/* Complete Set button */}
+                          <TouchableOpacity
+                            onPress={() => toggleSet(ex.id, setIdx)}
+                            style={{
+                              width: 34, height: 34, borderRadius: 17,
+                              backgroundColor: isDone ? c.primary : c.muted,
+                              alignItems: "center", justifyContent: "center",
+                            }}
+                          >
+                            <Feather name={isDone ? "check" : "circle"} size={18} color={isDone ? "white" : c.mutedForeground} />
+                          </TouchableOpacity>
+                        </View>
+
+                        {/* Inputs row: weight + actual reps */}
+                        <View style={{ flexDirection: isRTL ? "row-reverse" : "row", gap: 8, marginBottom: 8 }}>
+                          {/* Weight */}
+                          <View style={{ flex: 1 }}>
+                            <Text style={{ color: c.mutedForeground, fontSize: 11, marginBottom: 4, textAlign: isRTL ? "right" : "left" }}>
+                              {lang === "ar" ? "الوزن (kg)" : "Weight (kg)"}
+                            </Text>
+                            <TextInput
+                              value={weights[setIdx] ?? ""}
+                              onChangeText={(v) => {
+                                const s = v.replace(/[^0-9.]/g, "");
+                                setSetWeights((prev) => {
+                                  const arr = [...(prev[ex.id] ?? Array(numSets).fill(""))];
+                                  arr[setIdx] = s;
+                                  return { ...prev, [ex.id]: arr };
+                                });
+                              }}
+                              keyboardType="decimal-pad"
+                              placeholder="0"
+                              placeholderTextColor={c.mutedForeground}
+                              style={{
+                                backgroundColor: c.surface, color: c.foreground,
+                                borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8,
+                                borderWidth: 1, borderColor: c.border,
+                                textAlign: isRTL ? "right" : "left", fontSize: 15, fontWeight: "600",
+                              }}
+                            />
+                          </View>
+
+                          {/* Actual reps */}
+                          <View style={{ flex: 1 }}>
+                            <Text style={{ color: c.mutedForeground, fontSize: 11, marginBottom: 4, textAlign: isRTL ? "right" : "left" }}>
+                              {lang === "ar" ? "التكرار الفعلي" : "Actual Reps"}
+                            </Text>
+                            <TextInput
+                              value={reps[setIdx] ?? ""}
+                              onChangeText={(v) => {
+                                const s = v.replace(/[^0-9]/g, "");
+                                setSetReps((prev) => {
+                                  const arr = [...(prev[ex.id] ?? Array(numSets).fill(""))];
+                                  arr[setIdx] = s;
+                                  return { ...prev, [ex.id]: arr };
+                                });
+                              }}
+                              keyboardType="number-pad"
+                              placeholder={String(ex.reps ?? 10)}
+                              placeholderTextColor={c.mutedForeground}
+                              style={{
+                                backgroundColor: c.surface, color: c.foreground,
+                                borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8,
+                                borderWidth: 1, borderColor: isDone ? c.primary + "66" : c.border,
+                                textAlign: isRTL ? "right" : "left", fontSize: 15, fontWeight: "600",
+                              }}
+                            />
+                          </View>
+                        </View>
+
+                        {/* Notes */}
+                        <TextInput
+                          value={notes[setIdx] ?? ""}
+                          onChangeText={(v) => {
+                            setSetNotes((prev) => {
+                              const arr = [...(prev[ex.id] ?? Array(numSets).fill(""))];
+                              arr[setIdx] = v;
+                              return { ...prev, [ex.id]: arr };
+                            });
+                          }}
+                          placeholder={lang === "ar" ? "ملاحظة (اختياري)..." : "Note (optional)..."}
+                          placeholderTextColor={c.mutedForeground}
+                          style={{
+                            backgroundColor: c.surface, color: c.foreground,
+                            borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8,
+                            borderWidth: 1, borderColor: c.border,
+                            textAlign: isRTL ? "right" : "left", fontSize: 13,
+                          }}
+                        />
+                      </View>
+                    );
+                  })}
                 </View>
               </Card>
             );
           })}
 
+          {/* Session summary */}
+          {completedSets > 0 && (
+            <View style={{
+              backgroundColor: c.primary + "22", borderRadius: 12, padding: 14,
+              borderWidth: 1, borderColor: c.primary + "44",
+              flexDirection: isRTL ? "row-reverse" : "row", alignItems: "center", gap: 10,
+            }}>
+              <Feather name="zap" size={22} color={c.primary} />
+              <Text style={{ color: c.primary, fontWeight: "700", fontSize: 15, flex: 1 }}>
+                {lang === "ar"
+                  ? `أنجزت ${completedSets} من ${totalSets} مجموعة 💪`
+                  : `${completedSets}/${totalSets} sets completed 💪`}
+              </Text>
+            </View>
+          )}
+
           <Button
             title={t("member.completeWorkout")}
             icon="check"
-            onPress={() => complete.mutate()}
+            onPress={() => {
+              if (completedSets === 0) {
+                Alert.alert(
+                  lang === "ar" ? "لا توجد مجموعات مكتملة" : "No sets completed",
+                  lang === "ar"
+                    ? "أكمل مجموعة واحدة على الأقل قبل الحفظ."
+                    : "Complete at least one set before saving.",
+                  [
+                    { text: lang === "ar" ? "استمر" : "Continue", style: "cancel" },
+                    {
+                      text: lang === "ar" ? "احفظ على أي حال" : "Save anyway",
+                      onPress: () => complete.mutate(),
+                    },
+                  ]
+                );
+              } else {
+                complete.mutate();
+              }
+            }}
             loading={complete.isPending}
           />
         </ScrollView>

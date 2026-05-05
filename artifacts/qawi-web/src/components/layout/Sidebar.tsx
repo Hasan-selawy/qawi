@@ -4,7 +4,8 @@ import { useLanguage } from '@/hooks/use-language';
 import { useGymConfig } from '@/hooks/use-gym-config';
 import {
   LayoutDashboard, Users, UserSquare2, CreditCard, BarChart3,
-  Dumbbell, Library, ChevronLeft, ChevronRight, Activity, Building2, UtensilsCrossed
+  Dumbbell, Library, ChevronLeft, ChevronRight, Activity, Building2, UtensilsCrossed,
+  TrendingUp, Flag
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -31,6 +32,8 @@ export function Sidebar({ isOpen, setIsOpen, overlayMode }: SidebarProps) {
           { href: '/admin/coaches', icon: UserSquare2, label: 'coaches' },
           { href: '/admin/subscriptions', icon: CreditCard, label: 'subscriptions' },
           { href: '/admin/analytics', icon: BarChart3, label: 'analytics' },
+          { href: '/admin/revenue', icon: TrendingUp, label: 'revenue' },
+          { href: '/admin/reports', icon: Flag, label: 'memberReports' },
           { href: '/coach/library', icon: Library, label: 'library' },
         ];
         return links;

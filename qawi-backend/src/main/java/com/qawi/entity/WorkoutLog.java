@@ -34,6 +34,9 @@ public class WorkoutLog {
     @Column(name = "actual_weight", nullable = false)
     private double actualWeight;
 
+    @Column(name = "notes", length = 500)
+    private String notes;
+
     @Column(name = "logged_at", nullable = false)
     @Builder.Default
     private LocalDateTime loggedAt = LocalDateTime.now();

@@ -14,6 +14,7 @@ com/qawi/entity/PlanExercise.class
 com/qawi/repository/CoachNoteRepository.class
 com/qawi/dto/CreateNutritionPlanRequest.class
 com/qawi/entity/WorkoutLog$WorkoutLogBuilder.class
+com/qawi/controller/MemberReportController$SuggestionRequest.class
 com/qawi/dto/UpdateCoachNoteRequest.class
 com/qawi/repository/WorkoutTemplateDayRepository.class
 com/qawi/dto/CreateTemplateRequest.class
@@ -23,9 +24,11 @@ com/qawi/entity/User$UserBuilder.class
 com/qawi/entity/Role.class
 com/qawi/dto/CreateGymResponse.class
 com/qawi/filter/RequestLoggingFilter.class
+com/qawi/service/MemberReportService.class
 com/qawi/entity/CoachNote$CoachNoteBuilder.class
 com/qawi/dto/PlanInfo.class
 com/qawi/entity/Notification.class
+com/qawi/entity/ReportCategory.class
 com/qawi/dto/AdminAnalyticsResponse.class
 com/qawi/entity/WorkoutLog.class
 com/qawi/repository/BodyMeasurementRepository.class
@@ -34,6 +37,7 @@ com/qawi/dto/CreateCoachNoteRequest.class
 com/qawi/entity/Attendance.class
 com/qawi/dto/ContactRequestCreate.class
 com/qawi/dto/CreateWorkoutPlanRequest.class
+com/qawi/entity/MemberReport$MemberReportBuilder.class
 com/qawi/dto/RegisterRequest.class
 com/qawi/config/DataSeeder.class
 com/qawi/entity/ScheduleDay$ScheduleDayBuilder.class
@@ -42,6 +46,7 @@ com/qawi/dto/UserDto$UserDtoBuilder.class
 com/qawi/entity/MealLog$MealLogBuilder.class
 com/qawi/entity/NutritionPlan.class
 com/qawi/controller/MeasurementController.class
+com/qawi/controller/MemberReportController$ReportRequest.class
 com/qawi/service/AttendanceService$1.class
 com/qawi/repository/CoachMemberRepository.class
 com/qawi/dto/LoginRequest.class
@@ -96,8 +101,10 @@ com/qawi/repository/ExerciseCategoryRepository.class
 com/qawi/config/SecurityConfig.class
 com/qawi/repository/WorkoutTemplateRepository.class
 com/qawi/dto/AuthResponse$AuthResponseBuilder.class
+com/qawi/entity/MemberSuggestion.class
 com/qawi/entity/SubscriptionHistory$SubscriptionHistoryBuilder.class
 com/qawi/dto/CheckInResponse.class
+com/qawi/repository/MemberReportRepository.class
 com/qawi/dto/MarkContactedResponse.class
 com/qawi/entity/WorkoutTemplateDayExercise.class
 com/qawi/service/AccessGuard$1.class
@@ -108,6 +115,7 @@ com/qawi/entity/PlanExercise$PlanExerciseBuilder.class
 com/qawi/controller/AuthController.class
 com/qawi/filter/RateLimitFilter.class
 com/qawi/entity/NutritionPlan$NutritionPlanBuilder.class
+com/qawi/entity/ReportStatus.class
 com/qawi/dto/PlatformStatsResponse.class
 com/qawi/service/SuperAdminService.class
 com/qawi/entity/SubscriptionHistory.class
@@ -121,12 +129,14 @@ com/qawi/entity/CoachMember.class
 com/qawi/controller/MemberController$1DayRef.class
 com/qawi/dto/ErrorResponse$ErrorResponseBuilder.class
 com/qawi/controller/GymAdminController.class
+com/qawi/controller/MemberReportController.class
 com/qawi/repository/WorkoutTemplateDayExerciseRepository.class
 com/qawi/dto/PlatformStatsResponse$PlatformStatsResponseBuilder.class
 com/qawi/dto/CheckInResponse$CheckInResponseBuilder.class
 com/qawi/entity/MemberSubscriptionPlan.class
 com/qawi/dto/CreateGymRequest.class
 com/qawi/entity/WorkoutTemplateDay$WorkoutTemplateDayBuilder.class
+com/qawi/entity/MemberReport.class
 com/qawi/repository/AttendanceRepository.class
 com/qawi/dto/ExerciseUsageResponse$ExerciseUsageResponseBuilder.class
 com/qawi/repository/NutritionPlanRepository.class
@@ -136,6 +146,7 @@ com/qawi/controller/PublicGymController.class
 com/qawi/controller/WorkoutTemplateController.class
 com/qawi/controller/CoachDashboardController.class
 com/qawi/entity/CoachNote.class
+com/qawi/entity/MemberSuggestion$MemberSuggestionBuilder.class
 com/qawi/service/GymFeatureService$Feature.class
 com/qawi/dto/LogWorkoutRequest.class
 com/qawi/entity/ContactRequest.class
@@ -146,6 +157,7 @@ com/qawi/dto/MarkContactedResponse$MarkContactedResponseBuilder.class
 com/qawi/repository/WorkoutLogRepository.class
 com/qawi/service/ExerciseService$1.class
 com/qawi/repository/SubscriptionHistoryRepository.class
+com/qawi/repository/MemberSuggestionRepository.class
 com/qawi/service/ExerciseService.class
 com/qawi/dto/CreateMealRequest.class
 com/qawi/repository/MealRepository.class

@@ -39,6 +39,7 @@ public class MemberController {
     private final MeasurementService measurementService;
     private final BodyMeasurementRepository measurementRepository;
     private final MealLogRepository mealLogRepository;
+    private final CoachMemberRepository coachMemberRepository;
 
     // ───────────────────────── WORKOUTS ─────────────────────────
 
@@ -351,6 +352,26 @@ public class MemberController {
         if (n != null) req.setNotes(n.toString());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(measurementService.addMeasurement(req, ud.getUsername()));
+    }
+
+    // ───────────────────────── PROFILE ─────────────────────────
+
+    @GetMapping("/profile")
+    public ResponseEntity<Map<String, Object>> profile(@AuthenticationPrincipal UserDetails ud) {
+        User me = self(ud);
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("name", me.getName());
+        result.put("email", me.getEmail());
+        result.put("subscriptionEndDate", me.getSubscriptionEndDate() != null ? me.getSubscriptionEndDate().toString() : null);
+
+        // Find assigned coach name
+        coachMemberRepository.findByMemberId(me.getId()).stream().findFirst().ifPresent(cm ->
+            userRepository.findById(cm.getCoachId()).ifPresent(coach ->
+                result.put("coachName", coach.getName())
+            )
+        );
+
+        return ResponseEntity.ok(result);
     }
 
     // ───────────────────────── helpers ─────────────────────────

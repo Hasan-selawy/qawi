@@ -15,4 +15,7 @@ public interface SubscriptionHistoryRepository extends JpaRepository<Subscriptio
 
     @Query("SELECT COALESCE(SUM(s.price), 0) FROM SubscriptionHistory s WHERE s.createdAt >= :since")
     double sumRevenueSince(LocalDateTime since);
+
+    @Query("SELECT s FROM SubscriptionHistory s WHERE s.memberId IN :memberIds AND s.createdAt BETWEEN :start AND :end ORDER BY s.createdAt DESC")
+    List<SubscriptionHistory> findByMemberIdsAndDateRange(List<UUID> memberIds, LocalDateTime start, LocalDateTime end);
 }

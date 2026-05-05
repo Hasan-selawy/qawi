@@ -11,4 +11,5 @@ public class LogWorkoutRequest {
     private int actualSets;
     private int actualReps;
     private double actualWeight;
+    private String notes;
 }

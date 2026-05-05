@@ -282,6 +282,69 @@ public class GymAdminService {
                 .build();
     }
 
+    // ── REVENUE REPORT ────────────────────────────────────────────────────────
+
+    public Map<String, Object> getRevenueReport(String adminEmail, LocalDate start, LocalDate end) {
+        UUID gymId = getAdmin(adminEmail).getGymId();
+        List<User> members = userRepository.findByGymIdAndRole(gymId, Role.MEMBER);
+        List<UUID> memberIds = members.stream().map(User::getId).toList();
+
+        LocalDateTime startDt = start.atStartOfDay();
+        LocalDateTime endDt = end.atTime(23, 59, 59);
+
+        List<SubscriptionHistory> histories = memberIds.isEmpty()
+                ? List.of()
+                : subscriptionHistoryRepository.findByMemberIdsAndDateRange(memberIds, startDt, endDt);
+
+        LocalDate today = LocalDate.now();
+
+        long activeCount = members.stream()
+                .filter(m -> m.getSubscriptionEndDate() != null && !m.getSubscriptionEndDate().isBefore(today))
+                .count();
+        long expiredCount = members.stream()
+                .filter(m -> m.getSubscriptionEndDate() != null && m.getSubscriptionEndDate().isBefore(today))
+                .count();
+        double totalRevenue = histories.stream().mapToDouble(SubscriptionHistory::getPrice).sum();
+
+        Map<UUID, String> idToName = new HashMap<>();
+        members.forEach(m -> idToName.put(m.getId(), m.getName()));
+
+        List<Map<String, Object>> details = new ArrayList<>();
+        for (SubscriptionHistory h : histories) {
+            String memberName = idToName.getOrDefault(h.getMemberId(), "Unknown");
+            User member = members.stream().filter(m -> m.getId().equals(h.getMemberId())).findFirst().orElse(null);
+            String status;
+            if (member != null && member.getSubscriptionEndDate() != null) {
+                status = member.getSubscriptionEndDate().isBefore(today) ? "Expired" : "Active";
+            } else {
+                status = h.getEndDate().isBefore(today) ? "Expired" : "Active";
+            }
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("memberName", memberName);
+            row.put("plan", h.getPlan().name());
+            row.put("startDate", h.getStartDate().toString());
+            row.put("endDate", h.getEndDate().toString());
+            row.put("amountPaid", h.getPrice());
+            row.put("status", status);
+            details.add(row);
+        }
+
+        Map<String, Object> summary = new LinkedHashMap<>();
+        summary.put("activeSubscriptions", activeCount);
+        summary.put("newJoins", histories.size());
+        summary.put("expired", expiredCount);
+        summary.put("totalRevenue", totalRevenue);
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("summary", summary);
+        result.put("details", details);
+        return result;
+    }
+
+    public UUID getGymIdForAdmin(String email) {
+        return getAdmin(email).getGymId();
+    }
+
     // ── HELPERS ───────────────────────────────────────────────────────────────
 
     private User getAdmin(String email) {

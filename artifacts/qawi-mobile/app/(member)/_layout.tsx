@@ -32,6 +32,10 @@ export default function MemberLayout() {
         name="progress"
         options={{ title: t("member.tabs.progress"), tabBarIcon: ({ color, size }) => <Feather name="trending-up" size={size} color={color} /> }}
       />
+      <Tabs.Screen
+        name="profile"
+        options={{ title: t("member.tabs.profile"), tabBarIcon: ({ color, size }) => <Feather name="user" size={size} color={color} /> }}
+      />
     </Tabs>
   );
 }
