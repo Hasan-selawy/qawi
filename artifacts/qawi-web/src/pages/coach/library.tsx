@@ -1,8 +1,7 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/services/api';
 import { useLanguage } from '@/hooks/use-language';
-import { pickName } from '@/lib/i18n-name';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { PageWrapper } from '@/components/layout/PageWrapper';
 import { Button } from '@/components/ui/button';
@@ -10,7 +9,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Play, Search, Trash2, Pencil, UserPlus, Users, Dumbbell } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Plus, Play, Search, Trash2, Pencil, UserPlus, Users, Dumbbell, RotateCcw, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
@@ -21,16 +22,31 @@ function getYouTubeId(url?: string | null): string | null {
   return m ? m[1] : null;
 }
 
+function VideoPreview({ url }: { url?: string | null }) {
+  if (!url) return null;
+  const ytId = getYouTubeId(url);
+  if (ytId) {
+    return (
+      <div className="mt-3 rounded-lg overflow-hidden aspect-video w-full">
+        <iframe src={`https://www.youtube.com/embed/${ytId}`} className="w-full h-full"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+      </div>
+    );
+  }
+  return (
+    <div className="mt-3 rounded-lg overflow-hidden aspect-video w-full bg-black/20 flex items-center justify-center">
+      <video src={url} controls className="max-w-full max-h-full" />
+    </div>
+  );
+}
+
 function LibrarySkeleton() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       {[...Array(8)].map((_, i) => (
         <div key={i} className="glass-card overflow-hidden">
           <Skeleton className="h-32 w-full" />
-          <div className="p-5 space-y-3">
-            <Skeleton className="h-6 w-36" />
-            <Skeleton className="h-4 w-20" />
-          </div>
+          <div className="p-5 space-y-3"><Skeleton className="h-6 w-36" /><Skeleton className="h-4 w-20" /></div>
         </div>
       ))}
     </div>
@@ -43,6 +59,15 @@ export default function Library() {
   const { user } = useAuth();
   const [activeCategory, setActiveCategory] = useState<string>('');
   const [search, setSearch] = useState('');
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState<any | null>(null);
+  const [overrideTarget, setOverrideTarget] = useState<any | null>(null);
+  const [overrideForm, setOverrideForm] = useState({ name: '', nameAr: '', videoUrl: '' });
+  const [overrideVideoPreview, setOverrideVideoPreview] = useState('');
+  const [assignTarget, setAssignTarget] = useState<any | null>(null);
+  const [usageTarget, setUsageTarget] = useState<any | null>(null);
+  const isGymAdmin = user?.role === 'GYM_ADMIN';
+  const isCoach = user?.role === 'COACH';
 
   const { data: categories } = useQuery<any[]>({
     queryKey: ['exercises', 'categories'],
@@ -54,33 +79,76 @@ export default function Library() {
     queryFn: () => activeCategory ? apiFetch(`/exercises/library/${activeCategory}`) : apiFetch('/exercises/library'),
   });
 
+  const { data: gymOverrides } = useQuery<any[]>({
+    queryKey: ['admin', 'exercises', 'overrides'],
+    queryFn: () => apiFetch('/admin/exercises/overrides'),
+    enabled: isGymAdmin,
+  });
+
+  const { data: myMembers } = useQuery<any[]>({
+    queryKey: ['coach', 'members'],
+    queryFn: () => apiFetch('/coach/members'),
+    enabled: isCoach,
+  });
+
+  const { data: usageData } = useQuery<any[]>({
+    queryKey: ['exercises', usageTarget?.id, 'usage'],
+    queryFn: () => apiFetch(`/exercises/${usageTarget?.id}/usage`),
+    enabled: !!usageTarget,
+  });
+
+  const overrideMap = useMemo(() => {
+    const map: Record<string, any> = {};
+    (gymOverrides || []).forEach((o: any) => { map[o.exerciseTemplateId] = o; });
+    return map;
+  }, [gymOverrides]);
+
   const exercises = useMemo(() => {
     const list = rawExercises || [];
     if (!search.trim()) return list;
     const q = search.trim().toLowerCase();
     return list.filter((ex: any) =>
-      (ex.name || '').toLowerCase().includes(q) || (ex.nameAr || '').toLowerCase().includes(q)
-    );
+      (ex.name || '').toLowerCase().includes(q) || (ex.nameAr || '').toLowerCase().includes(q));
   }, [rawExercises, search]);
-
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editing, setEditing] = useState<any | null>(null);
-  const [assignTarget, setAssignTarget] = useState<any | null>(null);
-  const [usageTarget, setUsageTarget] = useState<any | null>(null);
 
   const addExercise = useMutation({
     mutationFn: (data: any) => apiFetch('/exercises/library', { method: 'POST', data }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['exercises', 'library'] }); toast.success('Exercise added to library'); setDialogOpen(false); setEditing(null); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['exercises'] }); toast.success('Exercise added'); setDialogOpen(false); setEditing(null); },
     onError: (err: any) => toast.error(err.error || 'Failed'),
   });
 
   const updateExercise = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => apiFetch(`/exercises/library/${id}`, { method: 'PUT', data }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['exercises', 'library'] }); toast.success('Exercise updated'); setDialogOpen(false); setEditing(null); },
-    onError: (err: any) => toast.error(err.error || 'Failed to update'),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['exercises'] }); toast.success('Exercise updated'); setDialogOpen(false); setEditing(null); },
+    onError: (err: any) => toast.error(err.error || 'Failed'),
   });
 
-  const canEdit = (ex: any) => {
+  const deleteExercise = useMutation({
+    mutationFn: (id: string) => apiFetch(`/exercises/library/${id}`, { method: 'DELETE' }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['exercises'] }); toast.success('Exercise removed'); },
+    onError: (err: any) => toast.error(err.error || 'Failed'),
+  });
+
+  const upsertOverride = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => apiFetch(`/admin/exercises/${id}/override`, { method: 'PUT', data }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin', 'exercises', 'overrides'] }); toast.success('Exercise customized for your gym'); setOverrideTarget(null); },
+    onError: (err: any) => toast.error(err.error || 'Failed'),
+  });
+
+  const deleteOverride = useMutation({
+    mutationFn: (id: string) => apiFetch(`/admin/exercises/${id}/override`, { method: 'DELETE' }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin', 'exercises', 'overrides'] }); toast.success('Reset to default'); setOverrideTarget(null); },
+    onError: (err: any) => toast.error(err.error || 'Failed'),
+  });
+
+  const openOverride = (ex: any) => {
+    const existing = overrideMap[ex.id];
+    setOverrideForm({ name: existing?.name ?? ex.name ?? '', nameAr: existing?.nameAr ?? ex.nameAr ?? '', videoUrl: existing?.videoUrl ?? ex.videoUrl ?? '' });
+    setOverrideVideoPreview(existing?.videoUrl ?? ex.videoUrl ?? '');
+    setOverrideTarget(ex);
+  };
+
+  const canEditOriginal = (ex: any) => {
     if (!user) return false;
     if (user.role === 'SUPER_ADMIN') return true;
     if (user.role === 'GYM_ADMIN') return ex.scope === 'GYM' && ex.gymId === user.gymId;
@@ -96,229 +164,232 @@ export default function Library() {
     return false;
   };
 
-  const canAssignToMember = user?.role === 'COACH';
-
-  const deleteExercise = useMutation({
-    mutationFn: (id: string) => apiFetch(`/exercises/library/${id}`, { method: 'DELETE' }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['exercises', 'library'] }); toast.success(t('coach.exercise_deleted')); },
-    onError: (err: any) => toast.error(err.error || err.message || t('coach.delete_exercise_failed')),
-  });
-
-  const categoryById = useMemo(() => {
-    const map: Record<string, any> = {};
-    (categories || []).forEach((c: any) => { map[c.id] = c; });
-    return map;
-  }, [categories]);
-
-  const getEmojiForCategory = (name?: string) => {
-    if (!name) return '🏋️';
-    const map: Record<string, string> = { chest: '💪', back: '🏋️', legs: '🦵', shoulders: '🎯', arms: '💪', core: '🔥', cardio: '🏃' };
-    const key = name.toLowerCase();
-    for (const k in map) if (key.includes(k)) return map[k];
-    return '🏋️';
-  };
-
   return (
     <PageWrapper>
       <PageHeader
         title={t('common.library')}
         actions={
-          <Button className="glow-hover" onClick={() => { setEditing(null); setDialogOpen(true); }}>
-            <Plus className="mr-2 h-4 w-4" /> Add Custom Exercise
+          <Button onClick={() => { setEditing(null); setDialogOpen(true); }} className="glow-hover">
+            <Plus className="mr-2 h-4 w-4" />{lang === 'ar' ? 'إضافة تمرين' : 'Add Exercise'}
           </Button>
         }
       />
 
-      <Dialog open={dialogOpen} onOpenChange={(v) => { setDialogOpen(v); if (!v) setEditing(null); }}>
-        <DialogContent className="glass-card border-white/10 sm:max-w-md">
-          <DialogHeader><DialogTitle>{editing ? 'Edit Exercise' : 'New Exercise'}</DialogTitle></DialogHeader>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const fd = new FormData(e.currentTarget);
-              const data = { name: fd.get('name'), nameAr: fd.get('nameAr'), categoryId: fd.get('categoryId'), defaultSets: Number(fd.get('defaultSets')), defaultReps: Number(fd.get('defaultReps')), videoUrl: fd.get('videoUrl') };
-              if (editing) updateExercise.mutate({ id: editing.id, data });
-              else addExercise.mutate(data);
-            }}
-            className="space-y-4"
-          >
-            <Input name="name" placeholder="English Name" required className="bg-black/20" defaultValue={editing?.name || ''} />
-            <Input name="nameAr" placeholder="Arabic Name" className="bg-black/20" dir="rtl" defaultValue={editing?.nameAr || ''} />
-            <Select name="categoryId" required defaultValue={editing?.categoryId || undefined}>
-              <SelectTrigger className="bg-black/20"><SelectValue placeholder="Category" /></SelectTrigger>
-              <SelectContent>
-                {categories?.map((c: any) => <SelectItem key={c.id} value={c.id}>{pickName(lang, c)}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <div className="grid grid-cols-2 gap-4">
-              <Input name="defaultSets" type="number" placeholder="Default Sets" defaultValue={editing?.defaultSets ?? 3} required className="bg-black/20" />
-              <Input name="defaultReps" type="number" placeholder="Default Reps" defaultValue={editing?.defaultReps ?? 10} required className="bg-black/20" />
+      {/* Gym Admin Override Modal */}
+      <Dialog open={!!overrideTarget} onOpenChange={(v) => { if (!v) setOverrideTarget(null); }}>
+        <DialogContent className="glass-card border-white/10 sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="text-primary h-5 w-5" />
+              {lang === 'ar' ? 'تخصيص التمرين لصالتك' : 'Customize exercise for your gym'}
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground -mt-2">
+            {lang === 'ar' ? 'التغييرات تطبق على صالتك فقط ولا تؤثر على بيانات التمرين العامة.' : 'Changes apply only to your gym — global exercise data is untouched.'}
+          </p>
+          <div className="space-y-4 mt-2">
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">{lang === 'ar' ? 'الاسم (إنجليزي)' : 'Name (English)'}</label>
+              <Input value={overrideForm.name} onChange={(e) => setOverrideForm((f) => ({ ...f, name: e.target.value }))} className="bg-black/20" placeholder="Exercise name" />
             </div>
-            <Input name="videoUrl" placeholder="Video URL (optional)" className="bg-black/20" defaultValue={editing?.videoUrl || ''} />
-            <Button type="submit" className="w-full" disabled={addExercise.isPending || updateExercise.isPending}>
-              {(addExercise.isPending || updateExercise.isPending) ? 'Saving…' : (editing ? 'Update Exercise' : 'Save Exercise')}
-            </Button>
-          </form>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">{lang === 'ar' ? 'الاسم (عربي)' : 'Name (Arabic)'}</label>
+              <Input value={overrideForm.nameAr} onChange={(e) => setOverrideForm((f) => ({ ...f, nameAr: e.target.value }))} className="bg-black/20" dir="rtl" placeholder="اسم التمرين" />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">{lang === 'ar' ? 'رابط الفيديو' : 'Video URL'}</label>
+              <Input value={overrideForm.videoUrl} onChange={(e) => { setOverrideForm((f) => ({ ...f, videoUrl: e.target.value })); setOverrideVideoPreview(e.target.value); }} className="bg-black/20" placeholder="https://youtube.com/..." />
+              <VideoPreview url={overrideVideoPreview} />
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button className="flex-1" onClick={() => upsertOverride.mutate({ id: overrideTarget?.id, data: overrideForm })} disabled={upsertOverride.isPending}>
+                {upsertOverride.isPending ? 'Saving…' : (lang === 'ar' ? 'حفظ التخصيص' : 'Save Customization')}
+              </Button>
+              {overrideMap[overrideTarget?.id] && (
+                <Button variant="outline" className="border-red-500/30 text-red-400 hover:bg-red-500/10" onClick={() => deleteOverride.mutate(overrideTarget?.id)} disabled={deleteOverride.isPending}>
+                  <RotateCcw className="mr-2 h-4 w-4" />{lang === 'ar' ? 'استعادة الافتراضي' : 'Reset'}
+                </Button>
+              )}
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
-      <AssignToMemberDialog exercise={assignTarget} onClose={() => setAssignTarget(null)} lang={lang} />
-      <UsageDialog exercise={usageTarget} onClose={() => setUsageTarget(null)} lang={lang} />
+      {/* Add/Edit Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={(v) => { setDialogOpen(v); if (!v) setEditing(null); }}>
+        <DialogContent className="glass-card border-white/10 sm:max-w-lg">
+          <DialogHeader><DialogTitle>{editing ? (lang === 'ar' ? 'تعديل التمرين' : 'Edit Exercise') : (lang === 'ar' ? 'إضافة تمرين' : 'Add Exercise')}</DialogTitle></DialogHeader>
+          <ExerciseForm initial={editing} categories={categories || []} lang={lang}
+            onSubmit={(data: any) => { if (editing) updateExercise.mutate({ id: editing.id, data }); else addExercise.mutate(data); }}
+            isPending={addExercise.isPending || updateExercise.isPending} />
+        </DialogContent>
+      </Dialog>
 
-      <div className="mb-8 flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-        <button onClick={() => setActiveCategory('')} className={cn('px-4 py-2 rounded-full whitespace-nowrap font-medium text-sm transition-all', !activeCategory ? 'bg-primary text-white' : 'bg-black/20 text-muted-foreground hover:bg-white/10')}>All</button>
-        {categories?.map((c: any) => (
-          <button key={c.id} onClick={() => setActiveCategory(c.id)} className={cn('px-4 py-2 rounded-full whitespace-nowrap font-medium text-sm transition-all flex items-center gap-2', activeCategory === c.id ? 'bg-primary text-white' : 'bg-black/20 text-muted-foreground hover:bg-white/10')}>
-            <span>{getEmojiForCategory(c.name)}</span> {pickName(lang, c)}
+      {/* Category filter */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        {[{ id: '', label: lang === 'ar' ? 'الكل' : 'All' }, ...(categories || []).map((c: any) => ({ id: c.id, label: lang === 'ar' ? c.nameAr : c.name }))].map((item) => (
+          <button key={item.id} onClick={() => setActiveCategory(item.id)}
+            className={cn('px-4 py-2 rounded-full text-sm font-medium transition-colors border', activeCategory === item.id ? 'bg-primary text-white border-primary' : 'border-white/10 text-muted-foreground hover:border-white/20')}>
+            {item.label}
           </button>
         ))}
       </div>
 
-      <div className="relative w-full max-w-md mb-8">
+      <div className="relative mb-6">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Search exercises..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 bg-black/20 h-12 rounded-xl border-white/10" />
+        <Input placeholder={lang === 'ar' ? 'بحث...' : 'Search exercises...'} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 bg-black/20" />
       </div>
 
-      {isLoading ? (
-        <LibrarySkeleton />
-      ) : exercises?.length === 0 ? (
-        <div className="glass-card p-16 text-center border-dashed border-white/10">
-          <Dumbbell className="h-16 w-16 text-muted-foreground/20 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-1">💪 No exercises found</h3>
-          <p className="text-muted-foreground text-sm mb-4">
-            {search ? `No exercises match "${search}"` : 'Add your first custom exercise!'}
-          </p>
-          {!search && <Button onClick={() => { setEditing(null); setDialogOpen(true); }} className="glow-hover"><Plus className="mr-2 h-4 w-4" /> Add Exercise</Button>}
-        </div>
-      ) : (
+      {isLoading ? <LibrarySkeleton /> : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {exercises?.map((ex: any) => {
-            const cat = categoryById[ex.categoryId];
+          {exercises.map((ex: any) => {
+            const override = overrideMap[ex.id];
+            const displayName = lang === 'ar' ? (override?.nameAr ?? ex.nameAr) : (override?.name ?? ex.name);
+            const displayVideo = override?.videoUrl ?? ex.videoUrl;
+            const ytId = getYouTubeId(displayVideo);
+            const isCustomized = !!override;
+
             return (
-              <div key={ex.id} onClick={() => setUsageTarget(ex)} className="glass-card border-white/5 hover:border-primary/30 transition-colors flex flex-col relative overflow-hidden group cursor-pointer">
-                {getYouTubeId(ex.videoUrl) && (
-                  <a href={ex.videoUrl!} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="relative block w-full overflow-hidden rounded-t-[inherit]" style={{ aspectRatio: '16/9' }}>
-                    <img src={`https://img.youtube.com/vi/${getYouTubeId(ex.videoUrl)}/hqdefault.jpg`} alt="Exercise video" className="w-full h-full object-cover" />
+              <div key={ex.id} className="glass-card overflow-hidden group flex flex-col hover:border-primary/30 transition-colors border border-white/5">
+                {ytId ? (
+                  <div className="relative h-32 bg-black overflow-hidden">
+                    <img src={`https://img.youtube.com/vi/${ytId}/mqdefault.jpg`} alt={displayName} className="w-full h-full object-cover opacity-70 group-hover:opacity-90 transition-opacity" />
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(255,0,0,0.85)' }}>
-                        <Play size={20} className="fill-white text-white ml-0.5" />
-                      </div>
+                      <div className="w-10 h-10 rounded-full bg-black/60 flex items-center justify-center"><Play className="h-5 w-5 text-white fill-white" /></div>
                     </div>
-                  </a>
-                )}
-                <div className="p-5 flex flex-col flex-1">
-                  <div className="absolute -right-6 -top-6 text-9xl opacity-5 pointer-events-none group-hover:scale-110 transition-transform">{getEmojiForCategory(cat?.name)}</div>
-                  <div className="mb-6 relative z-10 flex items-start justify-between gap-2">
-                    <h3 className="text-2xl font-bold leading-tight mb-1" dir={lang === 'ar' ? 'rtl' : 'ltr'}>{pickName(lang, ex)}</h3>
-                    <Users size={14} className="text-muted-foreground/60 mt-1 shrink-0" />
                   </div>
-                  <div className="mt-auto flex items-center justify-between relative z-10 pt-4 border-t border-white/5">
-                    <span className="bg-black/40 text-muted-foreground px-2 py-1 rounded-md text-xs font-bold font-mono">{ex.defaultSets} × {ex.defaultReps}</span>
-                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                      {ex.videoUrl && (<a href={ex.videoUrl} target="_blank" rel="noreferrer" className="text-red-500 hover:text-red-400 transition-colors p-1 bg-red-500/10 rounded-full hover:bg-red-500/20"><Play size={20} className="fill-current" /></a>)}
-                      {canAssignToMember && (<button onClick={() => setAssignTarget(ex)} title="Add to member's plan" className="text-emerald-400 hover:text-emerald-300 transition-colors p-1.5 bg-emerald-500/10 rounded-full hover:bg-emerald-500/20"><UserPlus size={16} /></button>)}
-                      {canEdit(ex) && (<button onClick={() => { setEditing(ex); setDialogOpen(true); }} title="Edit exercise" className="text-primary hover:text-primary/80 transition-colors p-1.5 bg-primary/10 rounded-full hover:bg-primary/20"><Pencil size={16} /></button>)}
-                      {canDelete(ex) && (<button onClick={() => { const name = pickName(lang, ex); const msg = (t('coach.delete_exercise_confirm') || 'Delete {name}?').replace('{name}', name); if (confirm(msg)) deleteExercise.mutate(ex.id); }} disabled={deleteExercise.isPending} title={t('coach.delete_exercise_title') || 'Delete'} className="text-red-500 hover:text-red-400 transition-colors p-1.5 bg-red-500/10 rounded-full hover:bg-red-500/20 disabled:opacity-50"><Trash2 size={16} /></button>)}
+                ) : displayVideo ? (
+                  <div className="relative h-32 bg-black/40 flex items-center justify-center"><Play className="h-8 w-8 text-muted-foreground" /></div>
+                ) : (
+                  <div className="h-32 bg-gradient-to-br from-primary/5 to-primary/10 flex items-center justify-center"><Dumbbell className="h-12 w-12 text-primary/30" /></div>
+                )}
+                <div className="p-4 flex flex-col flex-1 gap-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold truncate">{displayName}</h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {ex.scope === 'GLOBAL' ? (lang === 'ar' ? 'افتراضي' : 'Built-in') : ex.scope === 'GYM' ? (lang === 'ar' ? 'صالة' : 'Gym') : (lang === 'ar' ? 'مدرب' : 'Coach')}
+                      </p>
                     </div>
+                    {isCustomized && <Badge className="bg-primary/20 text-primary border-primary/30 text-xs shrink-0 pointer-events-none">{lang === 'ar' ? 'مخصص' : 'Customized'}</Badge>}
+                  </div>
+                  <div className="flex gap-1.5 mt-auto flex-wrap">
+                    {isGymAdmin && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button size="sm" variant="ghost" className="h-8 px-2 text-primary hover:bg-primary/10" onClick={() => openOverride(ex)}>
+                            <Sparkles className="h-3.5 w-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>{lang === 'ar' ? 'تخصيص للصالة' : 'Customize for gym'}</TooltipContent>
+                      </Tooltip>
+                    )}
+                    {canEditOriginal(ex) && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button size="sm" variant="ghost" className="h-8 px-2" onClick={() => { setEditing(ex); setDialogOpen(true); }}><Pencil className="h-3.5 w-3.5" /></Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Edit</TooltipContent>
+                      </Tooltip>
+                    )}
+                    {isCoach && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button size="sm" variant="ghost" className="h-8 px-2" onClick={() => setAssignTarget(ex)}><UserPlus className="h-3.5 w-3.5" /></Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Assign to member</TooltipContent>
+                      </Tooltip>
+                    )}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button size="sm" variant="ghost" className="h-8 px-2" onClick={() => setUsageTarget(ex)}><Users className="h-3.5 w-3.5" /></Button>
+                      </TooltipTrigger>
+                      <TooltipContent>View usage</TooltipContent>
+                    </Tooltip>
+                    {canDelete(ex) && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button size="sm" variant="ghost" className="h-8 px-2 text-red-500 hover:bg-red-500/10"
+                            onClick={() => { if (confirm('Delete this exercise?')) deleteExercise.mutate(ex.id); }}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Delete</TooltipContent>
+                      </Tooltip>
+                    )}
                   </div>
                 </div>
               </div>
             );
           })}
+          {exercises.length === 0 && !isLoading && (
+            <div className="col-span-full text-center py-16">
+              <Dumbbell className="h-16 w-16 mx-auto text-muted-foreground/20 mb-4" />
+              <p className="text-muted-foreground">{lang === 'ar' ? 'لا توجد تمارين' : 'No exercises found'}</p>
+            </div>
+          )}
         </div>
       )}
+
+      {/* Assign Dialog */}
+      <Dialog open={!!assignTarget} onOpenChange={(v) => { if (!v) setAssignTarget(null); }}>
+        <DialogContent className="glass-card border-white/10">
+          <DialogHeader><DialogTitle>Assign to Member</DialogTitle></DialogHeader>
+          <div className="space-y-3 max-h-64 overflow-y-auto">
+            {(myMembers || []).map((m: any) => (
+              <button key={m.id} onClick={() => { toast.success(`Tip: Add "${assignTarget?.name}" to ${m.name}'s plan from their profile`); setAssignTarget(null); }}
+                className="w-full text-left px-4 py-3 glass-card hover:border-primary/30 transition-colors flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold">{m.name[0]}</div>
+                <div><p className="font-medium">{m.name}</p><p className="text-xs text-muted-foreground">{m.email}</p></div>
+              </button>
+            ))}
+            {!(myMembers || []).length && <p className="text-center text-muted-foreground py-4">No members assigned yet</p>}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Usage Dialog */}
+      <Dialog open={!!usageTarget} onOpenChange={(v) => { if (!v) setUsageTarget(null); }}>
+        <DialogContent className="glass-card border-white/10">
+          <DialogHeader><DialogTitle>Usage — {usageTarget?.name}</DialogTitle></DialogHeader>
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {(usageData || []).length === 0
+              ? <p className="text-muted-foreground text-center py-4">Not assigned to any plans yet.</p>
+              : (usageData || []).map((u: any, i: number) => (
+                <div key={i} className="glass-card p-3 flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold">{u.memberName?.[0]}</div>
+                  <div><p className="font-medium text-sm">{u.memberName}</p><p className="text-xs text-muted-foreground">{u.planName}</p></div>
+                </div>
+              ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </PageWrapper>
   );
 }
 
-function AssignToMemberDialog({ exercise, onClose, lang }: { exercise: any; onClose: () => void; lang: 'en' | 'ar' }) {
-  const queryClient = useQueryClient();
-  const open = !!exercise;
-  const [memberId, setMemberId] = useState<string>('');
-  const [dayId, setDayId] = useState<string>('');
-  const [sets, setSets] = useState<number>(exercise?.defaultSets ?? 3);
-  const [reps, setReps] = useState<number>(exercise?.defaultReps ?? 10);
-  const [note, setNote] = useState('');
-
-  useEffect(() => { if (exercise) { setMemberId(''); setDayId(''); setSets(exercise.defaultSets ?? 3); setReps(exercise.defaultReps ?? 10); setNote(''); } }, [exercise?.id, exercise?.defaultSets, exercise?.defaultReps]);
-
-  const members = useQuery<any[]>({ queryKey: ['coach', 'members'], queryFn: () => apiFetch('/coach/members'), enabled: open });
-  const plans = useQuery<any[]>({ queryKey: ['workouts', 'member', memberId], queryFn: () => apiFetch(`/workouts/member/${memberId}`), enabled: open && !!memberId });
-  const latestPlanId = useMemo(() => { const arr = plans.data || []; if (!arr.length) return null; return [...arr].sort((a, b) => String(b.endDate).localeCompare(String(a.endDate)))[0]?.id; }, [plans.data]);
-  const planDetail = useQuery<any>({ queryKey: ['workouts', 'plan', latestPlanId], queryFn: () => apiFetch(`/workouts/${latestPlanId}`), enabled: open && !!latestPlanId });
-  const days: any[] = useMemo(() => (planDetail.data?.days || []).filter((d: any) => !d.isRestDay), [planDetail.data]);
-
-  const addToDay = useMutation({
-    mutationFn: () => apiFetch(`/workouts/days/${dayId}/exercises`, { method: 'POST', data: { exerciseTemplateId: exercise.id, sets, reps, targetWeight: 0, videoUrl: note ? `note:${note}` : undefined, orderIndex: 0 } }),
-    onSuccess: () => { const member = (members.data || []).find((m: any) => m.id === memberId || m.memberId === memberId); toast.success(`Added to ${member?.name || 'member'}'s plan!`); queryClient.invalidateQueries({ queryKey: ['workouts', 'plan', latestPlanId] }); onClose(); },
-    onError: (err: any) => toast.error(err.error || err.message || 'Failed to add'),
-  });
-
+function ExerciseForm({ initial, categories, lang, onSubmit, isPending }: any) {
+  const [form, setForm] = useState({ name: initial?.name || '', nameAr: initial?.nameAr || '', videoUrl: initial?.videoUrl || '', categoryId: initial?.categoryId || '', defaultSets: initial?.defaultSets || 3, defaultReps: initial?.defaultReps || 12, defaultWeight: initial?.defaultWeight || 0 });
+  const [videoPreview, setVideoPreview] = useState(form.videoUrl);
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="glass-card border-white/10 sm:max-w-md">
-        <DialogHeader><DialogTitle>Add to Member's Plan</DialogTitle></DialogHeader>
-        {exercise && <p className="text-sm text-muted-foreground -mt-2 mb-2">{pickName(lang, exercise)}</p>}
-        <div className="space-y-4">
-          <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Member</label>
-            <Select value={memberId} onValueChange={(v) => { setMemberId(v); setDayId(''); }}>
-              <SelectTrigger className="bg-black/20"><SelectValue placeholder={members.isLoading ? 'Loading...' : 'Select member'} /></SelectTrigger>
-              <SelectContent>{(members.data || []).map((m: any) => <SelectItem key={m.id || m.memberId} value={m.id || m.memberId}>{m.name || m.memberName}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground mb-1 block">Day</label>
-            <Select value={dayId} onValueChange={setDayId} disabled={!memberId || planDetail.isLoading}>
-              <SelectTrigger className="bg-black/20"><SelectValue placeholder={!memberId ? 'Pick member first' : planDetail.isLoading ? 'Loading plan...' : !latestPlanId ? 'Member has no plan' : days.length === 0 ? 'No training days' : 'Select day'} /></SelectTrigger>
-              <SelectContent>{days.map((d: any) => <SelectItem key={d.id} value={d.id}>{d.dayName} — {String(d.dayDate).slice(0, 10)}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><label className="text-xs text-muted-foreground mb-1 block">Sets</label><Input type="number" min={1} value={sets} onChange={(e) => setSets(Number(e.target.value))} className="bg-black/20" /></div>
-            <div><label className="text-xs text-muted-foreground mb-1 block">Reps</label><Input type="number" min={1} value={reps} onChange={(e) => setReps(Number(e.target.value))} className="bg-black/20" /></div>
-          </div>
-          <div><label className="text-xs text-muted-foreground mb-1 block">Coach Note (optional)</label><Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Use machine #1" className="bg-black/20" /></div>
-          <Button onClick={() => addToDay.mutate()} disabled={!memberId || !dayId || addToDay.isPending} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white">
-            {addToDay.isPending ? 'Adding…' : 'Add Exercise'}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function UsageDialog({ exercise, onClose, lang }: { exercise: any; onClose: () => void; lang: 'en' | 'ar' }) {
-  const open = !!exercise;
-  const usage = useQuery<any[]>({ queryKey: ['exercises', 'usage', exercise?.id], queryFn: () => apiFetch(`/exercises/${exercise.id}/usage`), enabled: open });
-  return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="glass-card border-white/10 sm:max-w-lg">
-        <DialogHeader><DialogTitle>{exercise ? `${pickName(lang, exercise)} — Usage` : 'Usage'}</DialogTitle></DialogHeader>
-        {usage.isLoading ? (
-          <div className="space-y-3 py-4">{[...Array(3)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}</div>
-        ) : !usage.data?.length ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">No members assigned yet.</p>
-        ) : (
-          <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-            {usage.data.map((u: any, i: number) => (
-              <div key={`${u.memberId}-${u.dayId}-${i}`} className="p-3 bg-black/30 rounded-lg border border-white/5">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold shrink-0">{(u.memberName || '?').slice(0, 1).toUpperCase()}</div>
-                    <div className="min-w-0"><p className="font-medium text-sm truncate">{u.memberName}</p><p className="text-xs text-muted-foreground truncate">{u.planName}</p></div>
-                  </div>
-                  <span className="text-[10px] font-mono bg-black/40 text-muted-foreground px-2 py-1 rounded">{u.sets} × {u.reps}</span>
-                </div>
-                <div className="mt-2 pt-2 border-t border-white/5 text-xs text-muted-foreground flex items-center justify-between">
-                  <span>{u.dayName} · {String(u.dayDate || '').slice(0, 10)}</span>
-                  {u.lastLoggedAt ? <span className="text-primary">Last: {String(u.lastLoggedAt).slice(0, 10)}{u.lastWeight != null ? ` · ${u.lastWeight}kg` : ''}</span> : <span className="text-muted-foreground/60">Not logged</span>}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
+    <form onSubmit={(e) => { e.preventDefault(); onSubmit(form); }} className="space-y-4">
+      <Input placeholder="Name (English)" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} className="bg-black/20" required />
+      <Input placeholder="الاسم بالعربية" value={form.nameAr} onChange={(e) => setForm((f) => ({ ...f, nameAr: e.target.value }))} className="bg-black/20" dir="rtl" required />
+      <Select value={form.categoryId} onValueChange={(v) => setForm((f) => ({ ...f, categoryId: v }))}>
+        <SelectTrigger className="bg-black/20"><SelectValue placeholder="Select category" /></SelectTrigger>
+        <SelectContent>{categories.map((cat: any) => <SelectItem key={cat.id} value={cat.id}>{lang === 'ar' ? cat.nameAr : cat.name}</SelectItem>)}</SelectContent>
+      </Select>
+      <div>
+        <Input placeholder="Video URL (YouTube or direct)" value={form.videoUrl}
+          onChange={(e) => { setForm((f) => ({ ...f, videoUrl: e.target.value })); setVideoPreview(e.target.value); }} className="bg-black/20" />
+        <VideoPreview url={videoPreview} />
+      </div>
+      <div className="grid grid-cols-3 gap-3">
+        <div><label className="text-xs text-muted-foreground">Sets</label><Input type="number" value={form.defaultSets} onChange={(e) => setForm((f) => ({ ...f, defaultSets: +e.target.value }))} className="bg-black/20" min={1} /></div>
+        <div><label className="text-xs text-muted-foreground">Reps</label><Input type="number" value={form.defaultReps} onChange={(e) => setForm((f) => ({ ...f, defaultReps: +e.target.value }))} className="bg-black/20" min={1} /></div>
+        <div><label className="text-xs text-muted-foreground">Weight (kg)</label><Input type="number" value={form.defaultWeight} onChange={(e) => setForm((f) => ({ ...f, defaultWeight: +e.target.value }))} className="bg-black/20" min={0} /></div>
+      </div>
+      <Button type="submit" className="w-full glow-hover" disabled={isPending}>{isPending ? 'Saving…' : 'Save Exercise'}</Button>
+    </form>
   );
 }

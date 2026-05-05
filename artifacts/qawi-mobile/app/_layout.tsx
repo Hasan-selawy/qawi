@@ -19,6 +19,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ToastProvider } from "@/components/Toast";
 import { AuthProvider, useProtectedRoute } from "@/context/AuthContext";
+import { BrandingProvider } from "@/context/BrandingContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 
 SplashScreen.preventAutoHideAsync();
@@ -66,10 +67,12 @@ export default function RootLayout() {
             <KeyboardProvider>
               <LanguageProvider>
                 <AuthProvider>
-                  <ToastProvider>
-                    <StatusBar style="light" />
-                    <RootLayoutNav />
-                  </ToastProvider>
+                  <BrandingProvider>
+                    <ToastProvider>
+                      <StatusBar style="light" />
+                      <RootLayoutNav />
+                    </ToastProvider>
+                  </BrandingProvider>
                 </AuthProvider>
               </LanguageProvider>
             </KeyboardProvider>

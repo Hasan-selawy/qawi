@@ -20,4 +20,6 @@ public class AdminAnalyticsResponse {
     private List<Map<String, Object>> topPerformingMembers;
     private double revenueThisMonth;
     private List<Map<String, Object>> memberGrowth;
+    private List<Map<String, Object>> monthlyRevenue;
+    private List<Map<String, Object>> weeklyAttendanceByDay;
 }

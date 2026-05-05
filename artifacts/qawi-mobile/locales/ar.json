@@ -29,7 +29,7 @@
     "superNotAllowed": "يجب على المسؤول الأعلى استخدام لوحة التحكم على الويب."
   },
   "member": {
-    "tabs": { "home": "الرئيسية", "workout": "التمرين", "checkin": "حضور", "nutrition": "التغذية", "progress": "التقدم", "profile": "ملفي" },
+    "tabs": { "home": "الرئيسية", "workout": "التمرين", "checkin": "حضور", "nutrition": "التغذية", "classes": "الحصص", "progress": "التقدم", "profile": "ملفي" },
     "welcome": "مرحباً",
     "todayWorkout": "تمرين اليوم",
     "startWorkout": "ابدأ التمرين",

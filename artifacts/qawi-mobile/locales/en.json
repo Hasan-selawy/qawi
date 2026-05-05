@@ -29,7 +29,7 @@
     "superNotAllowed": "Super admins must use the web dashboard."
   },
   "member": {
-    "tabs": { "home": "Home", "workout": "Workout", "checkin": "Check-in", "nutrition": "Nutrition", "progress": "Progress", "profile": "Profile" },
+    "tabs": { "home": "Home", "workout": "Workout", "checkin": "Check-in", "nutrition": "Nutrition", "classes": "Classes", "progress": "Progress", "profile": "Profile" },
     "welcome": "Welcome",
     "todayWorkout": "Today's Workout",
     "startWorkout": "Start Workout",

@@ -28,6 +28,8 @@ public class GymAdminController {
     private final GymAdminService gymAdminService;
     private final GymFeatureService gymFeatureService;
     private final MemberReportService memberReportService;
+    private final com.qawi.repository.GymExerciseOverrideRepository gymExerciseOverrideRepository;
+    private final com.qawi.repository.ExerciseTemplateRepository exerciseTemplateRepository;
 
     @PostMapping("/coaches")
     public ResponseEntity<User> createCoach(
@@ -142,6 +144,51 @@ public class GymAdminController {
             @AuthenticationPrincipal UserDetails userDetails) {
         UUID gymId = gymAdminService.getGymIdForAdmin(userDetails.getUsername());
         memberReportService.resolveReport(reportId, gymId);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ── EXERCISE OVERRIDES ────────────────────────────────────────────────────
+
+    @GetMapping("/exercises/overrides")
+    public ResponseEntity<List<com.qawi.entity.GymExerciseOverride>> getOverrides(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        UUID gymId = gymAdminService.getGymIdForAdmin(userDetails.getUsername());
+        return ResponseEntity.ok(gymExerciseOverrideRepository.findByGymId(gymId));
+    }
+
+    @PutMapping("/exercises/{exerciseId}/override")
+    public ResponseEntity<com.qawi.entity.GymExerciseOverride> upsertOverride(
+            @PathVariable UUID exerciseId,
+            @RequestBody Map<String, String> body,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        UUID gymId = gymAdminService.getGymIdForAdmin(userDetails.getUsername());
+        exerciseTemplateRepository.findById(exerciseId)
+                .orElseThrow(() -> new com.qawi.exception.AppException(
+                        "Exercise not found", "التمرين غير موجود", org.springframework.http.HttpStatus.NOT_FOUND));
+        com.qawi.entity.GymExerciseOverride override = gymExerciseOverrideRepository
+                .findByGymIdAndExerciseTemplateId(gymId, exerciseId)
+                .orElse(com.qawi.entity.GymExerciseOverride.builder()
+                        .gymId(gymId).exerciseTemplateId(exerciseId).build());
+        if (body.containsKey("name") && body.get("name") != null) override.setName(body.get("name"));
+        if (body.containsKey("nameAr") && body.get("nameAr") != null) override.setNameAr(body.get("nameAr"));
+        if (body.containsKey("videoUrl")) override.setVideoUrl(body.get("videoUrl"));
+        override.setUpdatedAt(java.time.LocalDateTime.now());
+        if (override.getName() == null) {
+            exerciseTemplateRepository.findById(exerciseId).ifPresent(t -> {
+                if (override.getName() == null) override.setName(t.getName());
+                if (override.getNameAr() == null) override.setNameAr(t.getNameAr());
+            });
+        }
+        return ResponseEntity.ok(gymExerciseOverrideRepository.save(override));
+    }
+
+    @DeleteMapping("/exercises/{exerciseId}/override")
+    @org.springframework.transaction.annotation.Transactional
+    public ResponseEntity<Void> deleteOverride(
+            @PathVariable UUID exerciseId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        UUID gymId = gymAdminService.getGymIdForAdmin(userDetails.getUsername());
+        gymExerciseOverrideRepository.deleteByGymIdAndExerciseTemplateId(gymId, exerciseId);
         return ResponseEntity.noContent().build();
     }
 }

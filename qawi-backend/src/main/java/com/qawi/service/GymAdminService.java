@@ -270,6 +270,35 @@ public class GymAdminService {
 
         boolean advanced = gymFeatureService.isEnabledForGymId(gymId, GymFeatureService.Feature.ANALYTICS_ADVANCED);
 
+        // Monthly revenue — last 6 months for this gym
+        List<User> gymMembers = userRepository.findByGymIdAndRole(gymId, Role.MEMBER);
+        List<UUID> gymMemberIds = gymMembers.stream().map(User::getId).toList();
+        List<Map<String, Object>> monthlyRevenue = new ArrayList<>();
+        if (!gymMemberIds.isEmpty()) {
+            List<Object[]> monthlyRaw = subscriptionHistoryRepository.findMonthlyRevenueForGym(gymMemberIds, now.minusMonths(6));
+            for (Object[] row : monthlyRaw) {
+                Map<String, Object> m = new LinkedHashMap<>();
+                m.put("month", row[0]);
+                m.put("revenue", row[1]);
+                monthlyRevenue.add(m);
+            }
+        }
+
+        // Weekly attendance by day of week (Mon-Sun)
+        String[] dayNames = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
+        long[] dayCounts = new long[7];
+        for (Attendance a : weekAttendance) {
+            int dow = a.getCheckedInAt().getDayOfWeek().getValue() - 1; // Mon=0
+            dayCounts[dow]++;
+        }
+        List<Map<String, Object>> weeklyByDay = new ArrayList<>();
+        for (int i = 0; i < 7; i++) {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("day", dayNames[i]);
+            m.put("count", dayCounts[i]);
+            weeklyByDay.add(m);
+        }
+
         return AdminAnalyticsResponse.builder()
                 .totalMembers(totalMembers).activeMembers(activeMembers)
                 .inactiveMembers(Math.max(0, inactiveMembers)).totalCoaches(totalCoaches)
@@ -279,6 +308,8 @@ public class GymAdminService {
                 .topPerformingMembers(advanced ? topPerforming : List.of())
                 .revenueThisMonth(advanced ? revenueThisMonth : 0d)
                 .memberGrowth(advanced ? memberGrowth : List.of())
+                .monthlyRevenue(advanced ? monthlyRevenue : List.of())
+                .weeklyAttendanceByDay(advanced ? weeklyByDay : List.of())
                 .build();
     }
 

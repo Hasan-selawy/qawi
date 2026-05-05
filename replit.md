@@ -23,14 +23,18 @@ sharing the same backend.
 ```
 com.qawi
   /config       — SecurityConfig, DataSeeder, Phase3DataSeeder, Phase4DataSeeder
-  /controller   — Auth, GymAdmin, CoachDashboard, Exercise, WorkoutPlan, WorkoutTemplate,
-                  Nutrition, Measurement, Attendance, Notification, Me, Member, PublicGym, SuperAdmin, CoachNote
-  /service      — AuthService, GymAdminService, ExerciseService, WorkoutPlanService, WorkoutTemplateService,
-                  NutritionService, MeasurementService, AttendanceService, NotificationService, AccessGuard
-  /repository   — 20 JPA interfaces
+  /controller   — Auth, GymAdmin (+ exercise overrides), CoachDashboard, Exercise, WorkoutPlan,
+                  WorkoutTemplate, Nutrition, Measurement, Attendance, Notification, Me, Member,
+                  PublicGym, SuperAdmin, CoachNote, GymClassController, MemberClassController
+  /service      — AuthService, GymAdminService (monthlyRevenue), ExerciseService, WorkoutPlanService,
+                  WorkoutTemplateService, NutritionService, MeasurementService, AttendanceService,
+                  NotificationService, AccessGuard, CoachDashboardService (nutritionStatus)
+  /repository   — 26 JPA interfaces (+ GymExerciseOverrideRepository, GymClassRepository,
+                  ClassBookingRepository, GymClassStatusRepository, ClassBookingStatusRepository)
   /entity       — User, Gym, GymFeatures, GymLimits, GymBranding, CoachMember, ExerciseCategory,
-                  ExerciseTemplate, WorkoutPlan, WorkoutDay, ScheduleDay, PlanExercise,
-                  NutritionPlan, Meal, MealLog, Measurement, Notification, Attendance
+                  ExerciseTemplate, GymExerciseOverride, WorkoutPlan, WorkoutDay, ScheduleDay,
+                  PlanExercise, NutritionPlan, Meal, MealLog, Measurement, Notification, Attendance,
+                  GymClass, GymClassStatus, ClassBooking, ClassBookingStatus
   /dto          — 30+ request/response DTOs (all with Bean Validation annotations)
   /exception    — AppException, GlobalExceptionHandler
   /filter       — RateLimitFilter (Bucket4j), RequestLoggingFilter (MDC)
@@ -86,6 +90,10 @@ Per-gym via `gym_features` table. Flags: `nutritionEnabled`, `pushNotificationsE
 - `/coach/nutrition` — nutrition plan management page (feature-flagged)
 - `/admin/members` — enforces `limits.maxMembers`; shows `X/Y members` count when limit set; disables Add button at limit
 - `/super/gyms/:id` — per-gym feature flag toggles and limits management
+- `/admin/classes` — class booking management (feature-gated by `classBookingEnabled`); CRUD for gym classes with capacity, instructor, date/time; shows lock/upgrade screen when feature disabled
+- `/admin/analytics` — rebuilt with Recharts bar charts (monthly revenue, weekly attendance), KPI stat cards, Print Report (browser print) + Export CSV buttons
+- `/coach/dashboard` — member cards now show colored nutrition status dots: green (on track), yellow (partial), red (no logs), gray (no plan); legend at top
+- `/coach/library` — exercise cards have Sparkles (✨) button for GYM_ADMIN gym overrides (custom name EN/AR + video URL per gym); "Customized" badge on overridden exercises; UserPlus for coach member assignment
 
 ### Phase 7B Polish (completed)
 - **ErrorBoundary** (`components/ErrorBoundary.tsx`) — wraps every page in `App.tsx`; bilingual fallback + reload button
@@ -105,10 +113,13 @@ Per-gym via `gym_features` table. Flags: `nutritionEnabled`, `pushNotificationsE
 - **Auth**: `context/AuthContext.tsx` with `useProtectedRoute()` (watches `firstSegment` string to avoid infinite loops)
 - **i18n**: `context/LanguageContext.tsx` (EN/AR); `locales/en.json` + `locales/ar.json`
 - **Feature flags**: `hooks/useGymConfig.ts`; coach Nutrition tab gated by `nutritionEnabled`
+- **Custom Branding**: `context/BrandingContext.tsx` + `hooks/useColors.ts` — when `customBrandingEnabled` is true and gym has `primaryColor`/`logoUrl` set, all screens use gym's brand color and login shows gym logo instead of default Qawi mark
+- **Login screen branding** (`app/(auth)/login.tsx`): shows gym logo image (if set) or gym name initial with glow; displays "Powered by Qawi" tagline; gradient button uses gym's primary color
 - **Tabs**:
-  - `(member)` — Home / Workout / Check-in / Nutrition / Progress
+  - `(member)` — Home / Workout / Check-in / Nutrition / Classes (feature-flagged) / Progress / Profile
   - `(coach)` — Members / Plans / Library / Nutrition (feature-flagged) / Profile
   - `(admin)` — Dashboard / Members / Coaches / Profile
+- **Member Classes screen** (`app/(member)/classes.tsx`): lists upcoming classes with date/time, instructor, capacity; Book Now / Cancel Booking with confirmation dialogs; full/booked/lock states handled
 - **Workflow**: `artifacts/qawi-mobile: expo` — restart only on dependency changes
 
 ### Phase 7B Polish (completed)

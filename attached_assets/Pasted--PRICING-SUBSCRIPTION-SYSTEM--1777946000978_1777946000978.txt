@@ -1,0 +1,119 @@
+================================================================
+PRICING & SUBSCRIPTION SYSTEM
+================================================================
+
+1. SUPER ADMIN — PRICING PAGE + GLOBAL PLAN EDITOR
+================================================================
+
+On the gym registration/onboarding page that shows when 
+someone wants to register their gym:
+
+- Super admin can edit the description/headline text on this page
+- Editable fields:
+  - Page title (e.g., "Choose your plan")
+  - Subtitle/description text
+  - Footer note (e.g., "All plans include app access")
+- Changes reflect immediately on the public registration page
+
+SUPER ADMIN GLOBAL PLANS:
+Super admin manages the platform-level subscription tiers
+that gyms subscribe to (not player plans):
+
+Default tiers:
+
+| Tier         | 1 Month | 3 Months | 6 Months | 1 Year |
+|--------------|---------|----------|----------|--------|
+| Basic        | 60 JOD  | auto     | auto     | auto   |
+| Pro          | 100 JOD | auto     | auto     | auto   |
+| Enterprise   | 180 JOD | auto     | auto     | auto   |
+
+- Super admin can edit the name of each tier
+- Super admin can edit the base monthly price
+- Super admin can edit the price for each duration separately
+- Super admin can add a new tier
+- Super admin can deactivate a tier
+- Changes reflect on the gym registration/pricing page
+
+================================================================
+2. GYM ADMIN — SUBSCRIPTION PLANS EDITOR
+================================================================
+
+Add a "Pricing" or "Subscription Plans" section in the gym
+admin sidebar.
+
+Admin can create and edit subscription plans for their gym's
+PLAYERS (separate from the platform tiers above).
+
+DEFAULT PLANS (pre-filled, admin sets the prices):
+
+| Plan Name                        | Duration |
+|----------------------------------|----------|
+| 1 Month - Training               | 1 month  |
+| 1 Month - Training + Nutrition   | 1 month  |
+| 3 Months - Training              | 3 months |
+| 3 Months - Training + Nutrition  | 3 months |
+| 6 Months - Training              | 6 months |
+| 6 Months - Training + Nutrition  | 6 months |
+| 1 Year - Training                | 1 year   |
+| 1 Year - Training + Nutrition    | 1 year   |
+
+Each plan has:
+- Plan name (editable)
+- Duration (1 month / 3 months / 6 months / 1 year)
+- Price (admin sets this)
+- Description / what's included (editable text)
+- Active / Inactive toggle (hide from players if inactive)
+
+Admin can:
+- Edit any plan name, price, description
+- Add a custom plan
+- Deactivate a plan (hides it from players)
+- Cannot delete default plans, only deactivate them
+
+================================================================
+3. PLAYER PROFILE — RENEW SUBSCRIPTION BUTTON
+================================================================
+
+On the player profile screen (mobile), next to the
+"Sub ends at" line add a "Renew" button.
+
+Behavior:
+- Tapping "Renew" opens the gym's pricing page
+- Shows all active subscription plans the admin created
+- Player can see plan name, duration, price, and description
+- Player selects a plan → shows confirmation screen:
+  "You selected: 1 Month - Training — 50 JOD
+   Please pay at the gym reception to activate."
+- On confirm → sends a renewal request notification to the
+  gym admin dashboard
+- Admin sees pending renewal requests and can manually
+  activate the subscription
+
+IMPORTANT:
+- No online payment needed — payment is in person at the gym
+- The flow is: player selects plan → admin gets notified →
+  admin activates manually after receiving payment
+
+================================================================
+4. ADMIN — RENEWAL REQUESTS
+================================================================
+
+In the admin dashboard, add a "Renewal Requests" section:
+- Shows list of players who requested renewal
+- Each row: player name, selected plan, request date, status
+- Admin can mark as "Activated" after receiving payment
+- When activated, the player's subscription end date is
+  automatically extended by the plan duration
+
+================================================================
+GENERAL NOTES:
+================================================================
+- Match existing QAWI dark theme (green #00C853, dark background)
+- Support Arabic RTL throughout
+- Mobile = Expo React Native
+- Web = existing dashboard
+- Default plans are pre-created in DB on first setup
+- Super admin always has full access
+- Gym admin plans are for players only
+- Super admin plans are for gyms subscribing to the platform
+- These are two completely separate pricing systems

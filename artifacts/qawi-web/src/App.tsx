@@ -22,6 +22,7 @@ import AdminSubscriptions from "@/pages/admin/subscriptions";
 import AdminAnalytics from "@/pages/admin/analytics";
 import AdminRevenue from "@/pages/admin/revenue";
 import AdminReports from "@/pages/admin/reports";
+import AdminClasses from "@/pages/admin/classes";
 
 import CoachDashboard from "@/pages/coach/dashboard";
 import MemberDetail from "@/pages/coach/member-detail";
@@ -68,6 +69,9 @@ function Router() {
       </Route>
       <Route path="/admin/reports">
         <RoleRoute role="GYM_ADMIN"><AppShell><ErrorBoundary><AdminReports /></ErrorBoundary></AppShell></RoleRoute>
+      </Route>
+      <Route path="/admin/classes">
+        <RoleRoute role="GYM_ADMIN"><AppShell><ErrorBoundary><AdminClasses /></ErrorBoundary></AppShell></RoleRoute>
       </Route>
 
       {/* Coach Routes */}

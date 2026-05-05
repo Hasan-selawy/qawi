@@ -5,7 +5,7 @@ import { useGymConfig } from '@/hooks/use-gym-config';
 import {
   LayoutDashboard, Users, UserSquare2, CreditCard, BarChart3,
   Dumbbell, Library, ChevronLeft, ChevronRight, Activity, Building2, UtensilsCrossed,
-  TrendingUp, Flag
+  TrendingUp, Flag, Calendar
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -37,6 +37,9 @@ export function Sidebar({ isOpen, setIsOpen, overlayMode }: SidebarProps) {
         ];
         if (features.analyticsAdvancedEnabled) {
           links.splice(5, 0, { href: '/admin/revenue', icon: TrendingUp, label: 'revenue' });
+        }
+        if (features.classBookingEnabled) {
+          links.push({ href: '/admin/classes', icon: Calendar, label: 'classes' });
         }
         return links;
       }

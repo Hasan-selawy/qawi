@@ -17,4 +17,5 @@ public class CoachMemberSummary {
     private long workoutsCompletedThisWeek;
     private String subscriptionStatus;
     private boolean isActive;
+    private String nutritionStatus; // "LOGGED" | "NOT_LOGGED" | "NO_PLAN"
 }

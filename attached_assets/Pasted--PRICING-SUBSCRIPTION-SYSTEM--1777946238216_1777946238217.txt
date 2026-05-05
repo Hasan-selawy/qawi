@@ -1,0 +1,110 @@
+
+PRICING & SUBSCRIPTION SYSTEM
+================================================================
+
+1. SUPER ADMIN — PRICING PAGE + GLOBAL PLAN EDITOR
+
+On the gym registration/onboarding page:
+
+- Super admin can edit the description/headline text on this page
+- Editable fields:
+  - Page title
+  - Subtitle/description text
+  - Footer note
+- Changes reflect immediately on the public registration page
+
+SUPER ADMIN GLOBAL PLANS:
+Super admin manages the platform-level subscription tiers:
+
+Default tiers and prices:
+
+| Tier       | 1 Month | 3 Months | 6 Months | 1 Year |
+|------------|---------|----------|----------|--------|
+| Basic      | 60 JOD  | editable | editable | editable |
+| Pro        | 100 JOD | editable | editable | editable |
+| Enterprise | 180 JOD | editable | editable | editable |
+
+- Super admin can edit every price for every duration
+- Super admin can edit tier names and features list
+- Super admin can add or deactivate a tier
+- Changes reflect live on the pricing page
+
+PRICING PAGE UI — DURATION TOGGLE:
+- Show 4 toggle buttons at the top: 
+  [ 1 Month ] [ 3 Months ] [ 6 Months ] [ 1 Year ]
+- Only ONE duration is active at a time
+- When a button is selected, the 3 plan cards update to show
+  the price for that duration
+- Active button is highlighted in green
+- Default selected: 1 Month
+- Optionally show a "Save X%" badge on 6 Months and 1 Year 
+  buttons to encourage longer commitment
+
+================================================================
+2. GYM ADMIN — SUBSCRIPTION PLANS EDITOR
+
+
+Add a "Pricing" section in the gym admin sidebar.
+
+Admin manages player subscription plans for their gym.
+
+DEFAULT PLANS (pre-filled, admin sets the prices):
+
+| Plan Name                       | Duration |
+|---------------------------------|----------|
+| 1 Month - Training              | 1 month  |
+| 1 Month - Training + Nutrition  | 1 month  |
+| 3 Months - Training             | 3 months |
+| 3 Months - Training + Nutrition | 3 months |
+| 6 Months - Training             | 6 months |
+| 6 Months - Training + Nutrition | 6 months |
+| 1 Year - Training               | 1 year   |
+| 1 Year - Training + Nutrition   | 1 year   |
+
+Each plan has:
+- Plan name (editable)
+- Duration
+- Price (admin sets this)
+- Description / what's included
+- Active / Inactive toggle
+
+PLAYER-FACING PRICING PAGE (Mobile):
+- Same toggle button UI as the registration page
+- Buttons: [ 1 Month ] [ 3 Months ] [ 6 Months ] [ 1 Year ]
+- Only shows plans matching the selected duration
+- Each plan card shows: name, price, what's included
+- Player taps a plan → confirmation screen
+
+Admin can:
+- Edit any plan name, price, description
+- Add a custom plan
+- Deactivate a plan (hides from players)
+
+================================================================
+3. PLAYER PROFILE — RENEW SUBSCRIPTION BUTTON
+
+On the player profile screen (mobile), next to 
+"Sub ends at" add a "Renew" button.
+
+Tapping Renew:
+- Opens the gym's pricing page with the duration toggle
+- Player picks a duration → sees matching plans
+- Selects a plan → confirmation screen:
+  "You selected: 1 Month - Training — 50 JOD
+   Please pay at the gym reception to activate."
+- On confirm → sends renewal request to admin dashboard
+
+IMPORTANT:
+- No online payment — in person at gym
+- Player selects → admin gets notified → admin activates manually
+
+================================================================
+4. ADMIN — RENEWAL REQUESTS
+
+In the admin dashboard, add a "Renewal Requests" section:
+- List of players who requested renewal
+- Each row: player name, selected plan, request date, status
+- Admin marks as "Activated" after receiving payment
+- When activated, subscription end date auto-extends by 
+  the plan duration
+

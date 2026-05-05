@@ -10,10 +10,35 @@ import { StatusBadge, BadgeStatus } from '@/components/StatusBadge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { format } from 'date-fns';
 import { Calendar, Activity, ChevronRight, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getDaysSince } from '@/lib/sub-status';
+
+function NutritionDot({ status }: { status?: string }) {
+  const { lang } = useLanguage();
+  const label = status === 'LOGGED'
+    ? (lang === 'ar' ? 'سجّل التغذية اليوم' : 'Logged today')
+    : status === 'NOT_LOGGED'
+    ? (lang === 'ar' ? 'لم يسجل التغذية اليوم' : 'Not logged today')
+    : (lang === 'ar' ? 'لا يوجد خطة تغذية' : 'No plan assigned');
+
+  const dot = status === 'LOGGED'
+    ? 'bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.7)]'
+    : status === 'NOT_LOGGED'
+    ? 'bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.7)]'
+    : 'bg-gray-500';
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className={cn('inline-block w-2.5 h-2.5 rounded-full shrink-0 cursor-help', dot)} />
+      </TooltipTrigger>
+      <TooltipContent side="top" className="text-xs">{label}</TooltipContent>
+    </Tooltip>
+  );
+}
 
 function CoachSkeleton() {
   return (
@@ -22,15 +47,9 @@ function CoachSkeleton() {
         <div key={i} className="glass-card p-6 space-y-4">
           <div className="flex items-start gap-3">
             <Skeleton className="h-12 w-12 rounded-full shrink-0" />
-            <div className="space-y-2 flex-1">
-              <Skeleton className="h-5 w-32" />
-              <Skeleton className="h-3 w-40" />
-            </div>
+            <div className="space-y-2 flex-1"><Skeleton className="h-5 w-32" /><Skeleton className="h-3 w-40" /></div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <Skeleton className="h-16 rounded-lg" />
-            <Skeleton className="h-16 rounded-lg" />
-          </div>
+          <div className="grid grid-cols-2 gap-4"><Skeleton className="h-16 rounded-lg" /><Skeleton className="h-16 rounded-lg" /></div>
           <Skeleton className="h-10 w-full rounded-lg" />
         </div>
       ))}
@@ -39,7 +58,7 @@ function CoachSkeleton() {
 }
 
 export default function CoachDashboard() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const [filter, setFilter] = useState('ALL');
@@ -65,6 +84,13 @@ export default function CoachDashboard() {
         <p className="text-muted-foreground flex items-center gap-2">
           <Calendar size={16} /> {format(new Date(), 'EEEE, MMMM do, yyyy')}
         </p>
+      </div>
+
+      {/* Legend */}
+      <div className="flex items-center gap-4 mb-4 text-xs text-muted-foreground">
+        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-green-500 inline-block" /> {lang === 'ar' ? 'سجّل التغذية' : 'Nutrition logged'}</span>
+        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-red-500 inline-block" /> {lang === 'ar' ? 'لم يسجل' : 'Not logged'}</span>
+        <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-gray-500 inline-block" /> {lang === 'ar' ? 'بلا خطة' : 'No plan'}</span>
       </div>
 
       <Tabs value={filter} onValueChange={setFilter} className="mb-8">
@@ -97,7 +123,10 @@ export default function CoachDashboard() {
                   <div className="flex items-center gap-3">
                     <GradientAvatar name={member.name} size="lg" />
                     <div>
-                      <h3 className="font-bold text-lg group-hover:text-primary transition-colors">{member.name}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-bold text-lg group-hover:text-primary transition-colors">{member.name}</h3>
+                        <NutritionDot status={member.nutritionStatus} />
+                      </div>
                       <p className="text-xs text-muted-foreground">{member.currentWorkoutPlanName || 'No active plan'}</p>
                     </div>
                   </div>
@@ -115,11 +144,7 @@ export default function CoachDashboard() {
                     <p className={cn('font-semibold text-sm px-2 py-0.5 rounded-md inline-block', checkinColor)}>{checkinText}</p>
                   </div>
                 </div>
-                <Button
-                  className="w-full mt-auto group-hover:bg-primary/90"
-                  variant="outline"
-                  onClick={() => setLocation(`/coach/members/${member.id}`)}
-                >
+                <Button className="w-full mt-auto group-hover:bg-primary/90" variant="outline" onClick={() => setLocation(`/coach/members/${member.id}`)}>
                   {t('coach.view_profile')} <ChevronRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>

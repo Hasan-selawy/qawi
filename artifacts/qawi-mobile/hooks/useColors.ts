@@ -1,18 +1,11 @@
 import { useColorScheme } from "react-native";
 
 import colors from "@/constants/colors";
+import { useGymConfig } from "@/hooks/useGymConfig";
 
 /**
- * Returns the design tokens for the current color scheme.
- *
- * The returned object contains all color tokens for the active palette
- * plus scheme-independent values like `radius`.
- *
- * Falls back to the light palette when no dark key is defined in
- * constants/colors.ts (the scaffold ships light-only by default).
- * When a sibling web artifact's dark tokens are synced into a `dark`
- * key, this hook will automatically switch palettes based on the
- * device's appearance setting.
+ * Returns design tokens for the current color scheme, with gym custom
+ * branding primary color applied when the feature is enabled.
  */
 export function useColors() {
   const scheme = useColorScheme();
@@ -20,5 +13,22 @@ export function useColors() {
     scheme === "dark" && "dark" in colors
       ? (colors as any).dark
       : colors.light;
+
+  const config = useGymConfig();
+  const customPrimary =
+    config.features.customBrandingEnabled && config.branding.primaryColor
+      ? config.branding.primaryColor
+      : null;
+
+  if (customPrimary) {
+    return {
+      ...palette,
+      radius: colors.radius,
+      primary: customPrimary,
+      tint: customPrimary,
+      accent: customPrimary,
+    };
+  }
+
   return { ...palette, radius: colors.radius };
 }

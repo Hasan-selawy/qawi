@@ -28,6 +28,7 @@ public class CoachDashboardService {
     private final CoachNoteRepository coachNoteRepository;
     private final ScheduleDayRepository scheduleDayRepository;
     private final PlanExerciseRepository planExerciseRepository;
+    private final MealLogRepository mealLogRepository;
 
     @Transactional(readOnly = true)
     public List<CoachMemberSummary> getMyMembers(String coachEmail) {
@@ -49,6 +50,14 @@ public class CoachDashboardService {
 
             String subscriptionStatus = resolveSubStatus(member);
 
+            // Nutrition status
+            String nutritionStatus = "NO_PLAN";
+            List<NutritionPlan> nutritionPlans = nutritionPlanRepository.findByMemberId(member.getId());
+            if (!nutritionPlans.isEmpty()) {
+                List<MealLog> todayLogs = mealLogRepository.findByMemberIdAndLogDate(member.getId(), LocalDate.now());
+                nutritionStatus = todayLogs.isEmpty() ? "NOT_LOGGED" : "LOGGED";
+            }
+
             return CoachMemberSummary.builder()
                     .id(member.getId()).name(member.getName()).email(member.getEmail())
                     .lastCheckinDate(lastCheckin.map(Attendance::getCheckedInAt).orElse(null))
@@ -56,6 +65,7 @@ public class CoachDashboardService {
                     .workoutsCompletedThisWeek(workoutsThisWeek)
                     .subscriptionStatus(subscriptionStatus)
                     .isActive(member.isActive())
+                    .nutritionStatus(nutritionStatus)
                     .build();
         }).filter(Objects::nonNull).toList();
     }

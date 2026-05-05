@@ -24,8 +24,15 @@ export default function MemberLayout() {
         options={{
           title: t("member.tabs.nutrition"),
           tabBarIcon: ({ color, size }) => <Feather name="coffee" size={size} color={color} />,
-          // Hide entirely when the gym hasn't paid for the nutrition feature.
           href: features.nutritionEnabled ? undefined : null,
+        }}
+      />
+      <Tabs.Screen
+        name="classes"
+        options={{
+          title: t("member.tabs.classes"),
+          tabBarIcon: ({ color, size }) => <Feather name="calendar" size={size} color={color} />,
+          href: features.classBookingEnabled ? undefined : null,
         }}
       />
       <Tabs.Screen
