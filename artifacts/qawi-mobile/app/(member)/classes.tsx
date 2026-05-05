@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { FeatureLockScreen } from "@/components/FeatureLockScreen";
 import { useLanguage } from "@/context/LanguageContext";
 import { useColors } from "@/hooks/useColors";
 import { useGymConfig } from "@/hooks/useGymConfig";
@@ -115,6 +116,7 @@ export default function MemberClasses() {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const { features } = useGymConfig();
+
   const [bookingId, setBookingId] = useState<string | null>(null);
 
   const { data: classes, isLoading, refetch, isRefetching } = useQuery<any[]>({
@@ -154,19 +156,13 @@ export default function MemberClasses() {
 
   if (!features.classBookingEnabled) {
     return (
-      <View style={[styles.root, { backgroundColor: C.background, paddingTop: insets.top }]}>
-        <View style={styles.emptyWrap}>
-          <Feather name="lock" size={48} color={C.mutedForeground} style={{ opacity: 0.3 }} />
-          <Text style={[styles.emptyTitle, { color: C.text }]}>
-            {lang === "ar" ? "حجز الحصص غير متاح" : "Class Booking Not Available"}
-          </Text>
-          <Text style={[styles.emptyDesc, { color: C.mutedForeground }]}>
-            {lang === "ar"
-              ? "صالتك لم تفعّل هذه الميزة بعد."
-              : "Your gym hasn't enabled this feature yet."}
-          </Text>
-        </View>
-      </View>
+      <FeatureLockScreen
+        icon="🗓️"
+        titleEn="Classes Not Activated Yet"
+        titleAr="لم يتم تفعيل الحصص بعد"
+        subtitleEn="Your gym hasn't enabled this feature yet."
+        subtitleAr="لم تقم صالتك بتفعيل هذه الميزة بعد."
+      />
     );
   }
 

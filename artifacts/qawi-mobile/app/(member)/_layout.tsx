@@ -24,7 +24,6 @@ export default function MemberLayout() {
         options={{
           title: t("member.tabs.nutrition"),
           tabBarIcon: ({ color, size }) => <Feather name="coffee" size={size} color={color} />,
-          href: features.nutritionEnabled ? undefined : null,
         }}
       />
       <Tabs.Screen
@@ -32,7 +31,6 @@ export default function MemberLayout() {
         options={{
           title: t("member.tabs.classes"),
           tabBarIcon: ({ color, size }) => <Feather name="calendar" size={size} color={color} />,
-          href: features.classBookingEnabled ? undefined : null,
         }}
       />
       <Tabs.Screen

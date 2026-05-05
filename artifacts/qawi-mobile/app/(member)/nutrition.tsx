@@ -4,20 +4,24 @@ import * as Haptics from "expo-haptics";
 import React from "react";
 import { Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 
+import { FeatureLockScreen } from "@/components/FeatureLockScreen";
 import { RoleHeader } from "@/components/RoleHeader";
 import { Card, EmptyState, Screen } from "@/components/ui";
 import { useLanguage, pickName } from "@/context/LanguageContext";
 import { useColors } from "@/hooks/useColors";
+import { useGymConfig } from "@/hooks/useGymConfig";
 import { apiFetch } from "@/services/api";
 
 export default function NutritionScreen() {
   const c = useColors();
   const { t, lang, isRTL } = useLanguage();
   const qc = useQueryClient();
+  const { features } = useGymConfig();
 
   const plan = useQuery({
     queryKey: ["member", "nutrition"],
     queryFn: () => apiFetch<any>("/member/nutrition/active").catch(() => null),
+    enabled: features.nutritionEnabled,
   });
 
   const toggleDone = useMutation({
@@ -42,6 +46,18 @@ export default function NutritionScreen() {
       qc.invalidateQueries({ queryKey: ["member", "nutrition"] });
     },
   });
+
+  if (!features.nutritionEnabled) {
+    return (
+      <FeatureLockScreen
+        icon="🥗"
+        titleEn="Nutrition Not Activated Yet"
+        titleAr="لم يتم تفعيل التغذية بعد"
+        subtitleEn="Your gym hasn't enabled this feature yet."
+        subtitleAr="لم تقم صالتك بتفعيل هذه الميزة بعد."
+      />
+    );
+  }
 
   const meals = (plan.data?.meals ?? []) as any[];
   const doneCount = meals.filter((m) => m.done).length;
