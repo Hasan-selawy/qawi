@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useAuth } from '@/hooks/use-auth';
 import { useLanguage } from '@/hooks/use-language';
@@ -15,13 +16,78 @@ interface SidebarProps {
   overlayMode?: boolean;
 }
 
+function GymLogoImage({
+  logoUrl,
+  gymName,
+  isOpen,
+  onError,
+}: {
+  logoUrl: string;
+  gymName: string | null;
+  isOpen: boolean;
+  onError: () => void;
+}) {
+  return (
+    <img
+      src={logoUrl}
+      alt={gymName || 'Gym logo'}
+      className={cn('object-contain shrink-0 transition-all', isOpen ? 'max-h-10 max-w-[160px]' : 'max-h-8 max-w-[48px]')}
+      onError={onError}
+    />
+  );
+}
+
+function SidebarLogo({ isOpen, lang }: { isOpen: boolean; lang: string }) {
+  const { features, branding, gymName } = useGymConfig();
+  const [imgFailed, setImgFailed] = useState(false);
+
+  if (features.customBrandingEnabled) {
+    const hasLogo = !!branding.logoUrl && !imgFailed;
+    const displayName = gymName || null;
+
+    return (
+      <div className="flex flex-col items-center gap-0.5 min-w-0 max-w-full">
+        {hasLogo ? (
+          <GymLogoImage
+            logoUrl={branding.logoUrl!}
+            gymName={displayName}
+            isOpen={isOpen}
+            onError={() => setImgFailed(true)}
+          />
+        ) : (
+          isOpen && displayName ? (
+            <span className="text-sm font-bold text-foreground truncate max-w-[180px]">{displayName}</span>
+          ) : !isOpen ? (
+            <span className="font-bold text-primary text-xl" style={{ textShadow: '0 0 20px rgba(34,197,94,0.3)' }}>
+              {lang === 'ar' ? 'ق' : 'Q'}
+            </span>
+          ) : null
+        )}
+        {isOpen && (
+          <span className="text-[9px] text-muted-foreground/50 tracking-widest uppercase leading-none">
+            Powered by Qawi
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <h1
+      className={cn('font-bold text-primary tracking-tight transition-all shrink-0', isOpen ? 'text-2xl' : 'text-xl')}
+      style={{ textShadow: '0 0 20px rgba(34,197,94,0.3)' }}
+      dir={lang === 'ar' ? 'rtl' : 'ltr'}
+    >
+      {isOpen ? (lang === 'ar' ? 'قوي' : 'Qawi') : (lang === 'ar' ? 'ق' : 'Q')}
+    </h1>
+  );
+}
+
 export function Sidebar({ isOpen, setIsOpen, overlayMode }: SidebarProps) {
   const { user } = useAuth();
   const { t, lang } = useLanguage();
   const [location] = useLocation();
-  const { features, branding, gymName } = useGymConfig();
-  const showLogo = features.customBrandingEnabled && !!branding.logoUrl;
-  const showGymName = !!gymName && (user?.role === 'GYM_ADMIN' || user?.role === 'COACH');
+  const { features } = useGymConfig();
 
   const getLinks = () => {
     switch (user?.role) {
@@ -73,24 +139,8 @@ export function Sidebar({ isOpen, setIsOpen, overlayMode }: SidebarProps) {
       overlayMode ? 'shadow-2xl' : '',
       isOpen ? 'w-[260px]' : 'w-[72px]'
     )}>
-      <div className="h-16 flex items-center justify-center border-b border-sidebar-border px-3 gap-2 overflow-hidden">
-        {showLogo ? (
-          <img
-            src={branding.logoUrl!}
-            alt={gymName || 'Gym'}
-            className={cn('object-contain shrink-0', isOpen ? 'h-10 w-10' : 'h-8 w-8')}
-            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-          />
-        ) : (
-          <h1 className={cn('font-bold text-primary tracking-tight transition-all shrink-0', isOpen ? 'text-2xl' : 'text-xl')} style={{ textShadow: '0 0 20px rgba(34,197,94,0.3)' }} dir={lang === 'ar' ? 'rtl' : 'ltr'}>
-            {isOpen ? (lang === 'ar' ? 'قوي' : 'Qawi') : (lang === 'ar' ? 'ق' : 'Q')}
-          </h1>
-        )}
-        {isOpen && showGymName && (
-          <span className="text-sm font-medium text-muted-foreground truncate" title={gymName!}>
-            {showLogo ? gymName : `· ${gymName}`}
-          </span>
-        )}
+      <div className="h-16 flex items-center justify-center border-b border-sidebar-border px-3 overflow-hidden">
+        <SidebarLogo isOpen={isOpen} lang={lang} />
       </div>
 
       <nav className="flex-1 py-4 flex flex-col gap-2 px-3 overflow-y-auto">

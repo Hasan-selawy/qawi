@@ -5,14 +5,70 @@ import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import NetInfo from "@react-native-community/netinfo";
 import React, { useCallback, useEffect, useState } from "react";
-import { Alert, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
+import { Alert, Image, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 
 import { RoleHeader } from "@/components/RoleHeader";
 import { Badge, Button, Card, EmptyState, Screen, SectionTitle } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
+import { useBranding } from "@/context/BrandingContext";
 import { useLanguage, pickName } from "@/context/LanguageContext";
 import { useColors } from "@/hooks/useColors";
 import { apiFetch } from "@/services/api";
+
+function LogoBanner() {
+  const c = useColors();
+  const { customBrandingEnabled, logoUrl, gymName } = useBranding();
+  const [imgFailed, setImgFailed] = useState(false);
+
+  if (customBrandingEnabled) {
+    return (
+      <View
+        style={{
+          alignItems: "center",
+          justifyContent: "center",
+          paddingVertical: 12,
+          borderBottomWidth: 1,
+          borderBottomColor: c.border,
+          backgroundColor: c.background,
+          gap: 4,
+        }}
+      >
+        {logoUrl && !imgFailed ? (
+          <Image
+            source={{ uri: logoUrl }}
+            style={{ height: 60, width: 180 }}
+            resizeMode="contain"
+            onError={() => setImgFailed(true)}
+          />
+        ) : (
+          <Text style={{ color: c.foreground, fontSize: 20, fontWeight: "800" }}>
+            {gymName || "Qawi"}
+          </Text>
+        )}
+        <Text style={{ color: c.mutedForeground, fontSize: 10, letterSpacing: 1, textTransform: "uppercase" }}>
+          Powered by Qawi
+        </Text>
+      </View>
+    );
+  }
+
+  return (
+    <View
+      style={{
+        alignItems: "center",
+        justifyContent: "center",
+        paddingVertical: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: c.border,
+        backgroundColor: c.background,
+      }}
+    >
+      <Text style={{ color: c.primary, fontSize: 26, fontWeight: "900", letterSpacing: -0.5 }}>
+        Qawi
+      </Text>
+    </View>
+  );
+}
 
 const PENDING_CHECKINS_KEY = "pendingCheckins";
 
@@ -208,6 +264,7 @@ export default function MemberHome() {
   return (
     <Screen>
       <RoleHeader title={`${t("member.welcome")}, ${user?.name?.split(" ")[0] ?? ""}`} subtitle={user?.gymName ?? undefined} />
+      <LogoBanner />
 
       {/* Offline indicator */}
       {!isOnline && (
