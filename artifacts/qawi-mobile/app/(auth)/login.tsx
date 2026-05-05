@@ -253,6 +253,25 @@ export default function LoginScreen() {
             </Pressable>
           </Animated.View>
 
+          {/* Forgot password */}
+          <View style={{ alignItems: "center", marginTop: 16 }}>
+            <Pressable
+              onPress={() =>
+                Alert.alert(
+                  lang === "ar" ? "نسيت كلمة المرور؟" : "Forgot Password?",
+                  lang === "ar"
+                    ? "تواصل مع مدير الصالة لإعادة تعيين كلمة المرور"
+                    : "Please contact your gym admin to reset your password."
+                )
+              }
+              style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+            >
+              <Text style={[styles.registerText, { fontFamily: lang === "ar" ? arabicBold : englishMedium, color: DEFAULT_COLORS.muted }]}>
+                {lang === "ar" ? "نسيت كلمة المرور؟" : "Forgot Password?"}
+              </Text>
+            </Pressable>
+          </View>
+
           <View style={styles.spacer} />
 
           {/* Register gym */}

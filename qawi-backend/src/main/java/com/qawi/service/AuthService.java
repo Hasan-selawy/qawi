@@ -1,6 +1,7 @@
 package com.qawi.service;
 
 import com.qawi.dto.AuthResponse;
+import com.qawi.dto.ChangePasswordRequest;
 import com.qawi.dto.LoginRequest;
 import com.qawi.dto.RegisterRequest;
 import com.qawi.dto.UserDto;
@@ -111,5 +112,21 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException("User not found", "المستخدم غير موجود", HttpStatus.NOT_FOUND));
         return UserDto.from(user);
+    }
+
+    public void changePassword(String email, ChangePasswordRequest req) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException("User not found", "المستخدم غير موجود", HttpStatus.NOT_FOUND));
+
+        if (!passwordEncoder.matches(req.getCurrentPassword(), user.getPassword())) {
+            throw new AppException(
+                    "Current password is incorrect",
+                    "كلمة المرور الحالية غير صحيحة",
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        user.setPassword(passwordEncoder.encode(req.getNewPassword()));
+        userRepository.save(user);
     }
 }

@@ -1,6 +1,7 @@
 package com.qawi.controller;
 
 import com.qawi.dto.AuthResponse;
+import com.qawi.dto.ChangePasswordRequest;
 import com.qawi.dto.LoginRequest;
 import com.qawi.dto.RegisterRequest;
 import com.qawi.dto.UserDto;
@@ -33,5 +34,13 @@ public class AuthController {
     @GetMapping("/me")
     public ResponseEntity<UserDto> me(@AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(authService.me(userDetails.getUsername()));
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<Void> changePassword(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Valid @RequestBody ChangePasswordRequest request) {
+        authService.changePassword(userDetails.getUsername(), request);
+        return ResponseEntity.ok().build();
     }
 }

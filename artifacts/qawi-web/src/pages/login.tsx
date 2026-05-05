@@ -8,6 +8,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
 import { Eye, EyeOff, Loader2, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 
@@ -29,6 +32,8 @@ export default function LoginPage() {
   const [, setLocation] = useLocation();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const isRTL = lang === 'ar';
 
   // Redirect as soon as auth state is committed — avoids race where
   // setLocation fires before AuthProvider re-renders with the new user.
@@ -156,13 +161,41 @@ export default function LoginPage() {
           </form>
         </Form>
 
-        <div className="mt-8 text-center">
+        <div className="mt-6 text-center">
+          <button
+            type="button"
+            onClick={() => setForgotOpen(true)}
+            className="text-sm text-muted-foreground hover:text-primary transition-colors"
+          >
+            {isRTL ? 'نسيت كلمة المرور؟' : 'Forgot Password?'}
+          </button>
+        </div>
+
+        <div className="mt-4 text-center">
           <Link href="/register" className="inline-flex items-center text-muted-foreground hover:text-primary transition-colors text-sm">
             {t("auth.register")}
             <ArrowRight size={16} className="ml-2 rtl:rotate-180 rtl:mr-2 rtl:ml-0" />
           </Link>
         </div>
       </div>
+
+      <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
+        <DialogContent className="glass-card border-white/10 sm:max-w-[360px]" dir={isRTL ? 'rtl' : 'ltr'}>
+          <DialogHeader>
+            <DialogTitle>{isRTL ? 'نسيت كلمة المرور؟' : 'Forgot Password?'}</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            {isRTL
+              ? 'تواصل مع مدير الصالة لإعادة تعيين كلمة المرور'
+              : 'Please contact your gym admin to reset your password.'}
+          </p>
+          <div className="flex justify-end pt-2">
+            <Button variant="outline" onClick={() => setForgotOpen(false)}>
+              {isRTL ? 'حسناً' : 'OK'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       
       {/* Background gradients */}
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-[120px] pointer-events-none"></div>

@@ -2,6 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
+
 import {
   Alert,
   Modal,
@@ -12,6 +13,7 @@ import {
   View,
 } from "react-native";
 
+import { ChangePasswordModal } from "@/components/ChangePasswordModal";
 import { RoleHeader } from "@/components/RoleHeader";
 import { Button, Card, Screen } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
@@ -38,6 +40,7 @@ export default function ProfileScreen() {
   const { user, logout } = useAuth();
   const router = useRouter();
 
+  const [changePwOpen, setChangePwOpen] = useState(false);
   const [reportModal, setReportModal] = useState(false);
   const [suggestionModal, setSuggestionModal] = useState(false);
   const [reportCategory, setReportCategory] = useState("COACH_ATTITUDE");
@@ -215,6 +218,12 @@ export default function ProfileScreen() {
 
         {/* Action Buttons */}
         <Button
+          title={lang === "ar" ? "تغيير كلمة المرور" : "Change Password"}
+          icon="lock"
+          variant="secondary"
+          onPress={() => setChangePwOpen(true)}
+        />
+        <Button
           title={lang === "ar" ? "إرسال تقرير" : "Submit a Report"}
           icon="flag"
           variant="secondary"
@@ -235,6 +244,8 @@ export default function ProfileScreen() {
           onPress={logout}
         />
       </ScrollView>
+
+      <ChangePasswordModal visible={changePwOpen} onClose={() => setChangePwOpen(false)} />
 
       {/* Report Modal */}
       <Modal visible={reportModal} animationType="slide" transparent>

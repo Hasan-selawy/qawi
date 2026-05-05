@@ -36,6 +36,7 @@
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/repository/WorkoutLogRepository.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/LogWorkoutRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/controller/MeasurementController.java
+/home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/ChangePasswordRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/controller/MemberReportController.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/UserDto.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/repository/PlatformTierRepository.java

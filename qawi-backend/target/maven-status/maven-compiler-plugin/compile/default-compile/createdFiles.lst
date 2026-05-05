@@ -177,6 +177,7 @@ com/qawi/entity/PlatformTier$PlatformTierBuilder.class
 com/qawi/repository/MemberReportRepository.class
 com/qawi/dto/MarkContactedResponse.class
 com/qawi/repository/MealLogRepository.class
+com/qawi/dto/ChangePasswordRequest.class
 com/qawi/security/JwtService.class
 com/qawi/entity/PlanExercise$PlanExerciseBuilder.class
 com/qawi/controller/AuthController.class

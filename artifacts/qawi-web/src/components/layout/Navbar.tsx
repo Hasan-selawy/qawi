@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useLanguage } from '@/hooks/use-language';
 import { useGymConfig } from '@/hooks/use-gym-config';
 import { GradientAvatar } from '../GradientAvatar';
 import { NotificationBell } from '../NotificationBell';
-import { LogOut, Menu } from 'lucide-react';
+import { ChangePasswordModal } from '../ChangePasswordModal';
+import { LogOut, Menu, KeyRound } from 'lucide-react';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger
@@ -17,6 +19,7 @@ export function Navbar({ onMenuClick }: NavbarProps) {
   const { user, logout } = useAuth();
   const { lang, setLang, t } = useLanguage();
   const { features } = useGymConfig();
+  const [changePassOpen, setChangePassOpen] = useState(false);
 
   return (
     <header className="h-16 border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-30 px-4 md:px-6 flex items-center justify-between">
@@ -55,6 +58,11 @@ export function Navbar({ onMenuClick }: NavbarProps) {
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>{t('common.my_account') || 'My Account'}</DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <DropdownMenuItem className="cursor-pointer" onClick={() => setChangePassOpen(true)}>
+              <KeyRound className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
+              <span>{lang === 'ar' ? 'تغيير كلمة المرور' : 'Change Password'}</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem className="text-destructive cursor-pointer" onClick={() => logout()}>
               <LogOut className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
               <span>{t('common.logout')}</span>
@@ -62,6 +70,8 @@ export function Navbar({ onMenuClick }: NavbarProps) {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      <ChangePasswordModal open={changePassOpen} onOpenChange={setChangePassOpen} />
     </header>
   );
 }
