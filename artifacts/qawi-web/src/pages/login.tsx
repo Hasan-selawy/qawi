@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { useLanguage } from "@/hooks/use-language";
@@ -16,12 +16,27 @@ const loginSchema = z.object({
   password: z.string().min(6),
 });
 
+function roleDestination(role: string): string {
+  if (role === 'GYM_ADMIN') return '/admin/dashboard';
+  if (role === 'COACH') return '/coach/dashboard';
+  if (role === 'SUPER_ADMIN') return '/super/dashboard';
+  return '/';
+}
+
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, user, isAuthenticated } = useAuth();
   const { t, lang, setLang } = useLanguage();
   const [, setLocation] = useLocation();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Redirect as soon as auth state is committed — avoids race where
+  // setLocation fires before AuthProvider re-renders with the new user.
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      setLocation(roleDestination(user.role));
+    }
+  }, [isAuthenticated, user, setLocation]);
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -31,12 +46,8 @@ export default function LoginPage() {
   const onSubmit = async (data: z.infer<typeof loginSchema>) => {
     setIsLoading(true);
     try {
-      const res = await login(data);
-      const role = res.user.role;
-      if (role === 'GYM_ADMIN') setLocation('/admin/dashboard');
-      else if (role === 'COACH') setLocation('/coach/dashboard');
-      else if (role === 'SUPER_ADMIN') setLocation('/super/dashboard');
-      else setLocation('/');
+      await login(data);
+      // Navigation is handled by the useEffect above once auth state commits.
     } catch (error: any) {
       toast.error(lang === 'ar' ? error.messageAr : error.error);
       const formEl = document.getElementById("login-card");
