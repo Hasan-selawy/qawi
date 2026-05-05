@@ -8,12 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, ArrowLeft, Sparkles, Users, Palette } from 'lucide-react';
+import { Loader2, ArrowLeft, Sparkles, Users, Palette, KeyRound, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 
 type GymDetail = {
   id: string;
   name: string;
+  adminId: string | null;
   adminEmail: string;
   subscriptionPlan: string;
   totalMembers: number;
@@ -49,6 +50,8 @@ export default function SuperGymDetail() {
   const [maxMembers, setMaxMembers] = useState<string>('');
   const [logoUrl, setLogoUrl] = useState<string>('');
   const [primaryColor, setPrimaryColor] = useState<string>('');
+  const [newAdminPassword, setNewAdminPassword] = useState('');
+  const [showAdminPw, setShowAdminPw] = useState(false);
 
   useEffect(() => {
     if (!data) return;
@@ -82,6 +85,18 @@ export default function SuperGymDetail() {
     }),
     onSuccess: () => { toast.success('Member cap saved'); invalidate(); },
     onError: (err: any) => toast.error(err.error || 'Failed to save limits'),
+  });
+
+  const resetAdminPassword = useMutation({
+    mutationFn: () => apiFetch(`/super/users/${data!.adminId}/reset-password`, {
+      method: 'PUT',
+      data: { newPassword: newAdminPassword },
+    }),
+    onSuccess: () => {
+      toast.success('Admin password reset successfully');
+      setNewAdminPassword('');
+    },
+    onError: (err: any) => toast.error(err.error || 'Failed to reset password'),
   });
 
   const saveBranding = useMutation({
@@ -169,6 +184,49 @@ export default function SuperGymDetail() {
             </Button>
           </div>
         </section>
+
+        {/* Reset Admin Password */}
+        {data.adminId && (
+          <section className="glass-card border border-white/10 rounded-xl p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <KeyRound size={18} className="text-primary" />
+              <h2 className="text-lg font-semibold">Reset Admin Password</h2>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              Set a new password for <span className="text-foreground font-medium">{data.adminEmail}</span>. The admin will need to use this new password on their next login.
+            </p>
+            <div className="space-y-3">
+              <Label htmlFor="adminPw">New password</Label>
+              <div className="relative">
+                <Input
+                  id="adminPw"
+                  type={showAdminPw ? 'text' : 'password'}
+                  placeholder="Min. 8 characters"
+                  value={newAdminPassword}
+                  onChange={(e) => setNewAdminPassword(e.target.value)}
+                  className="bg-black/20 pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowAdminPw((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showAdminPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end">
+              <Button
+                onClick={() => resetAdminPassword.mutate()}
+                disabled={resetAdminPassword.isPending || newAdminPassword.length < 8}
+                variant="destructive"
+              >
+                {resetAdminPassword.isPending && <Loader2 className="animate-spin mr-2 h-4 w-4" />}
+                Reset password
+              </Button>
+            </div>
+          </section>
+        )}
 
         {/* Branding */}
         <section className="glass-card border border-white/10 rounded-xl p-6 lg:col-span-3">

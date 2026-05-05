@@ -16,6 +16,7 @@ public class GymDetailResponse {
     private SubscriptionPlan subscriptionPlan;
     private LocalDateTime subscriptionExpiresAt;
     private LocalDateTime createdAt;
+    private UUID adminId;
     private String adminEmail;
     private long totalMembers;
     private long totalCoaches;

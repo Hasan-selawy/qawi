@@ -192,10 +192,9 @@ public class SuperAdminService {
         long members = userRepository.countByGymIdAndRole(gym.getId(), Role.MEMBER);
         long coaches = userRepository.countByGymIdAndRole(gym.getId(), Role.COACH);
 
-        String adminEmail = userRepository
-                .findFirstByGymIdAndRole(gym.getId(), Role.GYM_ADMIN)
-                .map(User::getEmail)
-                .orElse(null);
+        var adminUser = userRepository.findFirstByGymIdAndRole(gym.getId(), Role.GYM_ADMIN);
+        String adminEmail = adminUser.map(User::getEmail).orElse(null);
+        UUID adminId = adminUser.map(User::getId).orElse(null);
 
         String status;
         if (gym.getSubscriptionExpiresAt() == null) {
@@ -215,6 +214,7 @@ public class SuperAdminService {
                 .subscriptionPlan(gym.getSubscriptionPlan())
                 .subscriptionExpiresAt(gym.getSubscriptionExpiresAt())
                 .createdAt(gym.getCreatedAt())
+                .adminId(adminId)
                 .adminEmail(adminEmail)
                 .totalMembers(members)
                 .totalCoaches(coaches)
