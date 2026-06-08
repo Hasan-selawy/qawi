@@ -36,6 +36,9 @@ function RootLayoutNav() {
       <Stack.Screen name="(member)" />
       <Stack.Screen name="(coach)" />
       <Stack.Screen name="(admin)" />
+      <Stack.Screen name="(reception)" />
+      <Stack.Screen name="(finance)" />
+      <Stack.Screen name="(hr)" />
     </Stack>
   );
 }
