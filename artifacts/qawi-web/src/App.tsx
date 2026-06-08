@@ -31,6 +31,8 @@ import Templates from "@/pages/coach/templates";
 import Library from "@/pages/coach/library";
 import CoachNutrition from "@/pages/coach/nutrition";
 
+import MemberDashboard from "@/pages/member/dashboard";
+
 import SuperDashboard from "@/pages/super/dashboard";
 import SuperGyms from "@/pages/super/gyms";
 import SuperGymDetail from "@/pages/super/gym-detail";
@@ -77,6 +79,11 @@ function Router() {
       </Route>
       <Route path="/admin/pricing">
         <RoleRoute role="GYM_ADMIN"><AppShell><ErrorBoundary><AdminPricing /></ErrorBoundary></AppShell></RoleRoute>
+      </Route>
+
+      {/* Member Routes */}
+      <Route path="/member/dashboard">
+        <RoleRoute role="MEMBER"><AppShell><ErrorBoundary><MemberDashboard /></ErrorBoundary></AppShell></RoleRoute>
       </Route>
 
       {/* Coach Routes */}

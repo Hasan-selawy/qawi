@@ -6,7 +6,7 @@ import { useGymConfig } from '@/hooks/use-gym-config';
 import {
   LayoutDashboard, Users, UserSquare2, CreditCard, BarChart3,
   Dumbbell, Library, ChevronLeft, ChevronRight, Activity, Building2, UtensilsCrossed,
-  TrendingUp, Flag, Calendar, Tag
+  TrendingUp, Flag, Calendar, Tag, Home
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -128,6 +128,16 @@ export function Sidebar({ isOpen, setIsOpen, overlayMode }: SidebarProps) {
           { href: '/super/pricing', icon: Tag, label: 'pricing' },
           { href: '/coach/library', icon: Library, label: 'library' },
         ];
+      case 'MEMBER': {
+        const memberLinks: { href: string; icon: any; label: string }[] = [
+          { href: '/member/dashboard', icon: Home, label: 'dashboard' },
+          { href: '/member/workout', icon: Dumbbell, label: 'templates' },
+        ];
+        if (features.nutritionEnabled) {
+          memberLinks.push({ href: '/member/nutrition', icon: UtensilsCrossed, label: 'nutrition' });
+        }
+        return memberLinks;
+      }
       default:
         return [];
     }
