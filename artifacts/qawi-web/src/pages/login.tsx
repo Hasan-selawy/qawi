@@ -29,7 +29,7 @@ function roleDestination(role: string): string {
 export default function LoginPage() {
   const { login, user, isAuthenticated } = useAuth();
   const { t, lang, setLang } = useLanguage();
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [forgotOpen, setForgotOpen] = useState(false);
@@ -39,9 +39,12 @@ export default function LoginPage() {
   // setLocation fires before AuthProvider re-renders with the new user.
   useEffect(() => {
     if (isAuthenticated && user) {
-      setLocation(roleDestination(user.role));
+      const dest = roleDestination(user.role);
+      if (location !== dest) {
+        setLocation(dest);
+      }
     }
-  }, [isAuthenticated, user, setLocation]);
+  }, [isAuthenticated, user, location, setLocation]);
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
