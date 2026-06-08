@@ -1,8 +1,11 @@
 package com.qawi.entity;
 
 public enum Role {
-    MEMBER,
-    COACH,
+    SUPER_ADMIN,
     GYM_ADMIN,
-    SUPER_ADMIN
+    RECEPTIONIST,
+    COACH,
+    MEMBER,
+    ACCOUNTANT,
+    HR
 }
