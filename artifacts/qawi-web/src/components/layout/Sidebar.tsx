@@ -6,7 +6,7 @@ import { useGymConfig } from '@/hooks/use-gym-config';
 import {
   LayoutDashboard, Users, UserSquare2, CreditCard, BarChart3,
   Dumbbell, Library, ChevronLeft, ChevronRight, Activity, Building2, UtensilsCrossed,
-  TrendingUp, Flag, Calendar, Tag, Home
+  TrendingUp, Flag, Calendar, Tag
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -127,28 +127,6 @@ export function Sidebar({ isOpen, setIsOpen, overlayMode }: SidebarProps) {
           { href: '/super/gyms', icon: Building2, label: 'gyms' },
           { href: '/super/pricing', icon: Tag, label: 'pricing' },
           { href: '/coach/library', icon: Library, label: 'library' },
-        ];
-      case 'MEMBER': {
-        const memberLinks: { href: string; icon: any; label: string }[] = [
-          { href: '/member/dashboard', icon: Home, label: 'dashboard' },
-          { href: '/member/workout', icon: Dumbbell, label: 'templates' },
-        ];
-        if (features.nutritionEnabled) {
-          memberLinks.push({ href: '/member/nutrition', icon: UtensilsCrossed, label: 'nutrition' });
-        }
-        return memberLinks;
-      }
-      case 'RECEPTIONIST':
-        return [
-          { href: '/reception/dashboard', icon: LayoutDashboard, label: 'dashboard' },
-        ];
-      case 'ACCOUNTANT':
-        return [
-          { href: '/finance/dashboard', icon: LayoutDashboard, label: 'dashboard' },
-        ];
-      case 'HR':
-        return [
-          { href: '/hr/dashboard', icon: LayoutDashboard, label: 'dashboard' },
         ];
       default:
         return [];

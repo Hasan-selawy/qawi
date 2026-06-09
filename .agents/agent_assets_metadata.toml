@@ -11,9 +11,3 @@ id = "o_HhwYvwKV1vOlZJd-Pya"
 uri = "file://README.md"
 type = "text"
 title = "Qawi README — قوي"
-
-[[outputs]]
-id = "YfUVu_rslW8wYGthbLXkP"
-uri = "file://TECHNICAL_DOCS.md"
-type = "text"
-title = "Qawi Platform — Full Technical Documentation"

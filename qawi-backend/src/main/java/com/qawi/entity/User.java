@@ -47,9 +47,6 @@ public class User implements UserDetails {
     @Builder.Default
     private boolean isActive = true;
 
-    @Column(name = "phone")
-    private String phone;
-
     @Column(name = "subscription_start_date")
     private LocalDate subscriptionStartDate;
 

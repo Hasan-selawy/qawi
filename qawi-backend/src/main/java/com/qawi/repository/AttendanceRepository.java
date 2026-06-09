@@ -17,7 +17,6 @@ public interface AttendanceRepository extends JpaRepository<Attendance, UUID> {
     List<Attendance> findByMemberIdAndCheckedInAtAfterOrderByCheckedInAtDesc(UUID memberId, LocalDateTime since);
 
     List<Attendance> findByGymIdAndCheckedInAtAfter(UUID gymId, LocalDateTime since);
-    List<Attendance> findByGymIdAndCheckedInAtBetween(UUID gymId, LocalDateTime from, LocalDateTime to);
 
     @Query("SELECT DISTINCT a.memberId FROM Attendance a WHERE a.gymId = :gymId AND a.checkedInAt >= :since")
     List<UUID> findDistinctMemberIdsByGymIdAndCheckedInAtAfter(UUID gymId, LocalDateTime since);

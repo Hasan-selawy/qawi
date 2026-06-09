@@ -43,8 +43,8 @@ function TierForm({ tier, onSave, onCancel, isPending }: {
       price3m: parseInt(p3m) || 0,
       price6m: parseInt(p6m) || 0,
       price12m: parseInt(p12m) || 0,
-      features: features.split('\n').map((f: string) => f.trim()).filter(Boolean),
-      featuresAr: featuresAr.split('\n').map((f: string) => f.trim()).filter(Boolean),
+      features: features.split('\n').map(f => f.trim()).filter(Boolean),
+      featuresAr: featuresAr.split('\n').map(f => f.trim()).filter(Boolean),
       highlighted,
       subscriptionPlan: plan,
       maxMembers: maxMembers ? parseInt(maxMembers) : null,
@@ -168,7 +168,7 @@ export default function SuperPricing() {
       <PageHeader
         title="Platform Pricing"
         subtitle="Manage platform subscription tiers shown during gym registration"
-        actions={
+        action={
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={openPageEdit}>
               <FileText size={16} className="mr-2" /> Edit Page Content

@@ -17,7 +17,7 @@ async function safeSet(key: string, value: unknown): Promise<void> {
   await AsyncStorage.setItem(key, value);
 }
 
-export type Role = "MEMBER" | "COACH" | "GYM_ADMIN" | "SUPER_ADMIN" | "RECEPTIONIST" | "ACCOUNTANT" | "HR";
+export type Role = "MEMBER" | "COACH" | "GYM_ADMIN" | "SUPER_ADMIN";
 
 export type AuthUser = {
   id: string;
@@ -107,9 +107,6 @@ const ROLE_ROUTES: Record<Role, string> = {
   COACH: "/(coach)",
   GYM_ADMIN: "/(admin)",
   SUPER_ADMIN: "/(auth)/login",
-  RECEPTIONIST: "/(reception)",
-  ACCOUNTANT: "/(finance)",
-  HR: "/(hr)",
 };
 
 export function useProtectedRoute() {
