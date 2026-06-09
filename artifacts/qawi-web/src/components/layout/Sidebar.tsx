@@ -138,6 +138,18 @@ export function Sidebar({ isOpen, setIsOpen, overlayMode }: SidebarProps) {
         }
         return memberLinks;
       }
+      case 'RECEPTIONIST':
+        return [
+          { href: '/reception/dashboard', icon: LayoutDashboard, label: 'dashboard' },
+        ];
+      case 'ACCOUNTANT':
+        return [
+          { href: '/finance/dashboard', icon: LayoutDashboard, label: 'dashboard' },
+        ];
+      case 'HR':
+        return [
+          { href: '/hr/dashboard', icon: LayoutDashboard, label: 'dashboard' },
+        ];
       default:
         return [];
     }

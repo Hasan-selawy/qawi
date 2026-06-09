@@ -58,7 +58,7 @@ type OverviewData = {
 
 const GOALS = [
   { key: 'LOSE_WEIGHT', en: 'Weight Loss', ar: 'خسارة وزن' },
-  { key: 'GAIN_MUSCLE', en: 'Muscle Gain', ar: 'بناء عضلات' },
+  { key: 'MUSCLE_GAIN', en: 'Muscle Gain', ar: 'بناء عضلات' },
   { key: 'MAINTAIN', en: 'Maintenance', ar: 'محافظة' },
   { key: 'RECOMPOSITION', en: 'Recomposition', ar: 'إعادة تشكيل' },
 ];
