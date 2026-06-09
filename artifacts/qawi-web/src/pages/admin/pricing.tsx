@@ -152,7 +152,7 @@ export default function AdminPricing() {
       <PageHeader
         title={lang === 'ar' ? 'إدارة خطط الأعضاء' : 'Member Pricing Plans'}
         subtitle={lang === 'ar' ? 'أضف وعدّل خطط الاشتراك للأعضاء' : 'Set pricing plans visible to members in the mobile app'}
-        action={
+        actions={
           tab === 'plans' ? (
             <Button size="sm" onClick={() => setShowCreate(true)}>
               <Plus size={16} className="mr-2" />

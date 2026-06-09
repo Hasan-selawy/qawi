@@ -3,6 +3,16 @@ import { Redirect } from "wouter";
 import { useAuth, Role } from "../hooks/use-auth";
 import { Loader2 } from "lucide-react";
 
+const ROLE_HOME: Partial<Record<Role, string>> = {
+  GYM_ADMIN: "/admin/dashboard",
+  COACH: "/coach/dashboard",
+  SUPER_ADMIN: "/super/dashboard",
+  MEMBER: "/member/dashboard",
+  RECEPTIONIST: "/reception/dashboard",
+  ACCOUNTANT: "/finance/dashboard",
+  HR: "/hr/dashboard",
+};
+
 export function RoleRoute({ role, children }: { role: Role | Role[], children: ReactNode }) {
   const { user, isLoading, isAuthenticated } = useAuth();
 
@@ -18,7 +28,6 @@ export function RoleRoute({ role, children }: { role: Role | Role[], children: R
     return <Redirect to="/login" />;
   }
 
-  // SUPER_ADMIN has access to every page in the system.
   if (user.role === "SUPER_ADMIN") {
     return <>{children}</>;
   }
@@ -26,9 +35,8 @@ export function RoleRoute({ role, children }: { role: Role | Role[], children: R
   const allowedRoles = Array.isArray(role) ? role : [role];
 
   if (!allowedRoles.includes(user.role)) {
-    if (user.role === "GYM_ADMIN") return <Redirect to="/admin/dashboard" />;
-    if (user.role === "COACH") return <Redirect to="/coach/dashboard" />;
-    return <Redirect to="/login" />;
+    const home = ROLE_HOME[user.role] ?? "/login";
+    return <Redirect to={home} />;
   }
 
   return <>{children}</>;
