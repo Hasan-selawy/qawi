@@ -72,4 +72,9 @@ public class Gym {
     /** Hex string e.g. "#22c55e". Only honoured when customBrandingEnabled is true. */
     @Column(name = "primary_color")
     private String primaryColor;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "nutrition_workflow", columnDefinition = "VARCHAR(30) DEFAULT 'COACH_ONLY'")
+    @Builder.Default
+    private NutritionWorkflow nutritionWorkflow = NutritionWorkflow.COACH_ONLY;
 }

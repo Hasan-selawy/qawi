@@ -4,5 +4,6 @@ public enum NutritionGoal {
     WEIGHT_LOSS,
     MUSCLE_GAIN,
     MAINTENANCE,
-    RECOMPOSITION
+    RECOMPOSITION,
+    PERFORMANCE
 }

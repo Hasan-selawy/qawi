@@ -14,6 +14,7 @@
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/repository/MemberSuggestionRepository.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/RenewalRequestStatus.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/repository/GymLeadRepository.java
+/home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/NutritionWorkflow.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/MemberSubscriptionRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/GymClass.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/Attendance.java
@@ -35,6 +36,7 @@
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/controller/MeasurementController.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/ChangePasswordRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/ReceptionMemberResult.java
+/home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/WaterAddRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/config/SchemaInitializer.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/GymLeadSource.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/config/V3DataSeeder.java
@@ -42,6 +44,8 @@
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/User.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/ContactRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/RenewalRequest.java
+/home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/ArabicFoodSource.java
+/home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/MealSuggestionRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/CoachNote.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/BiometricDevice.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/SubscriptionPlan.java
@@ -81,11 +85,12 @@
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/controller/SuperAdminSalesController.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/controller/ZkTecoController.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/security/JwtService.java
-/home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/NutritionGoal.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/TemplateType.java
+/home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/NutritionGoal.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/Gym.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/PlatformTierDto.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/exception/GlobalExceptionHandler.java
+/home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/FoodLogManualRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/service/GymFeatureService.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/config/SalesDataSeeder.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/repository/StaffAttendanceRepository.java
@@ -96,6 +101,8 @@
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/WorkoutTemplateDayExercise.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/Notification.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/WaterLog.java
+/home/runner/workspace/qawi-backend/src/main/java/com/qawi/service/NutritionV2Service.java
+/home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/ArabicFoodCache.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/PlatformTier.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/ContactRequestDto.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/repository/WaterLogRepository.java
@@ -111,19 +118,22 @@
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/service/WorkoutTemplateService.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/repository/CoachMemberRepository.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/controller/CoachNoteController.java
+/home/runner/workspace/qawi-backend/src/main/java/com/qawi/controller/NutritionV2Controller.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/GymBrandingRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/ContactRequestCreate.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/MarkContactedResponse.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/MemberPlanDuration.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/controller/WorkoutTemplateController.java
-/home/runner/workspace/qawi-backend/src/main/java/com/qawi/controller/NutritionController.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/controller/SuperAdminController.java
+/home/runner/workspace/qawi-backend/src/main/java/com/qawi/controller/NutritionController.java
+/home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/FoodLogRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/UpdateSubscriptionRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/repository/WorkoutTemplateDayExerciseRepository.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/repository/BodyMeasurementRepository.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/controller/AuthController.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/SubmitRenewalRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/CrmRenewRequest.java
+/home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/FoodCalculateRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/repository/PlanExerciseRepository.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/CreateMeasurementRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/controller/HrController.java
@@ -139,6 +149,7 @@
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/repository/MemberLeadRepository.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/GymMemberPlanDto.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/service/SuperAdminService.java
+/home/runner/workspace/qawi-backend/src/main/java/com/qawi/repository/AiNutritionLogRepository.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/repository/WorkoutLogRepository.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/controller/MemberReportController.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/UserDto.java
@@ -149,6 +160,7 @@
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/controller/MemberClassController.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/MemberLeadStatus.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/NutritionPlan.java
+/home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/NutritionTargetSetRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/controller/ReceptionController.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/repository/MealLogRepository.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/ErrorResponse.java
@@ -177,6 +189,7 @@
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/EmployeeRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/ExerciseCategory.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/AssignCoachRequest.java
+/home/runner/workspace/qawi-backend/src/main/java/com/qawi/config/NutritionFoodSeeder.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/ReportCategory.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/CreateNutritionPlanRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/repository/FoodEntryRepository.java
@@ -196,6 +209,8 @@
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/WorkoutTemplateDay.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/CreateTemplateRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/GymDetailResponse.java
+/home/runner/workspace/qawi-backend/src/main/java/com/qawi/repository/MealSuggestionRepository.java
+/home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/AiNutritionLog.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/repository/GymExerciseOverrideRepository.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/CreateFromTemplateRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/service/MemberReportService.java
@@ -221,6 +236,7 @@
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/controller/GymSalesController.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/FoodEntryRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/service/FinanceService.java
+/home/runner/workspace/qawi-backend/src/main/java/com/qawi/repository/ArabicFoodCacheRepository.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/CrmNoteRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/GymLead.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/CheckEmailRequest.java
@@ -238,3 +254,4 @@
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/service/WorkoutPlanService.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/RegisterDeviceRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/repository/ScheduleDayRepository.java
+/home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/MealSuggestion.java

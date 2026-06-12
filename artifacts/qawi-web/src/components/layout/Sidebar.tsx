@@ -120,7 +120,7 @@ export function Sidebar({ isOpen, setIsOpen, overlayMode }: SidebarProps) {
           { href: '/coach/library', icon: Library, label: 'library' },
         ];
         if (features.nutritionEnabled) {
-          coachLinks.splice(1, 0, { href: '/coach/nutrition', icon: UtensilsCrossed, label: 'nutrition' });
+          coachLinks.splice(1, 0, { href: '/nutrition/dashboard', icon: UtensilsCrossed, label: 'nutrition' });
         }
         return coachLinks;
       }

@@ -18,8 +18,24 @@ public class NutritionTarget {
     @Column(name = "member_id", nullable = false, unique = true)
     private UUID memberId;
 
+    @Column(name = "gym_id")
+    private UUID gymId;
+
     @Column(name = "coach_id")
     private UUID coachId;
+
+    @Column(name = "created_by_user_id")
+    private UUID createdByUserId;
+
+    @Column(name = "created_by_role")
+    private String createdByRole;
+
+    @Column(name = "is_active", nullable = false)
+    @Builder.Default
+    private Boolean isActive = true;
+
+    @Column(name = "notes", columnDefinition = "TEXT")
+    private String notes;
 
     @Column(name = "calories")
     private Integer calories;

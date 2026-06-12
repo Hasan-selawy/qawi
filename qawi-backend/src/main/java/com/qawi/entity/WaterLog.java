@@ -18,6 +18,12 @@ public class WaterLog {
     @Column(name = "member_id", nullable = false)
     private UUID memberId;
 
+    @Column(name = "gym_id")
+    private UUID gymId;
+
+    @Column(name = "log_date")
+    private java.time.LocalDate logDate;
+
     @Column(name = "amount_ml", nullable = false)
     private Integer amountMl;
 

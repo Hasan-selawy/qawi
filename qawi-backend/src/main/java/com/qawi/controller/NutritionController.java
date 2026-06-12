@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/nutrition")
+@RequestMapping("/api/v1/nutrition/plans")
 @RequiredArgsConstructor
 public class NutritionController {
 

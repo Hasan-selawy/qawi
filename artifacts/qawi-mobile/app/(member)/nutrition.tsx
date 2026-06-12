@@ -556,10 +556,13 @@ function AddFoodModal({
     if (!foodInput.trim()) return;
     setPhase("loading");
     try {
-      const input = `${quantity} ${unit} of ${foodInput.trim()}`;
-      const result = await apiFetch<any>("/nutrition/v3/analyze", {
+      const result = await apiFetch<any>("/nutrition/calculate", {
         method: "POST",
-        data: { input },
+        data: {
+          foodName: foodInput.trim(),
+          quantity: parseFloat(quantity) || 100,
+          unit,
+        },
       });
       setAiResult(result);
       setPhase("result");
@@ -577,24 +580,21 @@ function AddFoodModal({
   const logFood = async () => {
     if (!aiResult) return;
     try {
-      await apiFetch("/nutrition/v3/log", {
+      await apiFetch("/nutrition/log/manual", {
         method: "POST",
         data: {
           memberId,
-          rawInput: `${quantity} ${unit} of ${foodInput.trim()}`,
           foodName: aiResult.foodName,
-          foodNameAr: aiResult.foodNameAr,
+          foodNameAr: aiResult.foodNameAr ?? "",
           mealType,
-          quantity: parseFloat(quantity) || 1,
+          quantity: parseFloat(quantity) || 100,
           unit,
           calories: aiResult.calories,
-          proteinG: aiResult.protein,
-          carbsG: aiResult.carbs,
-          fatG: aiResult.fat,
-          fiberG: aiResult.fiber,
-          sugarG: aiResult.sugar,
-          confidence: aiResult.confidence,
-          source: "AI",
+          protein: aiResult.protein,
+          carbs: aiResult.carbs,
+          fat: aiResult.fat,
+          fiber: aiResult.fiber ?? null,
+          sugar: aiResult.sugar ?? null,
         },
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
@@ -1054,18 +1054,18 @@ export default function NutritionScreen() {
   const memberId = user?.id ?? "";
 
   const todayQuery = useQuery({
-    queryKey: ["nutrition", "v3", "today", memberId],
+    queryKey: ["nutrition", "today", memberId],
     queryFn: () =>
-      apiFetch<any>(`/nutrition/v3/log/today/${memberId}`).catch(() => null),
+      apiFetch<any>(`/nutrition/log/today/${memberId}`).catch(() => null),
     enabled: !!memberId && features.nutritionEnabled,
     refetchInterval: 60_000,
   });
 
   const deleteEntry = useMutation({
     mutationFn: (entryId: string) =>
-      apiFetch(`/nutrition/v3/log/${entryId}`, { method: "DELETE" }),
+      apiFetch(`/nutrition/log/${entryId}`, { method: "DELETE" }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["nutrition", "v3", "today"] });
+      qc.invalidateQueries({ queryKey: ["nutrition", "today"] });
       Haptics.selectionAsync().catch(() => {});
     },
     onError: () => {
@@ -1078,33 +1078,40 @@ export default function NutritionScreen() {
 
   const logWater = useMutation({
     mutationFn: (amountMl: number) =>
-      apiFetch("/nutrition/v3/water", {
+      apiFetch("/nutrition/water", {
         method: "POST",
-        data: { memberId, amountMl },
+        data: { memberId, amount: amountMl / 1000 },
       }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["nutrition", "v3", "today"] });
+      qc.invalidateQueries({ queryKey: ["nutrition", "today"] });
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     },
   });
 
   const data = todayQuery.data;
-  const hasTarget = data?.hasTarget ?? false;
+  const hasTarget = !!data?.target;
   const target = data?.target ?? {};
-  const totals = data?.totals ?? { calories: 0, protein: 0, carbs: 0, fat: 0 };
-  const waterMl = data?.waterMl ?? 0;
+  const todayTotals = data?.totals ?? {};
+  const waterMl = Math.round((todayTotals?.water?.consumed ?? 0) * 1000);
 
-  const targetCal = target.calories ?? 0;
-  const remaining = targetCal - (totals.calories ?? 0);
+  const targetCal = target.targetCalories ?? 0;
+  const remaining = targetCal - (todayTotals?.calories?.consumed ?? 0);
+
+  const totals = {
+    calories: todayTotals?.calories?.consumed ?? 0,
+    protein: todayTotals?.protein?.consumed ?? 0,
+    carbs: todayTotals?.carbs?.consumed ?? 0,
+    fat: todayTotals?.fat?.consumed ?? 0,
+  };
 
   const entriesByMeal = useMemo(() => {
-    const all: any[] = data?.entries ?? [];
-    const map: Record<string, any[]> = {};
+    const map = data?.entriesByMeal ?? {};
+    const result: Record<string, any[]> = {};
     for (const mt of MEAL_TYPES) {
-      map[mt.key] = all.filter((e) => e.mealType === mt.key);
+      result[mt.key] = map[mt.key] ?? [];
     }
-    return map;
-  }, [data?.entries]);
+    return result;
+  }, [data?.entriesByMeal]);
 
   const confirmDelete = (entryId: string, name: string) => {
     Alert.alert(
@@ -1168,7 +1175,7 @@ export default function NutritionScreen() {
             tintColor={N_COLORS.calories}
             refreshing={todayQuery.isFetching}
             onRefresh={() =>
-              qc.invalidateQueries({ queryKey: ["nutrition", "v3", "today"] })
+              qc.invalidateQueries({ queryKey: ["nutrition", "today"] })
             }
           />
         }
@@ -1210,7 +1217,7 @@ export default function NutritionScreen() {
                   label="Protein"
                   labelAr="بروتين"
                   consumed={totals.protein ?? 0}
-                  target={target.proteinG ?? 0}
+                  target={target.targetProtein ?? 0}
                   color={N_COLORS.protein}
                   lang={lang}
                 />
@@ -1218,7 +1225,7 @@ export default function NutritionScreen() {
                   label="Carbs"
                   labelAr="كربوهيدرات"
                   consumed={totals.carbs ?? 0}
-                  target={target.carbsG ?? 0}
+                  target={target.targetCarbs ?? 0}
                   color={N_COLORS.carbs}
                   lang={lang}
                 />
@@ -1226,7 +1233,7 @@ export default function NutritionScreen() {
                   label="Fat"
                   labelAr="دهون"
                   consumed={totals.fat ?? 0}
-                  target={target.fatG ?? 0}
+                  target={target.targetFat ?? 0}
                   color={N_COLORS.fat}
                   lang={lang}
                 />
@@ -1251,7 +1258,7 @@ export default function NutritionScreen() {
             {/* Water Tracker */}
             <WaterTracker
               waterMl={waterMl}
-              targetMl={target.waterMl ?? 0}
+              targetMl={Math.round((target.targetWater ?? 2) * 1000)}
               lang={lang}
               onAdd={(ml) => logWater.mutate(ml)}
               adding={logWater.isPending}
@@ -1300,9 +1307,8 @@ export default function NutritionScreen() {
                 entries={entriesByMeal[mt.key] ?? []}
                 lang={lang}
                 onDelete={(id) => {
-                  const entry = (data?.entries ?? []).find(
-                    (e: any) => e.id === id
-                  );
+                  const allEntries = Object.values(data?.entriesByMeal ?? {}).flat() as any[];
+                  const entry = allEntries.find((e: any) => e.id === id);
                   const name =
                     lang === "ar" && entry?.foodNameAr
                       ? entry.foodNameAr
@@ -1324,7 +1330,7 @@ export default function NutritionScreen() {
         lang={lang}
         isRTL={isRTL}
         onLogged={() => {
-          qc.invalidateQueries({ queryKey: ["nutrition", "v3", "today"] });
+          qc.invalidateQueries({ queryKey: ["nutrition", "today"] });
         }}
       />
     </Screen>

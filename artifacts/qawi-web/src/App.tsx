@@ -32,6 +32,7 @@ import Library from "@/pages/coach/library";
 import CoachNutrition from "@/pages/coach/nutrition";
 
 import MemberDashboard from "@/pages/member/dashboard";
+import MemberNutrition from "@/pages/member/nutrition";
 import ReceptionDashboard from "@/pages/reception/dashboard";
 import FinanceDashboard from "@/pages/finance/dashboard";
 import HrDashboard from "@/pages/hr/dashboard";
@@ -91,6 +92,9 @@ function Router() {
       {/* Member Routes */}
       <Route path="/member/dashboard">
         <RoleRoute role="MEMBER"><AppShell><ErrorBoundary><MemberDashboard /></ErrorBoundary></AppShell></RoleRoute>
+      </Route>
+      <Route path="/member/nutrition">
+        <RoleRoute role="MEMBER"><AppShell><ErrorBoundary><MemberNutrition /></ErrorBoundary></AppShell></RoleRoute>
       </Route>
 
       {/* Reception Routes */}
@@ -152,7 +156,7 @@ function Router() {
         <RoleRoute role="GYM_ADMIN"><AppShell><ErrorBoundary><AdminEmployees /></ErrorBoundary></AppShell></RoleRoute>
       </Route>
       <Route path="/nutrition/dashboard">
-        <RoleRoute role={["NUTRITIONIST", "GYM_ADMIN"]}><AppShell><ErrorBoundary><NutritionDashboard /></ErrorBoundary></AppShell></RoleRoute>
+        <RoleRoute role={["NUTRITIONIST", "GYM_ADMIN", "COACH", "SUPER_ADMIN"]}><AppShell><ErrorBoundary><NutritionDashboard /></ErrorBoundary></AppShell></RoleRoute>
       </Route>
 
       <Route component={NotFound} />

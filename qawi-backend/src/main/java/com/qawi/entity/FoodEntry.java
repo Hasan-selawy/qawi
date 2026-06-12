@@ -18,6 +18,15 @@ public class FoodEntry {
     @Column(name = "member_id", nullable = false)
     private UUID memberId;
 
+    @Column(name = "gym_id")
+    private UUID gymId;
+
+    @Column(name = "log_date")
+    private java.time.LocalDate logDate;
+
+    @Column(name = "sodium")
+    private Double sodium;
+
     @Column(name = "food_name", nullable = false)
     private String foodName;
 
