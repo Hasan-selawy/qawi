@@ -853,7 +853,7 @@ export default function ReceptionDashboard() {
       {/* Header */}
       <div className="mb-6">
         <p className="text-muted-foreground text-sm mb-0.5">{greeting}, {firstName} 👋</p>
-        <h1 className="text-3xl font-extrabold text-foreground">{isAr ? 'الاستقبال' : 'Reception'}</h1>
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground">{isAr ? 'الاستقبال' : 'Reception'}</h1>
         <p className="text-primary text-sm font-medium mt-0.5">{gymName}</p>
       </div>
 

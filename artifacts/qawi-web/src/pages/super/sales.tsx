@@ -116,7 +116,7 @@ function AddLeadDialog({ open, onClose, lang }: { open: boolean; onClose: () => 
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-lg bg-background border-white/10">
         <DialogHeader><DialogTitle className="text-foreground">{isAr ? 'إضافة عميل محتمل' : 'Add New Lead'}</DialogTitle></DialogHeader>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="col-span-2"><Input placeholder={isAr ? 'اسم الصالة' : 'Gym Name'} value={form.gymName} onChange={f('gymName')} className="bg-white/5 border-white/10 text-foreground" /></div>
           <Input placeholder={isAr ? 'اسم المسؤول' : 'Contact Name'} value={form.contactName} onChange={f('contactName')} className="bg-white/5 border-white/10 text-foreground" />
           <Input placeholder={isAr ? 'رقم الهاتف' : 'Phone'} value={form.phoneNumber} onChange={f('phoneNumber')} className="bg-white/5 border-white/10 text-foreground" />
@@ -164,7 +164,7 @@ function LeadSidePanel({ lead, onClose, lang }: { lead: GymLead | null; onClose:
 
   return (
     <Sheet open={!!lead} onOpenChange={onClose}>
-      <SheetContent className="w-[440px] bg-background border-white/10 overflow-y-auto" side="right">
+      <SheetContent className="w-full sm:w-[440px] bg-background border-white/10 overflow-y-auto" side="right">
         <SheetHeader className="mb-4">
           <SheetTitle className="text-foreground text-xl font-bold">{lead.gymName}</SheetTitle>
           <StatusBadge status={lead.status} lang={lang} />

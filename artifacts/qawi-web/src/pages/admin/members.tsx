@@ -24,7 +24,7 @@ import { getSubStatus } from '@/lib/sub-status';
 
 function MembersTableSkeleton() {
   return (
-    <div className="glass-card p-6 border-white/5">
+    <div className="glass-card p-4 sm:p-6 border-white/5">
       <div className="flex flex-col md:flex-row gap-4 mb-6 justify-between">
         <Skeleton className="h-10 w-full md:w-72" />
         <Skeleton className="h-10 w-64" />
@@ -200,7 +200,7 @@ export default function AdminMembers() {
       {isLoading ? (
         <MembersTableSkeleton />
       ) : (
-        <div className="glass-card p-6 border-white/5">
+        <div className="glass-card p-4 sm:p-6 border-white/5">
           <div className="flex flex-col md:flex-row gap-4 mb-6 justify-between">
             <div className="relative w-full md:w-72">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

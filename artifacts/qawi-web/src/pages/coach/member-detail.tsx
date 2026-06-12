@@ -45,7 +45,7 @@ export default function MemberDetail({ id }: { id: string }) {
   return (
     <PageWrapper className="flex flex-col lg:flex-row gap-6 max-w-7xl mx-auto">
       <div className="w-full lg:w-[320px] flex flex-col gap-6 lg:sticky lg:top-24 h-max">
-        <div className="glass-card p-6 flex flex-col items-center text-center border-primary/20">
+        <div className="glass-card p-4 sm:p-6 flex flex-col items-center text-center border-primary/20">
           <GradientAvatar name={member.name} size="xl" className="mb-4" />
           <h2 className="text-2xl font-bold mb-1">{member.name}</h2>
           <p className="text-muted-foreground mb-4">{member.email}</p>

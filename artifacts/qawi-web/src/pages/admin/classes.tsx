@@ -102,7 +102,7 @@ export default function AdminClasses() {
     return (
       <PageWrapper>
         <PageHeader title={lang === 'ar' ? 'الحصص' : 'Classes'} />
-        <div className="glass-card p-16 text-center border-dashed border-primary/20">
+        <div className="glass-card p-8 sm:p-16 text-center border-dashed border-primary/20">
           <Lock className="h-12 w-12 mx-auto mb-4 text-primary/40" />
           <h3 className="text-xl font-semibold mb-2">{lang === 'ar' ? 'ميزة حجز الحصص غير مفعّلة' : 'Class Booking not enabled'}</h3>
           <p className="text-muted-foreground max-w-md mx-auto text-sm">
@@ -142,7 +142,7 @@ export default function AdminClasses() {
       </Dialog>
 
       {isLoading ? <ClassesSkeleton /> : (classes || []).length === 0 ? (
-        <div className="glass-card p-16 text-center border-dashed border-white/10">
+        <div className="glass-card p-8 sm:p-16 text-center border-dashed border-white/10">
           <Calendar className="h-16 w-16 mx-auto text-muted-foreground/20 mb-4" />
           <h3 className="text-lg font-semibold mb-1">📅 {lang === 'ar' ? 'لا توجد حصص بعد' : 'No classes yet'}</h3>
           <p className="text-muted-foreground text-sm mb-4">{lang === 'ar' ? 'أضف أول حصة لتبدأ' : 'Create your first class to get started'}</p>

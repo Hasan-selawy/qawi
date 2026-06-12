@@ -1,2 +1,1 @@
-- [Nutrition V2 system](nutrition-v2.md) — endpoint at /api/v1/nutrition/search (not /foods/search); calendar plans at /api/v1/nutrition/calendar-plans
-- [Mobile API URL env](mobile-api-url.md) — EXPO_PUBLIC_API_URL in artifacts/qawi-mobile/.env must NOT include :9000; proxy routes through shared proxy at port 80
+- [Nutrition V2 seed gap](nutrition-v2-seed.md) — DataSeeder has guard `if count > 0`; new role users need their own `seedXIfMissing()` method called from run().

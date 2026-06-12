@@ -32,16 +32,16 @@ export function StatCard({ title, value, icon, trend, glowColor = 'green', onCli
     <div 
       onClick={onClick}
       className={cn(
-        "glass-card p-6 border-l-4 transition-all duration-300",
+        "glass-card p-4 sm:p-6 border-l-4 transition-all duration-300",
         colorMap[glowColor],
         onClick && "cursor-pointer hover:-translate-y-1",
         className
       )}
     >
       <div className="flex justify-between items-start">
-        <div>
-          <p className="text-sm font-medium text-muted-foreground mb-1">{title}</p>
-          <h3 className="text-3xl font-bold tracking-tight text-foreground">{value}</h3>
+        <div className="min-w-0 mr-2">
+          <p className="text-xs sm:text-sm font-medium text-muted-foreground mb-1 truncate">{title}</p>
+          <h3 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">{value}</h3>
           {trend && (
             <p className={cn("text-xs mt-2 flex items-center gap-1", trend.isPositive ? "text-primary" : "text-destructive")}>
               <span>{trend.isPositive ? '↑' : '↓'} {Math.abs(trend.value)}%</span>

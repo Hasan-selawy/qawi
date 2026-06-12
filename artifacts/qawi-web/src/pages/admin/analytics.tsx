@@ -31,12 +31,12 @@ function StatCard({ icon: Icon, label, value, sub, color = 'primary', className 
     orange: 'text-orange-400 bg-orange-400/20',
   };
   return (
-    <div className={`glass-card p-6 flex flex-col items-center text-center ${className}`}>
-      <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-4 ${colorMap[color] || colorMap.primary}`}>
-        <Icon className="h-7 w-7" />
+    <div className={`glass-card p-4 sm:p-6 flex flex-col items-center text-center ${className}`}>
+      <div className={`w-10 h-10 sm:w-14 sm:h-14 rounded-full flex items-center justify-center mb-3 sm:mb-4 ${colorMap[color] || colorMap.primary}`}>
+        <Icon className="h-5 w-5 sm:h-7 sm:w-7" />
       </div>
-      <p className="text-sm text-muted-foreground font-medium mb-1">{label}</p>
-      <p className="text-4xl font-bold text-white">{value}</p>
+      <p className="text-xs sm:text-sm text-muted-foreground font-medium mb-1">{label}</p>
+      <p className="text-3xl sm:text-4xl font-bold text-white">{value}</p>
       {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
     </div>
   );
@@ -262,7 +262,7 @@ export default function AdminAnalytics() {
       />
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
         <StatCard icon={Users} label={lang === 'ar' ? 'إجمالي الأعضاء' : 'Total Members'} value={totalMembers} color="primary" />
         <StatCard icon={UserCheck} label={lang === 'ar' ? 'نشطون (7 أيام)' : 'Active (7 days)'} value={activeMembers} color="blue" />
         {advanced ? (
@@ -279,15 +279,15 @@ export default function AdminAnalytics() {
       {advanced ? (
         <>
           {/* Revenue + Weekly Attendance side by side */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            <div className="glass-card p-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
+            <div className="glass-card p-4 sm:p-6">
               <h3 className="text-base font-semibold mb-4 flex items-center gap-2">
                 <TrendingUp className="h-4 w-4 text-primary" />
                 {lang === 'ar' ? 'الإيراد الشهري (6 أشهر)' : 'Monthly Revenue (6 months)'}
               </h3>
               <RevenueBarChart data={monthlyRevenue} />
             </div>
-            <div className="glass-card p-6">
+            <div className="glass-card p-4 sm:p-6">
               <h3 className="text-base font-semibold mb-4 flex items-center gap-2">
                 <BarChart2 className="h-4 w-4 text-blue-400" />
                 {lang === 'ar' ? 'الحضور الأسبوعي حسب اليوم' : 'Weekly Attendance by Day'}
@@ -297,7 +297,7 @@ export default function AdminAnalytics() {
           </div>
 
           {/* Daily attendance trend */}
-          <div className="glass-card p-6 mb-6">
+          <div className="glass-card p-4 sm:p-6 mb-4 sm:mb-6">
             <h3 className="text-base font-semibold mb-4 flex items-center gap-2">
               <Activity className="h-4 w-4 text-primary" />
               {lang === 'ar' ? 'اتجاه الحضور (هذا الأسبوع)' : 'Attendance Trend (This Week)'}
@@ -306,15 +306,15 @@ export default function AdminAnalytics() {
           </div>
 
           {/* Growth + Top performers */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            <div className="glass-card p-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
+            <div className="glass-card p-4 sm:p-6">
               <h3 className="text-base font-semibold mb-4 flex items-center gap-2">
                 <Users className="h-4 w-4 text-blue-400" />
                 {lang === 'ar' ? 'مسار نمو الأعضاء' : 'Member Growth Trajectory'}
               </h3>
               <MemberGrowthChart data={growthData} />
             </div>
-            <div className="glass-card p-6">
+            <div className="glass-card p-4 sm:p-6">
               <h3 className="text-base font-semibold mb-4 flex items-center gap-2">
                 <Medal className="h-4 w-4 text-yellow-400" />
                 {lang === 'ar' ? 'أفضل المتدربين أداءً' : 'Top Performing Members'}
@@ -344,18 +344,18 @@ export default function AdminAnalytics() {
           </div>
 
           {/* Avg workouts */}
-          <div className="glass-card p-6">
+          <div className="glass-card p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-base font-semibold">{lang === 'ar' ? 'متوسط التمارين / عضو' : 'Avg Workouts / Member'}</h3>
                 <p className="text-muted-foreground text-sm">{lang === 'ar' ? 'آخر 7 أيام' : 'Last 7 days'}</p>
               </div>
-              <div className="text-5xl font-bold text-primary">{avgWorkouts.toFixed(1)}</div>
+              <div className="text-4xl sm:text-5xl font-bold text-primary">{avgWorkouts.toFixed(1)}</div>
             </div>
           </div>
         </>
       ) : (
-        <div className="glass-card p-12 border-dashed border-primary/30 text-center">
+        <div className="glass-card p-8 sm:p-12 border-dashed border-primary/30 text-center">
           <Lock className="h-12 w-12 mx-auto mb-4 text-primary/50" />
           <h3 className="text-xl font-semibold mb-2">{lang === 'ar' ? 'التحليلات المتقدمة — ميزة Pro' : 'Advanced Analytics — Pro Feature'}</h3>
           <p className="text-muted-foreground max-w-md mx-auto text-sm">

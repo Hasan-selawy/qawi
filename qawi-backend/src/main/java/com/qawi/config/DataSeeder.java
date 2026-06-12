@@ -31,6 +31,7 @@ public class DataSeeder implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         if (userRepository.count() > 0) {
             seedSuperAdminIfMissing();
+            seedNutritionistIfMissing();
             seedExercisesIfMissing();
             return;
         }
@@ -114,6 +115,24 @@ public class DataSeeder implements ApplicationRunner {
                     .name("Qawi Admin").email("super@qawi.com")
                     .password(passwordEncoder.encode("qawi_super_2024"))
                     .role(Role.SUPER_ADMIN).build());
+        }
+    }
+
+    private void seedNutritionistIfMissing() {
+        if (!userRepository.existsByEmail("nutritionist@ironpeak.com")) {
+            gymRepository.findAll().stream()
+                    .filter(g -> "Iron Peak Gym".equals(g.getName()))
+                    .findFirst()
+                    .ifPresent(gym -> {
+                        userRepository.save(User.builder()
+                                .name("Dr. Sara Nutrition")
+                                .email("nutritionist@ironpeak.com")
+                                .password(passwordEncoder.encode("password123"))
+                                .role(Role.NUTRITIONIST)
+                                .gymId(gym.getId())
+                                .build());
+                        log.info("Seeded NUTRITIONIST user: nutritionist@ironpeak.com / password123");
+                    });
         }
     }
 

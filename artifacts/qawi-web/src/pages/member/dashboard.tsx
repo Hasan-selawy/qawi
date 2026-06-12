@@ -19,9 +19,9 @@ function StatCard({ icon: Icon, value, label, color = 'text-primary' }: {
   icon: any; value: number | string; label: string; color?: string;
 }) {
   return (
-    <div className="glass-card p-5 flex flex-col items-center gap-2 text-center">
-      <Icon size={22} className={color} />
-      <span className="text-3xl font-extrabold text-foreground">{value}</span>
+    <div className="glass-card p-4 sm:p-5 flex flex-col items-center gap-2 text-center">
+      <Icon size={20} className={color} />
+      <span className="text-2xl sm:text-3xl font-extrabold text-foreground">{value}</span>
       <span className="text-xs text-muted-foreground">{label}</span>
     </div>
   );
@@ -275,7 +275,7 @@ export default function MemberDashboard() {
       )}
 
       {/* Today's Workout */}
-      <div className="glass-card p-6 mb-6">
+      <div className="glass-card p-4 sm:p-6 mb-6">
         <div className="flex items-center gap-2 mb-4">
           <Dumbbell size={18} className="text-primary" />
           <h2 className="font-bold text-lg text-foreground">
@@ -358,7 +358,7 @@ export default function MemberDashboard() {
       </div>
 
       {/* Upcoming Training */}
-      <div className="glass-card p-6">
+      <div className="glass-card p-4 sm:p-6">
         <div className="flex items-center gap-2 mb-4">
           <Clock size={18} className="text-primary" />
           <h2 className="font-bold text-lg text-foreground">

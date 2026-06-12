@@ -79,15 +79,15 @@ export default function CoachDashboard() {
 
   return (
     <PageWrapper>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">{t('coach.welcome')} {user?.name} 👋</h1>
-        <p className="text-muted-foreground flex items-center gap-2">
+      <div className="mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-2">{t('coach.welcome')} {user?.name} 👋</h1>
+        <p className="text-muted-foreground flex items-center gap-2 text-sm">
           <Calendar size={16} /> {format(new Date(), 'EEEE, MMMM do, yyyy')}
         </p>
       </div>
 
       {/* Legend */}
-      <div className="flex items-center gap-4 mb-4 text-xs text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-3 mb-4 text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-green-500 inline-block" /> {lang === 'ar' ? 'سجّل التغذية' : 'Nutrition logged'}</span>
         <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-red-500 inline-block" /> {lang === 'ar' ? 'لم يسجل' : 'Not logged'}</span>
         <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-gray-500 inline-block" /> {lang === 'ar' ? 'بلا خطة' : 'No plan'}</span>

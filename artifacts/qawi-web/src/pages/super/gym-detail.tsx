@@ -131,7 +131,7 @@ export default function SuperGymDetail() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Features */}
-        <section className="glass-card border border-white/10 rounded-xl p-6 lg:col-span-2">
+        <section className="glass-card border border-white/10 rounded-xl p-4 sm:p-6 lg:col-span-2">
           <div className="flex items-center gap-2 mb-4">
             <Sparkles size={18} className="text-primary" />
             <h2 className="text-lg font-semibold">Pro Features</h2>
@@ -159,7 +159,7 @@ export default function SuperGymDetail() {
         </section>
 
         {/* Limits */}
-        <section className="glass-card border border-white/10 rounded-xl p-6">
+        <section className="glass-card border border-white/10 rounded-xl p-4 sm:p-6">
           <div className="flex items-center gap-2 mb-4">
             <Users size={18} className="text-primary" />
             <h2 className="text-lg font-semibold">Limits</h2>
@@ -187,7 +187,7 @@ export default function SuperGymDetail() {
 
         {/* Reset Admin Password */}
         {data.adminId && (
-          <section className="glass-card border border-white/10 rounded-xl p-6">
+          <section className="glass-card border border-white/10 rounded-xl p-4 sm:p-6">
             <div className="flex items-center gap-2 mb-4">
               <KeyRound size={18} className="text-primary" />
               <h2 className="text-lg font-semibold">Reset Admin Password</h2>

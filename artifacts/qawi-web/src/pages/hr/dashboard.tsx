@@ -23,7 +23,7 @@ function KpiCard({ label, value, icon: Icon, iconBg, iconColor }: {
           <Icon size={18} className={iconColor} />
         </div>
       </div>
-      <p className="text-3xl font-extrabold text-foreground">{value}</p>
+      <p className="text-2xl sm:text-3xl font-extrabold text-foreground">{value}</p>
     </div>
   );
 }
