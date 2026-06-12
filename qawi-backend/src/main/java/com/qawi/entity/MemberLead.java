@@ -3,6 +3,7 @@ package com.qawi.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -21,16 +22,45 @@ public class MemberLead {
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false)
+    @Column(name = "phone_number")
     private String phoneNumber;
 
-    @Column(columnDefinition = "text")
-    private String notes;
+    @Column(name = "email")
+    private String email;
+
+    @Enumerated(EnumType.STRING)
+    @Column
+    @Builder.Default
+    private MemberLeadType type = MemberLeadType.PROSPECT;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
     private MemberLeadStatus status = MemberLeadStatus.NEW;
+
+    @Column(columnDefinition = "text")
+    private String notes;
+
+    @Column(name = "member_id")
+    private UUID memberId;
+
+    @Column(name = "coach_id")
+    private UUID coachId;
+
+    @Column(name = "subscription_start_date")
+    private LocalDate subscriptionStartDate;
+
+    @Column(name = "subscription_end_date")
+    private LocalDate subscriptionEndDate;
+
+    @Column(name = "last_visit_at")
+    private LocalDateTime lastVisitAt;
+
+    @Column(name = "last_contacted_at")
+    private LocalDateTime lastContactedAt;
+
+    @Column(name = "next_follow_up_at")
+    private LocalDate nextFollowUpAt;
 
     @Column(name = "created_by", nullable = false)
     private UUID createdBy;

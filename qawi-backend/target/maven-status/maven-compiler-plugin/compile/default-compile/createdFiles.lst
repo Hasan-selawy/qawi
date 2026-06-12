@@ -25,10 +25,13 @@ com/qawi/repository/ClassBookingRepository.class
 com/qawi/dto/AdminAnalyticsResponse.class
 com/qawi/repository/ScheduleDayRepository.class
 com/qawi/controller/GymSalesController.class
+com/qawi/dto/CrmRenewRequest.class
 com/qawi/dto/ContactRequestCreate.class
+com/qawi/config/SalesDataSeeder.class
 com/qawi/dto/MemberLeadConvertRequest.class
 com/qawi/dto/FoodAnalysisRequest.class
 com/qawi/entity/MemberReport$MemberReportBuilder.class
+com/qawi/config/SchemaInitializer.class
 com/qawi/service/NutritionV3Service.class
 com/qawi/entity/MealLog$MealLogBuilder.class
 com/qawi/controller/MeasurementController.class
@@ -281,9 +284,11 @@ com/qawi/exception/AppException.class
 com/qawi/controller/WorkoutPlanController.class
 com/qawi/dto/StreakResponse$StreakResponseBuilder.class
 com/qawi/dto/UpdateSubscriptionRequest.class
+com/qawi/entity/MemberLeadType.class
 com/qawi/dto/PlatformTierRequest.class
 com/qawi/config/Phase4DataSeeder.class
 com/qawi/repository/StaffProfileRepository.class
+com/qawi/dto/CrmNoteRequest.class
 com/qawi/repository/WorkoutPlanRepository.class
 com/qawi/entity/FoodEntry.class
 com/qawi/repository/GymRepository.class

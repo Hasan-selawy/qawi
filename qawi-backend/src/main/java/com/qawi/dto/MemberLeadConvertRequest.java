@@ -11,6 +11,7 @@ import java.util.UUID;
 public class MemberLeadConvertRequest {
     @NotBlank @Email private String email;
     @NotBlank        private String password;
+    private String phoneNumber;
     private UUID coachId;
     private LocalDate subscriptionEndDate;
     private UUID planId;

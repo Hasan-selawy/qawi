@@ -17,7 +17,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/gym/leads")
-@PreAuthorize("hasAnyRole('GYM_ADMIN','RECEPTIONIST')")
+@PreAuthorize("hasAnyRole('GYM_ADMIN','RECEPTIONIST','SALES')")
 @RequiredArgsConstructor
 public class GymSalesController {
 
@@ -25,8 +25,12 @@ public class GymSalesController {
 
     @GetMapping
     public ResponseEntity<List<MemberLeadResponse>> getLeads(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String type,
             @AuthenticationPrincipal UserDetails userDetails) {
-        return ResponseEntity.ok(memberLeadService.getLeads(userDetails.getUsername()));
+        return ResponseEntity.ok(
+                memberLeadService.getLeads(userDetails.getUsername(), q, status, type));
     }
 
     @PostMapping
@@ -60,5 +64,21 @@ public class GymSalesController {
             @AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(memberLeadService.convertLead(id, req, userDetails.getUsername()));
+    }
+
+    @PostMapping("/{id}/note")
+    public ResponseEntity<MemberLeadResponse> addNote(
+            @PathVariable UUID id,
+            @Valid @RequestBody CrmNoteRequest req,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(memberLeadService.addNote(id, req, userDetails.getUsername()));
+    }
+
+    @PostMapping("/{id}/renew")
+    public ResponseEntity<MemberLeadResponse> renewMember(
+            @PathVariable UUID id,
+            @Valid @RequestBody CrmRenewRequest req,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(memberLeadService.renewMember(id, req, userDetails.getUsername()));
     }
 }

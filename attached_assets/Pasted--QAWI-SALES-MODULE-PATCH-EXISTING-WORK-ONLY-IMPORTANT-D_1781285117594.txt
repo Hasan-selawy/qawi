@@ -1,0 +1,407 @@
+# QAWI SALES MODULE — PATCH EXISTING WORK ONLY
+
+IMPORTANT:
+Do NOT start from zero.
+
+Do NOT delete what you already built.
+
+Do NOT rebuild the Sales module.
+
+Do NOT create a second Sales page.
+
+You already built the Sales module from the previous prompt with:
+
+* Super Admin Sales Pipeline
+* Gym-level Member Leads
+
+Now I want you to MODIFY the existing implementation only.
+
+Keep the Super Admin Sales Pipeline as it is unless something is broken.
+
+Focus this task only on improving the gym-level Sales page.
+
+---
+
+# MAIN CORRECTION
+
+The gym-level Sales page should not show only walk-in leads.
+
+It should become a Sales CRM that shows BOTH:
+
+1. Prospect leads / walk-ins
+2. Real gym members
+
+Every gym member should automatically appear in the Sales page.
+
+Why:
+In gyms, sales is not only new people.
+Sales also means:
+
+* active members
+* members expiring soon
+* expired members
+* renewal follow-ups
+* lost members
+
+---
+
+# ADD SALES ROLE
+
+SALES role does not currently exist.
+
+Create a new role:
+
+SALES
+
+Update the UserRole enum to include:
+
+* SUPER_ADMIN
+* GYM_ADMIN
+* COACH
+* MEMBER
+* SALES
+
+If RECEPTIONIST already exists, keep it.
+If RECEPTIONIST does not exist yet, do not create it in this task.
+
+SALES is gym-scoped.
+
+A SALES user belongs to one gym only.
+
+SALES can:
+
+* view the gym Sales CRM page
+* view prospects and member CRM records inside their gym
+* add prospect leads
+* edit prospect leads
+* convert prospects to members
+* add notes
+* set next follow-up date
+* open WhatsApp links
+* view active / expiring / expired / lost members
+
+SALES cannot:
+
+* access Super Admin pages
+* access other gyms
+* manage gym settings
+* delete real members
+* manage coaches
+* view platform-wide analytics
+
+Add SALES to backend security rules.
+
+Add SALES to frontend role routing/sidebar.
+
+Optional demo account if seed data exists:
+
+[sales@ironpeak.com](mailto:sales@ironpeak.com)
+password123
+role = SALES
+gym = Iron Peak Gym
+
+---
+
+# ADD PHONE NUMBER TO MEMBERS
+
+Add phoneNumber to User/member if missing.
+
+phoneNumber should be:
+
+* nullable for old users
+* required for new members
+* required when converting a lead to member
+
+Phone number must appear in:
+
+* Members page
+* Sales page
+* Add Member forms
+* Convert Lead modal
+
+Do not break existing users without phone numbers.
+
+---
+
+# MODIFY EXISTING GYM-LEVEL LEAD ENTITY
+
+Use the existing entity/table you already created for gym-level leads.
+
+Do not create a duplicate system.
+
+Extend it into a CRM record.
+
+Add missing fields:
+
+memberId UUID nullable
+
+gymId UUID required
+
+type enum:
+
+* PROSPECT
+* MEMBER
+
+status enum:
+
+* NEW
+* CONTACTED
+* VISIT_SCHEDULED
+* SIGNED_UP
+* ACTIVE
+* EXPIRING_SOON
+* EXPIRED
+* LOST
+
+phoneNumber String
+
+coachId UUID nullable
+
+subscriptionStartDate LocalDate nullable
+
+subscriptionEndDate LocalDate nullable
+
+lastVisitAt LocalDateTime nullable
+
+lastContactedAt LocalDateTime nullable
+
+nextFollowUpAt LocalDate nullable
+
+notes Text nullable
+
+createdBy UUID nullable
+
+createdAt LocalDateTime
+
+updatedAt LocalDateTime
+
+---
+
+# DATA RULES
+
+One member = one Sales CRM record.
+
+If User.role = MEMBER, there should be exactly one CRM record:
+
+type = MEMBER
+memberId = user.id
+gymId = user.gymId
+
+Prospect leads have:
+
+type = PROSPECT
+memberId = null
+
+When converting a prospect to a member:
+
+* create User with role MEMBER
+* save phoneNumber
+* link the same CRM record to the new member
+* set memberId = created member id
+* set type = MEMBER
+* set status = ACTIVE
+* do not create a duplicate CRM record
+
+---
+
+# BACKFILL EXISTING MEMBERS
+
+Create a safe idempotent backfill.
+
+For every existing User where role = MEMBER:
+
+If no Sales CRM record exists with memberId = user.id:
+
+Create one with:
+
+* type = MEMBER
+* memberId = user.id
+* gymId = user.gymId
+* phoneNumber = user.phoneNumber
+* subscriptionStartDate = user.subscriptionStartDate
+* subscriptionEndDate = user.subscriptionEndDate
+
+Status should be calculated:
+
+ACTIVE:
+subscriptionEndDate is more than 7 days away
+
+EXPIRING_SOON:
+subscriptionEndDate is within the next 7 days
+
+EXPIRED:
+subscriptionEndDate is before today
+
+LOST:
+member expired more than 60 days ago and has not renewed
+
+Do not create duplicates if the backfill runs multiple times.
+
+---
+
+# UPDATE GYM SALES API
+
+Keep the existing gym-level sales/leads endpoint.
+
+Modify it to return BOTH:
+
+* PROSPECT records
+* MEMBER records
+
+Endpoint can stay:
+
+GET /api/v1/gym/leads
+
+or whatever the current Sales page already uses.
+
+Support filters:
+
+q=
+status=
+type=
+
+Response DTO should include:
+
+id
+type
+memberId
+name
+phoneNumber
+email
+status
+notes
+coachId
+coachName
+subscriptionStartDate
+subscriptionEndDate
+daysRemaining
+lastVisitAt
+lastContactedAt
+nextFollowUpAt
+createdAt
+updatedAt
+canConvert
+canRenew
+canDelete
+
+---
+
+# UPDATE FRONTEND SALES PAGE
+
+Modify the existing Sales page.
+
+Do not create a new page.
+
+Title:
+
+Sales — Member CRM
+
+Subtitle:
+
+Track leads, renewals, and member follow-ups
+
+Add top stats cards:
+
+* Total CRM Records
+* Active Members
+* Expiring Soon
+* Expired Members
+* Prospects
+* Renewed This Month
+
+Add filter tabs:
+
+All
+Leads
+Active
+Expiring Soon
+Expired
+Renewed
+Lost
+
+Table columns:
+
+Name
+Phone
+Type
+Status
+Coach
+Subscription
+Days Left
+Notes
+Last Contact
+Next Follow-up
+Actions
+
+Type badges:
+
+* PROSPECT = Lead
+* MEMBER = Member
+
+Actions for PROSPECT:
+
+* WhatsApp
+* Edit
+* Convert
+* Delete
+
+Actions for MEMBER:
+
+* WhatsApp
+* Add Note
+* Renew
+* View Profile
+
+Do not show Delete for MEMBER records.
+
+---
+
+# WHATSAPP BUTTON
+
+Use wa.me links.
+
+Normalize Jordan phone numbers.
+
+If phone starts with 07, convert it to 9627.
+
+Messages:
+
+For PROSPECT:
+مرحبا {name}، معك فريق {gymName}. حابين نساعدك تبدأ معنا في النادي 💪
+
+For EXPIRING_SOON:
+مرحبا {name}، اشتراكك في {gymName} سينتهي بتاريخ {subscriptionEndDate}. يسعدنا تجديد اشتراكك 💪
+
+For EXPIRED:
+مرحبا {name}، اشتراكك في {gymName} انتهى بتاريخ {subscriptionEndDate}. يمكنك التجديد في أي وقت، ونرحب برجعتك معنا 💪
+
+For ACTIVE:
+مرحبا {name}، نتمنى تكون مستمتع بتدريبك في {gymName}. إذا تحتاج أي مساعدة احنا جاهزين 💪
+
+---
+
+# SECURITY
+
+Every backend query must filter by gymId from authenticated user.
+
+Never trust gymId from frontend.
+
+GYM_ADMIN and SALES should only see their own gym records.
+
+COACH and MEMBER should not access the Sales page.
+
+SALES should not access Super Admin pages.
+
+---
+
+# IMPORTANT
+
+Do not redo the whole Sales module.
+
+Do not delete the Super Admin pipeline.
+
+Do not delete existing walk-in leads.
+
+Do not create a second Sales page.
+
+Only patch and extend the existing implementation.

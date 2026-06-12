@@ -5,5 +5,8 @@ public enum MemberLeadStatus {
     CONTACTED,
     VISIT_SCHEDULED,
     SIGNED_UP,
+    ACTIVE,
+    EXPIRING_SOON,
+    EXPIRED,
     LOST
 }
