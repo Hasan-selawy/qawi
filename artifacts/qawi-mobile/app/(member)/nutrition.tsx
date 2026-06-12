@@ -539,7 +539,18 @@ function AddFoodModal({
   const [aiResult, setAiResult] = useState<any>(null);
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [recentFoods, setRecentFoods] = useState<any[]>([]);
   const searchTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Fetch recent foods when the modal opens
+  React.useEffect(() => {
+    if (!visible) return;
+    apiFetch<any[]>("/nutrition/recent-foods")
+      .then((data) => {
+        setRecentFoods(Array.isArray(data) ? data.slice(0, 6) : []);
+      })
+      .catch(() => setRecentFoods([]));
+  }, [visible]);
 
   // Debounced cache search — fires 300ms after user stops typing
   const handleFoodInputChange = (text: string) => {
@@ -563,6 +574,14 @@ function AddFoodModal({
     // Auto-fill quantity from serving size hint
     if (item.servingSize) setQuantity(String(item.servingSize));
     if (item.servingUnit) setUnit(item.servingUnit);
+  };
+
+  const pickRecentFood = (item: any) => {
+    const name = lang === "ar" && item.foodNameAr ? item.foodNameAr : item.foodName;
+    setFoodInput(name);
+    setSearchResults([]);
+    if (item.quantity) setQuantity(String(item.quantity));
+    if (item.unit) setUnit(item.unit);
   };
 
   const reset = () => {
@@ -944,6 +963,53 @@ function AddFoodModal({
                               {item.caloriesPer100g ?? "—"} kcal
                             </Text>
                             <Text style={{ color: "rgba(255,255,255,0.3)", fontSize: 10 }}>per 100g</Text>
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                )}
+
+                {/* Recent Foods — shown before the user starts typing */}
+                {foodInput.trim().length < 2 && recentFoods.length > 0 && (
+                  <View style={{ marginTop: 10, borderRadius: 10, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" }}>
+                    <View style={{ backgroundColor: "rgba(255,255,255,0.04)", paddingHorizontal: 10, paddingVertical: 6, flexDirection: "row", alignItems: "center", gap: 6 }}>
+                      <Feather name="clock" size={11} color="rgba(255,255,255,0.4)" />
+                      <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", letterSpacing: 0.5 }}>
+                        {lang === "ar" ? "مؤخراً" : "RECENT"}
+                      </Text>
+                    </View>
+                    {recentFoods.map((item, idx) => {
+                      const name = lang === "ar" && item.foodNameAr ? item.foodNameAr : item.foodName;
+                      const altName = lang === "ar" ? item.foodName : item.foodNameAr;
+                      const cal = item.calories != null ? Math.round(item.calories) : null;
+                      return (
+                        <TouchableOpacity
+                          key={item.id ?? idx}
+                          onPress={() => pickRecentFood(item)}
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            padding: 10,
+                            backgroundColor: idx % 2 === 0 ? "rgba(255,255,255,0.02)" : "transparent",
+                            borderTopWidth: idx > 0 ? 1 : 0,
+                            borderTopColor: "rgba(255,255,255,0.05)",
+                          }}
+                        >
+                          <View style={{ flex: 1 }}>
+                            <Text style={{ color: "white", fontSize: 14, fontWeight: "600" }}>{name}</Text>
+                            {altName ? <Text style={{ color: "rgba(255,255,255,0.35)", fontSize: 11 }}>{altName}</Text> : null}
+                          </View>
+                          <View style={{ alignItems: "flex-end", marginLeft: 8 }}>
+                            {cal != null ? (
+                              <Text style={{ color: N_COLORS.calories, fontSize: 12, fontWeight: "700" }}>
+                                {cal} kcal
+                              </Text>
+                            ) : null}
+                            <Text style={{ color: "rgba(255,255,255,0.3)", fontSize: 10 }}>
+                              {item.quantity ?? ""} {item.unit ?? ""}
+                            </Text>
                           </View>
                         </TouchableOpacity>
                       );
