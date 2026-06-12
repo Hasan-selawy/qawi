@@ -17,3 +17,9 @@ id = "YfUVu_rslW8wYGthbLXkP"
 uri = "file://TECHNICAL_DOCS.md"
 type = "text"
 title = "Qawi Platform — Full Technical Documentation"
+
+[[outputs]]
+id = "YJp1fcoCfKKsOvTkU7__f"
+uri = "file://qawi-brand/color-palette.svg"
+type = "image"
+title = "Qawi Brand Color Palette"
