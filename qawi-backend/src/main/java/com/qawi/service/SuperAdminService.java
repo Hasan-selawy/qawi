@@ -107,6 +107,11 @@ public class SuperAdminService {
         if (req.getCustomBrandingEnabled() != null) gym.setCustomBrandingEnabled(req.getCustomBrandingEnabled());
         if (req.getClassBookingEnabled() != null) gym.setClassBookingEnabled(req.getClassBookingEnabled());
         if (req.getAnalyticsAdvancedEnabled() != null) gym.setAnalyticsAdvancedEnabled(req.getAnalyticsAdvancedEnabled());
+        if (req.getNutritionWorkflow() != null) {
+            try {
+                gym.setNutritionWorkflow(com.qawi.entity.NutritionWorkflow.valueOf(req.getNutritionWorkflow()));
+            } catch (IllegalArgumentException ignored) {}
+        }
         return toGymDetail(gymRepository.save(gym));
     }
 
@@ -224,6 +229,7 @@ public class SuperAdminService {
                 .customBrandingEnabled(gym.isCustomBrandingEnabled())
                 .classBookingEnabled(gym.isClassBookingEnabled())
                 .analyticsAdvancedEnabled(gym.isAnalyticsAdvancedEnabled())
+                .nutritionWorkflow(gym.getNutritionWorkflow() != null ? gym.getNutritionWorkflow().name() : "COACH_ONLY")
                 .maxMembers(gym.getMaxMembers())
                 .logoUrl(gym.getLogoUrl())
                 .primaryColor(gym.getPrimaryColor())

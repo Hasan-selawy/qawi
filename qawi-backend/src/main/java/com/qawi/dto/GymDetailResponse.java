@@ -28,6 +28,7 @@ public class GymDetailResponse {
     private boolean customBrandingEnabled;
     private boolean classBookingEnabled;
     private boolean analyticsAdvancedEnabled;
+    private String nutritionWorkflow;
 
     // Limits
     private Integer maxMembers;

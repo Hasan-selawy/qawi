@@ -9,4 +9,5 @@ public class GymFeaturesRequest {
     private Boolean customBrandingEnabled;
     private Boolean classBookingEnabled;
     private Boolean analyticsAdvancedEnabled;
+    private String nutritionWorkflow;
 }

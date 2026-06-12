@@ -11,6 +11,7 @@ export type GymConfig = {
     customBrandingEnabled: boolean;
     classBookingEnabled: boolean;
     analyticsAdvancedEnabled: boolean;
+    nutritionWorkflow: string;
   };
   branding: { logoUrl: string | null; primaryColor: string | null };
   limits: { maxMembers: number | null };
@@ -25,6 +26,7 @@ const FALLBACK: GymConfig = {
     customBrandingEnabled: false,
     classBookingEnabled: false,
     analyticsAdvancedEnabled: false,
+    nutritionWorkflow: 'COACH_ONLY',
   },
   branding: { logoUrl: null, primaryColor: null },
   limits: { maxMembers: null },

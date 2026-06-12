@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, ArrowLeft, Sparkles, Users, Palette, KeyRound, Eye, EyeOff } from 'lucide-react';
+import { Loader2, ArrowLeft, Sparkles, Users, Palette, KeyRound, Eye, EyeOff, Utensils } from 'lucide-react';
 import { toast } from 'sonner';
 
 type GymDetail = {
@@ -24,6 +24,7 @@ type GymDetail = {
   customBrandingEnabled: boolean;
   classBookingEnabled: boolean;
   analyticsAdvancedEnabled: boolean;
+  nutritionWorkflow: string;
   maxMembers: number | null;
   logoUrl: string | null;
   primaryColor: string | null;
@@ -37,6 +38,24 @@ const FEATURE_LIST: Array<{ key: keyof GymDetail; label: string; help: string }>
   { key: 'analyticsAdvancedEnabled',  label: 'Advanced Analytics',   help: 'Revenue, growth charts, top performers, weekly attendance breakdown.' },
 ];
 
+const WORKFLOW_OPTIONS = [
+  {
+    value: 'COACH_ONLY',
+    label: 'Coach Only',
+    desc: 'Coaches manage all nutrition for their assigned members.',
+  },
+  {
+    value: 'NUTRITIONIST_ONLY',
+    label: 'Nutritionist Only',
+    desc: 'A dedicated nutritionist manages nutrition for the entire gym.',
+  },
+  {
+    value: 'COACH_AND_NUTRITIONIST',
+    label: 'Coach + Nutritionist',
+    desc: 'Both coaches and the nutritionist can create and edit nutrition plans.',
+  },
+];
+
 export default function SuperGymDetail() {
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
@@ -47,6 +66,7 @@ export default function SuperGymDetail() {
   });
 
   const [features, setFeatures] = useState<Partial<GymDetail>>({});
+  const [nutritionWorkflow, setNutritionWorkflow] = useState<string>('COACH_ONLY');
   const [maxMembers, setMaxMembers] = useState<string>('');
   const [logoUrl, setLogoUrl] = useState<string>('');
   const [primaryColor, setPrimaryColor] = useState<string>('');
@@ -62,6 +82,7 @@ export default function SuperGymDetail() {
       classBookingEnabled: data.classBookingEnabled,
       analyticsAdvancedEnabled: data.analyticsAdvancedEnabled,
     });
+    setNutritionWorkflow(data.nutritionWorkflow ?? 'COACH_ONLY');
     setMaxMembers(data.maxMembers != null ? String(data.maxMembers) : '');
     setLogoUrl(data.logoUrl ?? '');
     setPrimaryColor(data.primaryColor ?? '');
@@ -73,7 +94,10 @@ export default function SuperGymDetail() {
   };
 
   const saveFeatures = useMutation({
-    mutationFn: () => apiFetch(`/super/gyms/${id}/features`, { method: 'PUT', data: features }),
+    mutationFn: () => apiFetch(`/super/gyms/${id}/features`, {
+      method: 'PUT',
+      data: { ...features, nutritionWorkflow },
+    }),
     onSuccess: () => { toast.success('Feature flags saved'); invalidate(); },
     onError: (err: any) => toast.error(err.error || 'Failed to save features'),
   });
@@ -181,6 +205,50 @@ export default function SuperGymDetail() {
             <Button onClick={() => saveLimits.mutate()} disabled={saveLimits.isPending}>
               {saveLimits.isPending && <Loader2 className="animate-spin mr-2 h-4 w-4" />}
               Save limits
+            </Button>
+          </div>
+        </section>
+
+        {/* Nutrition Workflow */}
+        <section className="glass-card border border-white/10 rounded-xl p-4 sm:p-6 lg:col-span-2">
+          <div className="flex items-center gap-2 mb-1">
+            <Utensils size={18} className="text-primary" />
+            <h2 className="text-lg font-semibold">Nutrition Workflow</h2>
+          </div>
+          <p className="text-xs text-muted-foreground mb-4">
+            Controls which staff roles can create and manage nutrition plans for members.
+            Requires the <span className="text-foreground font-medium">Nutrition Plans</span> feature to be enabled.
+          </p>
+          <div className="space-y-3">
+            {WORKFLOW_OPTIONS.map((opt) => {
+              const active = nutritionWorkflow === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  onClick={() => setNutritionWorkflow(opt.value)}
+                  className={[
+                    'w-full text-left rounded-lg border px-4 py-3 transition-all',
+                    active
+                      ? 'border-primary bg-primary/10 ring-1 ring-primary'
+                      : 'border-white/10 bg-black/20 hover:border-white/20',
+                  ].join(' ')}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className={[
+                      'w-3.5 h-3.5 rounded-full border-2 flex-shrink-0',
+                      active ? 'border-primary bg-primary' : 'border-white/30',
+                    ].join(' ')} />
+                    <span className="font-medium text-sm">{opt.label}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1 ml-5">{opt.desc}</p>
+                </button>
+              );
+            })}
+          </div>
+          <div className="mt-6 flex justify-end">
+            <Button onClick={() => saveFeatures.mutate()} disabled={saveFeatures.isPending}>
+              {saveFeatures.isPending && <Loader2 className="animate-spin mr-2 h-4 w-4" />}
+              Save workflow
             </Button>
           </div>
         </section>

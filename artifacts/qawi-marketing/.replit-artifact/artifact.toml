@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/marketing/"
+title = "Qawi — Smart Gym Management"
+version = "1.0.0"
+id = "artifacts/qawi-marketing"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/marketing/" ]
+localPort = 23287
+
+[services.development]
+run = "pnpm --filter @workspace/qawi-marketing run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/qawi-marketing", "run", "build" ]
+publicDir = "artifacts/qawi-marketing/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23287"
+BASE_PATH = "/marketing/"

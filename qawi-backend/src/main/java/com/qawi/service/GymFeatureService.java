@@ -96,6 +96,8 @@ public class GymFeatureService {
         features.put("customBrandingEnabled", customBranding);
         features.put("classBookingEnabled", classBooking);
         features.put("analyticsAdvancedEnabled", analyticsAdvanced);
+        features.put("nutritionWorkflow", gym != null && gym.getNutritionWorkflow() != null
+                ? gym.getNutritionWorkflow().name() : "COACH_ONLY");
 
         // Only surface branding overrides when the customer pays for the feature.
         branding.put("logoUrl", customBranding && gym != null ? gym.getLogoUrl() : null);
