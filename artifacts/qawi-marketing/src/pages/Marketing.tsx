@@ -41,7 +41,15 @@ function parseStatValue(raw: string): { prefix: string; num: number; suffix: str
 function fadeUp(delay = 0) {
   return {
     hidden: { opacity: 0, y: 28 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.55, delay, ease: [0.22, 1, 0.36, 1] } },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.55,
+        delay,
+        ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
+      },
+    },
   };
 }
 
@@ -317,9 +325,13 @@ function GetAccessModal({
 
   useEffect(() => {
     if (!open) {
-      const id = setTimeout(() => { setSubmitted(false); setForm({ name: '', email: '', phone: '', gym: '', city: '' }); }, 350);
+      const id = setTimeout(() => {
+        setSubmitted(false);
+        setForm({ name: '', email: '', phone: '', gym: '', city: '' });
+      }, 350);
       return () => clearTimeout(id);
     }
+    return undefined;
   }, [open]);
 
   useEffect(() => {
