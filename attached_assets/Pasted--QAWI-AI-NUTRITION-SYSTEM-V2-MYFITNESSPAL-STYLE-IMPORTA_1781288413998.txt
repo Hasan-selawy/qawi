@@ -1,0 +1,2108 @@
+# QAWI — AI NUTRITION SYSTEM V2 — MYFITNESSPAL STYLE
+
+## IMPORTANT
+
+Read CLAUDE.md and project documentation before making changes.
+
+Do NOT build Reception in this task.
+
+Do NOT build HR in this task.
+
+Do NOT rebuild the full app.
+
+Do NOT delete old nutrition data.
+
+Do NOT break existing workout, coach, member, sales, employees, or reception features.
+
+This task is only for rebuilding Nutrition into a MyFitnessPal-style food logging system with AI macro calculation.
+
+The old nutrition system is basic:
+
+* Coach creates NutritionPlan
+* Coach adds Meal entries
+
+That is not enough.
+
+New nutrition system should work like:
+
+* Coach or Nutritionist sets daily targets
+* Member logs what they ate
+* App calculates calories, protein, carbs, fat
+* Arabic food cache is checked first
+* AI is used only when food is not found locally
+* Food result is cached so the same food does not cost AI again
+
+---
+
+# CONTEXT
+
+Qawi is a multi-tenant gym management SaaS.
+
+Current stack:
+
+* Backend: Java 17 + Spring Boot 3
+* Database: PostgreSQL
+* Auth: JWT + Spring Security
+* Frontend: React 18 + TypeScript + Tailwind CSS
+* Mobile: React Native + Expo
+* Theme: dark Qawi theme
+
+Current roles may include:
+
+* SUPER_ADMIN
+* GYM_ADMIN
+* COACH
+* MEMBER
+* SALES
+* RECEPTIONIST
+* NUTRITIONIST
+
+If NUTRITIONIST role already exists, reuse it.
+
+If NUTRITIONIST does not exist yet, add it safely.
+
+---
+
+# GOAL
+
+Build a modern nutrition system similar to MyFitnessPal.
+
+The member should be able to:
+
+* Search food
+* Log food
+* Type Arabic or English food names
+* Enter quantity and unit
+* See calories and macros
+* See daily progress toward targets
+* Track water
+* View history
+
+Coach or Nutritionist should be able to:
+
+* Set nutrition targets for a member
+* View member food logs
+* View adherence for last 7 days
+* Add optional meal suggestions
+* See whether member is hitting calories/protein
+
+---
+
+# BIG CONCEPT CHANGE
+
+Do not keep nutrition as only "coach writes meal plan."
+
+New system:
+
+## Staff job
+
+Set daily targets:
+
+* Calories
+* Protein
+* Carbs
+* Fat
+* Water
+* Goal
+* Notes
+
+Optional:
+
+* Meal suggestions
+
+## Member job
+
+Log food daily.
+
+Example:
+
+"شاورما دجاج 300 جرام"
+
+or
+
+"2 eggs"
+
+or
+
+"mansaf plate"
+
+System calculates:
+
+* Calories
+* Protein
+* Carbs
+* Fat
+* Fiber
+* Sugar
+* Confidence score
+
+---
+
+# NUTRITION WORKFLOW BY GYM
+
+Some gyms have no nutritionist.
+
+Some gyms have a nutrition department.
+
+Support this with gym setting:
+
+nutritionWorkflow enum:
+
+* COACH_ONLY
+* NUTRITIONIST_ONLY
+* COACH_AND_NUTRITIONIST
+
+If this field already exists from Employees task, reuse it.
+
+If it does not exist, add it to Gym safely.
+
+Default:
+
+COACH_ONLY
+
+Meaning:
+
+## COACH_ONLY
+
+Coach can set nutrition targets and view logs.
+
+Nutritionist role may exist but is not required.
+
+This fits small gyms.
+
+## NUTRITIONIST_ONLY
+
+Coach manages workouts only.
+
+Nutritionist manages nutrition.
+
+Coach can view nutrition summary but cannot edit targets.
+
+## COACH_AND_NUTRITIONIST
+
+Coach and nutritionist can both view nutrition.
+
+Nutritionist has primary edit access.
+
+Coach can add suggestions and view logs.
+
+---
+
+# ROLE ACCESS
+
+## MEMBER
+
+Can:
+
+* View own nutrition dashboard
+* Search foods
+* Log own food
+* Edit own food quantity
+* Delete own food entries
+* Log own water
+* View own history
+* View targets set by coach/nutritionist
+* View meal suggestions
+
+Cannot:
+
+* View other members
+* Set own official targets unless no target exists and app needs fallback
+* Edit staff suggestions
+
+---
+
+## COACH
+
+Can:
+
+* View nutrition for assigned members only
+* Set/edit targets only when gym nutritionWorkflow is COACH_ONLY
+* View targets and logs when gym nutritionWorkflow is COACH_AND_NUTRITIONIST
+* Add meal suggestions when workflow allows
+* View adherence and weekly summaries
+
+Cannot:
+
+* View members from other gyms
+* View unassigned members unless GYM_ADMIN permissions allow
+* Access nutritionist-only editing if workflow is NUTRITIONIST_ONLY
+
+---
+
+## NUTRITIONIST
+
+Can:
+
+* View nutrition dashboard
+* View members in their gym
+* Set/edit nutrition targets
+* View food logs
+* Add meal suggestions
+* View adherence
+* Review AI-calculated entries
+
+Cannot:
+
+* Access Super Admin pages
+* Access other gyms
+* Edit workout plans
+* Access Sales
+* Access Employees
+* Access full financial reports
+* Access HR
+
+---
+
+## GYM_ADMIN
+
+Can:
+
+* View nutrition summaries for members in their gym
+* View whether targets exist
+* View adherence overview
+* Change nutrition workflow if settings UI exists
+
+Do not build full settings UI unless simple.
+
+---
+
+## SUPER_ADMIN
+
+No special nutrition UI required in this task.
+
+---
+
+# SAFETY AND PRODUCT RULES
+
+Nutrition values are estimates.
+
+AI can be wrong.
+
+Show small disclaimer:
+
+"Nutrition values are estimates and may vary by preparation."
+
+Do not generate medical diet advice.
+
+Do not create extreme calorie targets automatically.
+
+Targets are set by coach/nutritionist.
+
+If targetCalories is below a safe minimum, show validation warning.
+
+Use reasonable validation:
+
+targetCalories must be between 1000 and 6000
+
+targetProtein must be between 0 and 400g
+
+targetCarbs must be between 0 and 800g
+
+targetFat must be between 0 and 300g
+
+targetWater must be between 0 and 10L
+
+Do not block existing old data.
+
+---
+
+# DATABASE CHANGES
+
+Do not delete old NutritionPlan and Meal tables.
+
+Keep them as legacy.
+
+Create new V2 entities.
+
+---
+
+## NutritionTarget
+
+id UUID
+
+gymId UUID
+
+memberId UUID FK to User
+
+createdByUserId UUID FK to User
+
+createdByRole enum:
+
+COACH
+
+NUTRITIONIST
+
+GYM_ADMIN
+
+targetCalories INT
+
+targetProtein INT
+
+targetCarbs INT
+
+targetFat INT
+
+targetWater DOUBLE
+
+goal enum:
+
+WEIGHT_LOSS
+
+MUSCLE_GAIN
+
+MAINTENANCE
+
+RECOMPOSITION
+
+PERFORMANCE
+
+notes TEXT nullable
+
+isActive BOOLEAN default true
+
+createdAt LocalDateTime
+
+updatedAt LocalDateTime
+
+Rules:
+
+One active target per member.
+
+When updating targets, update current active record or create version history if simple.
+
+---
+
+## FoodEntry
+
+id UUID
+
+gymId UUID
+
+memberId UUID FK to User
+
+loggedAt LocalDateTime
+
+logDate LocalDate
+
+mealType enum:
+
+BREAKFAST
+
+LUNCH
+
+DINNER
+
+SNACK
+
+PRE_WORKOUT
+
+POST_WORKOUT
+
+foodName String
+
+foodNameAr String nullable
+
+quantity DOUBLE
+
+unit String
+
+calories DOUBLE
+
+protein DOUBLE
+
+carbs DOUBLE
+
+fat DOUBLE
+
+fiber DOUBLE nullable
+
+sugar DOUBLE nullable
+
+sodium DOUBLE nullable
+
+aiConfidence DOUBLE nullable
+
+source enum:
+
+DATABASE
+
+AI_CALCULATED
+
+MANUAL
+
+notes TEXT nullable
+
+createdAt LocalDateTime
+
+updatedAt LocalDateTime
+
+---
+
+## WaterLog
+
+id UUID
+
+gymId UUID
+
+memberId UUID FK to User
+
+amount DOUBLE
+
+loggedAt LocalDateTime
+
+logDate LocalDate
+
+createdAt LocalDateTime
+
+---
+
+## MealSuggestion
+
+id UUID
+
+gymId UUID
+
+memberId UUID FK to User
+
+createdByUserId UUID FK to User
+
+mealType enum:
+
+BREAKFAST
+
+LUNCH
+
+DINNER
+
+SNACK
+
+PRE_WORKOUT
+
+POST_WORKOUT
+
+description TEXT
+
+descriptionAr TEXT nullable
+
+targetCalories INT nullable
+
+targetProtein INT nullable
+
+createdAt LocalDateTime
+
+updatedAt LocalDateTime
+
+---
+
+## ArabicFoodCache
+
+id UUID
+
+foodName String
+
+foodNameAr String
+
+searchKeywords TEXT nullable
+
+defaultQuantity DOUBLE
+
+defaultUnit String
+
+calories DOUBLE
+
+protein DOUBLE
+
+carbs DOUBLE
+
+fat DOUBLE
+
+fiber DOUBLE nullable
+
+sugar DOUBLE nullable
+
+sodium DOUBLE nullable
+
+source enum:
+
+SEEDED
+
+AI
+
+MANUAL
+
+searchCount INT default 0
+
+createdAt LocalDateTime
+
+updatedAt LocalDateTime
+
+Rules:
+
+Cache is global, not gym-specific.
+
+Search Arabic and English names.
+
+Increment searchCount when used.
+
+---
+
+## AiNutritionLog
+
+id UUID
+
+memberId UUID nullable
+
+gymId UUID nullable
+
+inputText TEXT
+
+quantity DOUBLE nullable
+
+unit String nullable
+
+responseJson TEXT
+
+success BOOLEAN
+
+confidence DOUBLE nullable
+
+errorMessage TEXT nullable
+
+createdAt LocalDateTime
+
+Purpose:
+
+Debugging only.
+
+Do not expose this to members.
+
+---
+
+# SEED ARABIC FOOD CACHE
+
+Seed ArabicFoodCache with common Jordanian / Middle Eastern foods.
+
+Do not duplicate if already exists.
+
+Use these initial foods:
+
+Chicken Shawarma / شاورما دجاج
+Default: 300g
+Calories: 450
+Protein: 38
+Carbs: 35
+Fat: 16
+
+Mansaf / منسف
+Default: 400g
+Calories: 800
+Protein: 45
+Carbs: 90
+Fat: 28
+
+Falafel / فلافل
+Default: 1 piece
+Calories: 57
+Protein: 2
+Carbs: 6
+Fat: 3
+
+Hummus / حمص
+Default: 100g
+Calories: 166
+Protein: 8
+Carbs: 14
+Fat: 10
+
+Knafeh / كنافة
+Default: 100g
+Calories: 400
+Protein: 8
+Carbs: 55
+Fat: 18
+
+Musakhan / مسخن
+Default: 350g
+Calories: 650
+Protein: 35
+Carbs: 70
+Fat: 25
+
+Maqluba / مقلوبة
+Default: 350g
+Calories: 550
+Protein: 28
+Carbs: 65
+Fat: 18
+
+Tabbouleh / تبولة
+Default: 100g
+Calories: 100
+Protein: 3
+Carbs: 12
+Fat: 5
+
+Fattoush / فتوش
+Default: 100g
+Calories: 90
+Protein: 2
+Carbs: 14
+Fat: 3
+
+Arabic Bread / خبز عربي
+Default: 1 piece
+Calories: 370
+Protein: 12
+Carbs: 76
+Fat: 2
+
+White Rice Cooked / أرز أبيض مطبوخ
+Default: 200g
+Calories: 260
+Protein: 5
+Carbs: 57
+Fat: 0
+
+Grilled Chicken / دجاج مشوي
+Default: 150g
+Calories: 230
+Protein: 43
+Carbs: 0
+Fat: 5
+
+Egg / بيض
+Default: 1 large
+Calories: 78
+Protein: 6
+Carbs: 0
+Fat: 5
+
+Yogurt / لبن
+Default: 200g
+Calories: 120
+Protein: 8
+Carbs: 16
+Fat: 2
+
+Olive Oil / زيت زيتون
+Default: 1 tbsp
+Calories: 119
+Protein: 0
+Carbs: 0
+Fat: 14
+
+Tuna / تونا
+Default: 100g
+Calories: 132
+Protein: 29
+Carbs: 0
+Fat: 1
+
+Banana / موز
+Default: 1 medium
+Calories: 105
+Protein: 1
+Carbs: 27
+Fat: 0
+
+Dates / تمر
+Default: 1 piece
+Calories: 23
+Protein: 0
+Carbs: 6
+Fat: 0
+
+---
+
+# AI NUTRITION CALCULATION
+
+Use OpenAI or existing AI client if already configured.
+
+Do not hardcode API key.
+
+Use environment variable:
+
+OPENAI_API_KEY
+
+Use environment variable for model:
+
+OPENAI_NUTRITION_MODEL
+
+Default model can be whatever is already configured in the project.
+
+If no model is configured, use a cheap fast model suitable for JSON extraction/calculation.
+
+Important:
+
+Use structured JSON output if available.
+
+Do not rely on random text parsing.
+
+Set temperature to 0.
+
+Keep max output small.
+
+Cache successful AI foods in ArabicFoodCache.
+
+---
+
+# AI SYSTEM PROMPT
+
+Use this behavior:
+
+You are a nutrition calculator specializing in Middle Eastern and Arabic cuisine.
+
+You estimate nutrition values for food logging.
+
+You must return only valid JSON matching the required schema.
+
+Nutrition values are estimates.
+
+Prefer common Jordanian serving sizes when the input is vague.
+
+Do not give medical advice.
+
+Do not recommend diets.
+
+Only calculate approximate nutrition.
+
+---
+
+# AI USER PROMPT TEMPLATE
+
+Calculate nutrition for:
+
+Food: {foodName}
+Quantity: {quantity}
+Unit: {unit}
+
+Context:
+
+This is for a Jordanian / Arabic gym nutrition tracker.
+
+Common foods include shawarma, mansaf, falafel, hummus, knafeh, musakhan, maqluba, tabbouleh, fattoush, rice, Arabic bread, grilled chicken, eggs, tuna, yogurt, dates, olive oil.
+
+Return JSON only:
+
+{
+"foodName": "English food name",
+"foodNameAr": "Arabic food name",
+"calories": number,
+"protein": number,
+"carbs": number,
+"fat": number,
+"fiber": number,
+"sugar": number,
+"sodium": number,
+"confidence": number between 0 and 1,
+"notes": "short note if needed"
+}
+
+If the food is unclear, still estimate but set confidence lower.
+
+---
+
+# SCALING MACROS
+
+When food is found in ArabicFoodCache:
+
+Scale macros based on requested quantity and unit.
+
+Examples:
+
+Cache default:
+
+100g hummus = 166 kcal
+
+User logs:
+
+200g hummus
+
+Result:
+
+332 kcal
+
+2x macros
+
+If unit conversion is unclear:
+
+Use AI calculation instead of wrong scaling.
+
+Supported units:
+
+g
+
+gram
+
+grams
+
+kg
+
+ml
+
+liter
+
+cup
+
+tbsp
+
+tsp
+
+piece
+
+pieces
+
+serving
+
+plate
+
+sandwich
+
+---
+
+# BACKEND API ENDPOINTS
+
+Base path:
+
+/api/v1/nutrition
+
+All endpoints must be gym-scoped.
+
+Never trust gymId from frontend.
+
+---
+
+# TARGETS
+
+## POST /api/v1/nutrition/targets
+
+Allowed roles:
+
+* COACH if workflow allows
+* NUTRITIONIST
+* GYM_ADMIN
+
+Request:
+
+memberId
+
+targetCalories
+
+targetProtein
+
+targetCarbs
+
+targetFat
+
+targetWater
+
+goal
+
+notes
+
+Rules:
+
+* member must belong to same gym
+* coach can only set targets for assigned members unless GYM_ADMIN
+* nutritionist can set targets for members in same gym
+* validate ranges
+* save active target
+
+---
+
+## GET /api/v1/nutrition/targets/{memberId}
+
+Allowed roles:
+
+* MEMBER for own target
+* COACH for assigned member
+* NUTRITIONIST for same gym
+* GYM_ADMIN for same gym
+
+Return current active target.
+
+If no target exists, return null safely.
+
+---
+
+## PUT /api/v1/nutrition/targets/{memberId}
+
+Same permissions as POST.
+
+Update current active target.
+
+---
+
+# FOOD SEARCH
+
+## GET /api/v1/nutrition/search?q=
+
+Allowed roles:
+
+* MEMBER
+* COACH
+* NUTRITIONIST
+* GYM_ADMIN
+
+Search ArabicFoodCache by:
+
+* foodName
+* foodNameAr
+* searchKeywords
+
+Return best matches.
+
+Response item:
+
+id
+
+foodName
+
+foodNameAr
+
+defaultQuantity
+
+defaultUnit
+
+calories
+
+protein
+
+carbs
+
+fat
+
+fiber
+
+sugar
+
+source
+
+Do not call AI on every keystroke.
+
+Only search local cache here.
+
+AI should be called in calculate/log endpoint.
+
+---
+
+# CALCULATE FOOD PREVIEW
+
+## POST /api/v1/nutrition/calculate
+
+Allowed roles:
+
+* MEMBER
+* COACH
+* NUTRITIONIST
+* GYM_ADMIN
+
+Request:
+
+foodName
+
+quantity
+
+unit
+
+Backend logic:
+
+1. Search exact or strong match in ArabicFoodCache.
+2. If found, scale macros and return source = DATABASE.
+3. If not found, call AI with structured JSON response.
+4. Save successful AI result to ArabicFoodCache.
+5. Return calculated result but do not save FoodEntry yet.
+
+Response:
+
+foodName
+
+foodNameAr
+
+quantity
+
+unit
+
+calories
+
+protein
+
+carbs
+
+fat
+
+fiber
+
+sugar
+
+sodium
+
+confidence
+
+source
+
+notes
+
+---
+
+# LOG FOOD
+
+## POST /api/v1/nutrition/log
+
+Allowed roles:
+
+* MEMBER for self
+* COACH only for assigned member if needed
+* NUTRITIONIST for same gym if needed
+
+Request:
+
+memberId optional
+
+foodName
+
+quantity
+
+unit
+
+mealType
+
+loggedAt optional
+
+If memberId is missing:
+
+Use authenticated member id.
+
+Backend logic:
+
+1. Validate member access.
+2. Calculate macros using cache first, AI second.
+3. Save FoodEntry.
+4. Return entry and daily summary.
+
+Response:
+
+entry
+
+dailySummary:
+
+calories consumed target remaining percentage
+
+protein consumed target remaining percentage
+
+carbs consumed target remaining percentage
+
+fat consumed target remaining percentage
+
+water consumed target remaining percentage
+
+---
+
+# GET TODAY LOG
+
+## GET /api/v1/nutrition/log/today/{memberId}
+
+Allowed roles:
+
+* MEMBER for self
+* COACH for assigned member
+* NUTRITIONIST for same gym
+* GYM_ADMIN for same gym
+
+Return:
+
+date
+
+target
+
+entries grouped by mealType
+
+totals
+
+percentages
+
+water
+
+suggestions
+
+---
+
+# GET HISTORY
+
+## GET /api/v1/nutrition/log/history/{memberId}?days=7
+
+Return daily summaries:
+
+date
+
+totalCalories
+
+totalProtein
+
+totalCarbs
+
+totalFat
+
+targetCalories
+
+targetProtein
+
+goalMet
+
+entriesCount
+
+waterTotal
+
+Goal met:
+
+Calories within ±10% of target
+
+Protein at least 90% of target
+
+---
+
+# UPDATE FOOD ENTRY
+
+## PUT /api/v1/nutrition/log/{entryId}
+
+Allowed:
+
+* member can edit own entry
+* nutritionist can edit if same gym
+* coach can edit if workflow allows and member assigned
+
+Request:
+
+quantity
+
+unit
+
+mealType
+
+loggedAt optional
+
+Recalculate macros.
+
+If original source was DATABASE, scale.
+
+If unclear, call AI again.
+
+---
+
+# DELETE FOOD ENTRY
+
+## DELETE /api/v1/nutrition/log/{entryId}
+
+Allowed:
+
+* member can delete own entry
+* nutritionist can delete same gym entry
+* coach can delete if workflow allows
+
+Soft delete if project uses soft delete.
+
+Otherwise delete safely.
+
+---
+
+# WATER
+
+## POST /api/v1/nutrition/water
+
+Allowed:
+
+* MEMBER for self
+* COACH / NUTRITIONIST if needed
+
+Request:
+
+memberId optional
+
+amount
+
+loggedAt optional
+
+Rules:
+
+amount in liters
+
+amount must be between 0.05 and 5 per log
+
+---
+
+## GET /api/v1/nutrition/water/today/{memberId}
+
+Return:
+
+consumed
+
+target
+
+remaining
+
+percentage
+
+logs
+
+---
+
+# MEAL SUGGESTIONS
+
+## POST /api/v1/nutrition/suggestions
+
+Allowed:
+
+* COACH if workflow allows
+* NUTRITIONIST
+* GYM_ADMIN
+
+Request:
+
+memberId
+
+mealType
+
+description
+
+descriptionAr
+
+targetCalories optional
+
+targetProtein optional
+
+---
+
+## GET /api/v1/nutrition/suggestions/{memberId}
+
+Allowed:
+
+* MEMBER self
+* COACH assigned
+* NUTRITIONIST same gym
+* GYM_ADMIN same gym
+
+---
+
+## DELETE /api/v1/nutrition/suggestions/{id}
+
+Allowed:
+
+* creator
+* GYM_ADMIN
+* NUTRITIONIST same gym
+
+---
+
+# COACH / NUTRITIONIST OVERVIEW
+
+## GET /api/v1/nutrition/staff/members
+
+Allowed:
+
+* COACH
+* NUTRITIONIST
+* GYM_ADMIN
+
+For COACH:
+
+Return assigned members only.
+
+For NUTRITIONIST:
+
+Return members in same gym.
+
+For GYM_ADMIN:
+
+Return all gym members.
+
+Each item:
+
+memberId
+
+name
+
+phoneNumber
+
+coachName
+
+hasTarget
+
+todayCalories
+
+targetCalories
+
+todayProtein
+
+targetProtein
+
+adherence7Days
+
+lastLoggedAt
+
+status
+
+Status:
+
+ON_TRACK
+
+UNDER
+
+OVER
+
+NO_LOG
+
+NO_TARGET
+
+---
+
+## GET /api/v1/nutrition/staff/overview/{memberId}
+
+Return:
+
+member info
+
+current target
+
+today summary
+
+today entries
+
+water summary
+
+last 7 days summaries
+
+adherence percentage
+
+weekly averages
+
+meal suggestions
+
+---
+
+# WEB DASHBOARD — NUTRITIONIST
+
+If NUTRITIONIST logs in:
+
+Route:
+
+/dashboard/nutrition
+
+Replace placeholder if exists.
+
+Sidebar for NUTRITIONIST:
+
+* Nutrition Dashboard
+* Members
+* Food Logs
+* Targets
+* Suggestions
+
+Do not show:
+
+* Sales
+* Employees
+* Reception
+* Revenue
+* Super Admin
+* Workout plan editing
+
+---
+
+# WEB DASHBOARD — COACH
+
+In coach member detail page, add Nutrition tab.
+
+Nutrition tab includes:
+
+1. Target card
+2. Today’s log
+3. 7-day adherence
+4. Meal suggestions
+
+If workflow = COACH_ONLY:
+
+Coach can edit targets.
+
+If workflow = NUTRITIONIST_ONLY:
+
+Coach can view only.
+
+Show message:
+
+"Nutrition targets are managed by the nutrition department."
+
+If workflow = COACH_AND_NUTRITIONIST:
+
+Coach can view and add suggestions.
+
+Nutritionist has primary edit access.
+
+---
+
+# WEB DASHBOARD — GYM ADMIN
+
+Add Nutrition overview page if simple.
+
+Show:
+
+* Members without targets
+* Members not logging food
+* Average adherence
+* Nutrition workflow setting if settings UI exists
+
+Do not overbuild.
+
+---
+
+# WEB MEMBER NUTRITION PAGE
+
+Members should be able to log food from web too.
+
+Route:
+
+/dashboard/nutrition
+
+or existing member route pattern.
+
+Main sections:
+
+* Daily calories ring
+* Macro bars
+* Water tracker
+* Add Food
+* Meal sections
+* History
+
+---
+
+# MOBILE APP — MEMBER NUTRITION
+
+Replace old mobile Nutrition screen.
+
+Main screen:
+
+## Top Daily Summary
+
+Large calorie ring:
+
+Center text:
+
+{remaining} kcal left
+
+Color:
+
+green under 90%
+
+orange between 90% and 100%
+
+red over target
+
+## Macro bars
+
+Protein:
+
+120g / 180g
+
+Carbs:
+
+180g / 220g
+
+Fat:
+
+35g / 70g
+
+## Water tracker
+
+💧 1.5L / 2.5L
+
+Quick add buttons:
+
+0.25L
+
+0.5L
+
+1L
+
+## Add Food button
+
+Large green button:
+
+* Add Food
+
+## Meal sections
+
+Breakfast
+
+Lunch
+
+Dinner
+
+Snack
+
+Pre-workout
+
+Post-workout
+
+Each section shows:
+
+* total calories
+* entries
+* food name
+* quantity
+* macros
+* delete action
+
+## Coach/Nutritionist suggestions
+
+Show suggestions if available.
+
+---
+
+# MOBILE ADD FOOD SCREEN
+
+Search input:
+
+"Search food... / ابحث عن طعام"
+
+Search local cache via:
+
+GET /api/v1/nutrition/search?q=
+
+Results as cards.
+
+Each result shows:
+
+* Arabic/English name
+* default quantity
+* calories
+* protein
+
+If no result:
+
+Show manual input:
+
+"What did you eat? / ماذا أكلت؟"
+
+Fields:
+
+foodName
+
+quantity
+
+unit
+
+mealType
+
+Button:
+
+Calculate
+
+Call:
+
+POST /api/v1/nutrition/calculate
+
+Show result card:
+
+Calories
+
+Protein
+
+Carbs
+
+Fat
+
+Confidence
+
+Notes if confidence low
+
+Button:
+
+Add to Log
+
+Then call:
+
+POST /api/v1/nutrition/log
+
+Do not call AI while typing.
+
+Only call AI when user presses Calculate or Add.
+
+---
+
+# MOBILE HISTORY SCREEN
+
+Show:
+
+7-day calories chart
+
+Target line
+
+Protein summary
+
+Goal met badges
+
+Daily table:
+
+Date
+
+Calories
+
+Protein
+
+Goal met
+
+---
+
+# UI COLORS
+
+Nutrition-specific colors:
+
+Calories:
+
+#F59E0B
+
+Protein:
+
+#22C55E
+
+Carbs:
+
+#3B82F6
+
+Fat:
+
+#EC4899
+
+Water:
+
+#06B6D4
+
+On target:
+
+#22C55E
+
+Over target:
+
+#EF4444
+
+Use existing Qawi dark theme.
+
+---
+
+# ARABIC / RTL
+
+Support Arabic and English.
+
+Arabic food names should show in Arabic if Arabic mode is active.
+
+Numbers and units should display clearly:
+
+English:
+
+180g protein
+
+Arabic:
+
+١٨٠ جرام بروتين
+
+Use existing i18n patterns.
+
+Do not hardcode only English labels.
+
+---
+
+# OPENAI ERROR HANDLING
+
+If AI request fails:
+
+Return clear error:
+
+"Could not calculate nutrition right now. Try again or enter manually."
+
+Do not crash app.
+
+Do not save broken FoodEntry.
+
+Log error in AiNutritionLog.
+
+If AI returns invalid JSON:
+
+Retry once.
+
+If still invalid:
+
+Return safe error.
+
+If confidence < 0.7:
+
+Show warning:
+
+"Estimate may be inaccurate. Please check quantity."
+
+---
+
+# COST CONTROL
+
+Very important.
+
+Do not call AI on every search keystroke.
+
+Do not call AI if local cache has a strong match.
+
+Cache successful AI results.
+
+Reuse recent foods.
+
+Add backend rate limit for AI calculation per user if simple:
+
+Example:
+
+100 AI calculations per member per day
+
+If limit exceeded:
+
+Ask user to use cached foods or try tomorrow.
+
+---
+
+# RECENT FOODS
+
+Implement recent foods using FoodEntry query.
+
+Endpoint:
+
+GET /api/v1/nutrition/recent-foods
+
+Return last 10 unique foods for authenticated member.
+
+Each item:
+
+foodName
+
+foodNameAr
+
+quantity
+
+unit
+
+calories
+
+protein
+
+carbs
+
+fat
+
+source
+
+Mobile Add Food screen should show these.
+
+Tap recent food:
+
+pre-fill and allow quick add.
+
+---
+
+# MANUAL ENTRY FALLBACK
+
+Add manual entry option.
+
+Endpoint:
+
+POST /api/v1/nutrition/log/manual
+
+Request:
+
+foodName
+
+foodNameAr optional
+
+quantity
+
+unit
+
+mealType
+
+calories
+
+protein
+
+carbs
+
+fat
+
+fiber optional
+
+sugar optional
+
+This saves FoodEntry with:
+
+source = MANUAL
+
+Allowed for:
+
+* MEMBER self
+* NUTRITIONIST same gym
+* COACH if workflow allows
+
+---
+
+# SECURITY
+
+Every endpoint must enforce:
+
+* gym isolation
+* role access
+* member ownership or assignment
+
+Never trust gymId from frontend.
+
+For MEMBER:
+
+Use authenticated user id unless memberId is explicitly allowed and equals self.
+
+For COACH:
+
+Validate CoachMember relationship.
+
+For NUTRITIONIST:
+
+Validate same gym.
+
+For GYM_ADMIN:
+
+Validate same gym.
+
+No role should access another gym’s nutrition data.
+
+---
+
+# MIGRATION SAFETY
+
+Do not drop old NutritionPlan.
+
+Do not drop old Meal.
+
+Create new tables safely.
+
+Old nutrition screen can be replaced, but old data should remain in database.
+
+If needed, keep old endpoints working temporarily.
+
+If old frontend calls break, update them to new V2 endpoints.
+
+Seed ArabicFoodCache without duplicating.
+
+Existing gyms default to nutritionWorkflow = COACH_ONLY.
+
+Existing coaches should not lose current permissions.
+
+---
+
+# IMPLEMENTATION ORDER
+
+1. Inspect existing NutritionPlan and Meal code.
+2. Inspect User roles and Gym entity.
+3. Add NUTRITIONIST role if missing.
+4. Add nutritionWorkflow to Gym if missing.
+5. Add new nutrition entities.
+6. Add migrations.
+7. Seed ArabicFoodCache.
+8. Add repositories.
+9. Add DTOs.
+10. Add NutritionTarget service/endpoints.
+11. Add FoodCache search service.
+12. Add AI Nutrition service with structured JSON output.
+13. Add calculate endpoint.
+14. Add log endpoint.
+15. Add daily summary logic.
+16. Add history endpoint.
+17. Add water endpoints.
+18. Add meal suggestions endpoints.
+19. Add staff overview endpoints.
+20. Add web Nutritionist dashboard or replace placeholder.
+21. Add Coach member Nutrition tab.
+22. Add Member web Nutrition page.
+23. Replace mobile Nutrition screen.
+24. Add mobile Add Food screen.
+25. Add mobile History screen.
+26. Add recent foods.
+27. Add error handling and loading states.
+28. Test all permissions.
+29. Test cache before AI.
+30. Test Arabic food input.
+
+---
+
+# TEST CASES
+
+## Test 1 — Arabic food cache search
+
+Search:
+
+شاورما
+
+Expected:
+
+Chicken Shawarma appears from DATABASE.
+
+No AI call should happen.
+
+---
+
+## Test 2 — Log cached food
+
+Log:
+
+300g شاورما دجاج
+
+Expected:
+
+FoodEntry saved.
+
+Daily totals update.
+
+Source = DATABASE.
+
+---
+
+## Test 3 — AI calculation
+
+Log food not in cache.
+
+Expected:
+
+AI calculates JSON.
+
+FoodEntry saved.
+
+Food added to ArabicFoodCache.
+
+Next time same food should use DATABASE, not AI.
+
+---
+
+## Test 4 — Member daily summary
+
+Member opens Nutrition page.
+
+Expected:
+
+Shows:
+
+* target
+* consumed calories
+* remaining calories
+* macro bars
+* water
+* entries grouped by meal
+
+---
+
+## Test 5 — Water log
+
+Add 0.5L water.
+
+Expected:
+
+Water total updates.
+
+---
+
+## Test 6 — Coach target permission
+
+With nutritionWorkflow = COACH_ONLY:
+
+Coach can set targets for assigned member.
+
+With nutritionWorkflow = NUTRITIONIST_ONLY:
+
+Coach cannot edit targets.
+
+Coach can view summary only.
+
+---
+
+## Test 7 — Nutritionist target permission
+
+Nutritionist can set targets for members in same gym.
+
+Nutritionist cannot see other gyms.
+
+Nutritionist cannot access Sales or Employees.
+
+---
+
+## Test 8 — Meal suggestions
+
+Nutritionist adds meal suggestion.
+
+Member sees it in mobile nutrition screen.
+
+---
+
+## Test 9 — History
+
+Member logs food for multiple days.
+
+History shows 7-day summaries.
+
+Goal met works using ±10% calories and 90% protein rule.
+
+---
+
+## Test 10 — AI failure
+
+Simulate OpenAI failure.
+
+Expected:
+
+App shows friendly error.
+
+No broken entry saved.
+
+---
+
+## Test 11 — Security
+
+Member A cannot view Member B nutrition.
+
+Coach cannot view unassigned member.
+
+Nutritionist cannot view another gym.
+
+---
+
+# FINAL RESULT EXPECTED
+
+Qawi now has a MyFitnessPal-style nutrition system.
+
+Member can:
+
+* search food
+* log food
+* use Arabic and English food names
+* get AI macro calculation
+* track calories/protein/carbs/fat
+* track water
+* view history
+
+Coach or Nutritionist can:
+
+* set targets
+* view adherence
+* add suggestions
+* monitor food logs
+
+System should:
+
+* use ArabicFoodCache first
+* call AI only when needed
+* cache AI results
+* protect gym data
+* support both coach-led and nutritionist-led gyms
+
+Do not build Reception in this task.
+
+Do not build HR in this task.

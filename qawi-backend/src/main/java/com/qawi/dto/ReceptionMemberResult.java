@@ -19,4 +19,5 @@ public class ReceptionMemberResult {
     private LocalDateTime lastCheckin;
     private int attendanceStreak;
     private boolean active;
+    private boolean checkedInToday;
 }

@@ -63,8 +63,16 @@ public class ReceptionController {
     }
 
     @GetMapping("/today")
-    public ResponseEntity<?> getTodayStats(@AuthenticationPrincipal UserDetails ud) {
+    public ResponseEntity<Map<String, Object>> getTodayStats(@AuthenticationPrincipal UserDetails ud) {
         return ResponseEntity.ok(receptionService.getTodayStats(ud.getUsername()));
+    }
+
+    @PutMapping("/members/{memberId}/contact")
+    public ResponseEntity<Map<String, Object>> updateContact(
+            @PathVariable UUID memberId,
+            @RequestBody Map<String, String> body,
+            @AuthenticationPrincipal UserDetails ud) {
+        return ResponseEntity.ok(receptionService.updateContact(ud.getUsername(), memberId, body));
     }
 
     @GetMapping("/live-feed")

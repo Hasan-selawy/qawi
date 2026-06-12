@@ -169,7 +169,7 @@ public class ReceptionService {
         return result;
     }
 
-    public ReceptionTodayStats getTodayStats(String email) {
+    public Map<String, Object> getTodayStats(String email) {
         User caller = loadReceptionist(email);
         UUID gymId = caller.getGymId();
         LocalDateTime startOfDay = LocalDateTime.now().toLocalDate().atStartOfDay();
@@ -179,27 +179,81 @@ public class ReceptionService {
         long checkedInToday = todayAtt.stream().map(Attendance::getMemberId).distinct().count();
 
         List<User> members = userRepository.findByGymIdAndRole(gymId, Role.MEMBER);
-        long expectedToday = members.stream().filter(m -> m.getSubscriptionEndDate() != null
-                && !m.getSubscriptionEndDate().isBefore(LocalDate.now())).count();
+        LocalDate today = LocalDate.now();
+        LocalDate weekEnd = today.plusDays(7);
 
-        LocalDate weekEnd = LocalDate.now().plusDays(7);
-        long expiringThisWeek = members.stream().filter(m -> m.getSubscriptionEndDate() != null
-                && !m.getSubscriptionEndDate().isBefore(LocalDate.now())
-                && !m.getSubscriptionEndDate().isAfter(weekEnd)).count();
-
-        LocalDate weekAgo = LocalDate.now().minusDays(7);
-        LocalDateTime weekAgoStart = weekAgo.atStartOfDay();
-        long newMembersThisWeek = members.stream()
-                .filter(m -> m.getCreatedAt() != null && m.getCreatedAt().isAfter(weekAgoStart))
+        long expectedToday = members.stream()
+                .filter(m -> m.getSubscriptionEndDate() != null && !m.getSubscriptionEndDate().isBefore(today))
                 .count();
 
-        return ReceptionTodayStats.builder()
-                .checkedInToday(checkedInToday)
-                .expectedToday(expectedToday)
-                .expiringThisWeek(expiringThisWeek)
-                .totalCheckins(todayAtt.size())
-                .newMembersThisWeek(newMembersThisWeek)
-                .build();
+        long expiredMembersCount = members.stream()
+                .filter(m -> m.getSubscriptionEndDate() != null && m.getSubscriptionEndDate().isBefore(today))
+                .count();
+
+        List<User> expiringUsers = members.stream()
+                .filter(m -> m.getSubscriptionEndDate() != null
+                        && !m.getSubscriptionEndDate().isBefore(today)
+                        && !m.getSubscriptionEndDate().isAfter(weekEnd))
+                .sorted(Comparator.comparing(User::getSubscriptionEndDate))
+                .collect(Collectors.toList());
+
+        long newMembersThisWeek = members.stream()
+                .filter(m -> m.getCreatedAt() != null && m.getCreatedAt().isAfter(today.minusDays(7).atStartOfDay()))
+                .count();
+
+        List<Map<String, Object>> expiringList = expiringUsers.stream().map(m -> {
+            long daysLeft = today.until(m.getSubscriptionEndDate(), java.time.temporal.ChronoUnit.DAYS);
+            String coachName = coachMemberRepository.findByMemberId(m.getId()).stream()
+                    .findFirst()
+                    .flatMap(cm -> userRepository.findById(cm.getCoachId()))
+                    .map(User::getName).orElse(null);
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("memberId", m.getId());
+            item.put("memberName", m.getName());
+            item.put("phoneNumber", m.getPhone());
+            item.put("subscriptionEndDate", m.getSubscriptionEndDate());
+            item.put("daysUntilExpiry", daysLeft);
+            item.put("coachName", coachName);
+            return item;
+        }).collect(Collectors.toList());
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("checkedInToday", checkedInToday);
+        result.put("expectedToday", expectedToday);
+        result.put("expiringThisWeek", (long) expiringUsers.size());
+        result.put("expiredMembersCount", expiredMembersCount);
+        result.put("totalCheckins", (long) todayAtt.size());
+        result.put("newMembersThisWeek", newMembersThisWeek);
+        result.put("expiringMembers", expiringList);
+        return result;
+    }
+
+    @Transactional
+    public Map<String, Object> updateContact(String email, UUID memberId, Map<String, String> body) {
+        User caller = loadReceptionist(email);
+        User member = userRepository.findById(memberId)
+                .orElseThrow(() -> new AppException("Member not found", "العضو غير موجود", HttpStatus.NOT_FOUND));
+        if (!caller.getGymId().equals(member.getGymId()))
+            throw new AppException("Access denied", "غير مصرح لك", HttpStatus.FORBIDDEN);
+
+        if (body.get("phoneNumber") != null && !body.get("phoneNumber").isBlank())
+            member.setPhone(body.get("phoneNumber").trim());
+        if (body.get("email") != null && !body.get("email").isBlank()) {
+            String newEmail = body.get("email").trim().toLowerCase();
+            if (!newEmail.equals(member.getEmail())) {
+                if (userRepository.existsByEmail(newEmail))
+                    throw new AppException("Email already in use", "البريد الإلكتروني مستخدم بالفعل", HttpStatus.CONFLICT);
+                member.setEmail(newEmail);
+            }
+        }
+        userRepository.save(member);
+
+        Map<String, Object> res = new LinkedHashMap<>();
+        res.put("memberId", memberId);
+        res.put("name", member.getName());
+        res.put("phone", member.getPhone());
+        res.put("email", member.getEmail());
+        return res;
     }
 
     public List<Map<String, Object>> getLiveFeed(String email) {
@@ -291,6 +345,9 @@ public class ReceptionService {
         List<Attendance> recent = attendanceRepository.findByMemberIdOrderByCheckedInAtDesc(m.getId());
         LocalDateTime lastCheckin = recent.isEmpty() ? null : recent.get(0).getCheckedInAt();
 
+        LocalDateTime startOfDay = LocalDateTime.now().toLocalDate().atStartOfDay();
+        boolean checkedInToday = recent.stream().anyMatch(a -> a.getCheckedInAt().isAfter(startOfDay));
+
         return ReceptionMemberResult.builder()
                 .id(m.getId())
                 .name(m.getName())
@@ -302,6 +359,7 @@ public class ReceptionService {
                 .lastCheckin(lastCheckin)
                 .attendanceStreak(calcStreak(m.getId()))
                 .active(m.isActive())
+                .checkedInToday(checkedInToday)
                 .build();
     }
 

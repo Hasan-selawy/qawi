@@ -27,4 +27,7 @@ public class Attendance {
 
     @Column(name = "checked_out_at")
     private LocalDateTime checkedOutAt;
+
+    @Column(name = "source")
+    private String source;
 }
