@@ -418,3 +418,58 @@
     inset: -1px;
   }
 }
+
+/* ── Qawi Dark Theme ─────────────────────────────────────────────────────── */
+:root, .dark {
+  --background: 228 52% 8%;
+  --foreground: 0 0% 96%;
+  --border: 228 28% 16%;
+  --card: 228 40% 10%;
+  --card-foreground: 0 0% 96%;
+  --card-border: 228 28% 16%;
+  --sidebar: 228 40% 10%;
+  --sidebar-foreground: 0 0% 80%;
+  --sidebar-border: 228 28% 16%;
+  --sidebar-primary: 142 71% 45%;
+  --sidebar-primary-foreground: 228 52% 8%;
+  --sidebar-accent: 228 30% 14%;
+  --sidebar-accent-foreground: 0 0% 80%;
+  --sidebar-ring: 142 71% 45%;
+  --popover: 228 40% 10%;
+  --popover-foreground: 0 0% 96%;
+  --popover-border: 228 28% 16%;
+  --primary: 142 71% 45%;
+  --primary-foreground: 228 52% 8%;
+  --secondary: 228 30% 14%;
+  --secondary-foreground: 0 0% 80%;
+  --muted: 228 25% 14%;
+  --muted-foreground: 220 15% 52%;
+  --accent: 228 30% 14%;
+  --accent-foreground: 0 0% 96%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+  --input: 228 28% 20%;
+  --ring: 142 71% 45%;
+  --chart-1: 142 71% 45%;
+  --chart-2: 204 94% 54%;
+  --chart-3: 262 83% 63%;
+  --chart-4: 32 95% 44%;
+  --chart-5: 0 72% 51%;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+.shimmer-text {
+  background: linear-gradient(90deg, #22C55E 0%, #86efac 40%, #22C55E 60%, #16a34a 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 3s linear infinite;
+}
+@keyframes sparkle-float {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 1; }
+  50% { transform: translateY(-12px) scale(1.2); opacity: 0.6; }
+}
