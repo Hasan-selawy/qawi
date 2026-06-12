@@ -45,7 +45,10 @@
     "adminName": "اسم المسؤول",
     "confirmPassword": "تأكيد كلمة المرور",
     "choosePlan": "اختر خطتك",
-    "startTrial": "ابدأ التجربة المجانية"
+    "startTrial": "ابدأ التجربة المجانية",
+    "my_account": "حسابي",
+    "notifications": "الإشعارات",
+    "mark_all_read": "تعليم الكل كمقروء"
   },
   "auth": {
     "login": "تسجيل الدخول",
