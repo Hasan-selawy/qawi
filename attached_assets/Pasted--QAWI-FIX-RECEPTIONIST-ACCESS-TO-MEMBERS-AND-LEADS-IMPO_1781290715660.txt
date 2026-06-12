@@ -1,0 +1,378 @@
+# QAWI — FIX RECEPTIONIST ACCESS TO MEMBERS AND LEADS
+
+## IMPORTANT
+
+Do NOT rebuild Reception.
+
+Do NOT rebuild Sales.
+
+Do AND LEADS
+
+## IMPORTANT
+
+Do NOT rebuild Reception.
+
+Do NOT rebuild Sales.
+
+Do NOT rebuild Members.
+
+Do NOT create duplicate pages.
+
+Only patch role permissions, API access, sidebar routing, and data visibility for the RECEPTIONIST role.
+
+---
+
+# PROBLEM
+
+The RECEPTIONIST role currently cannot see existing members and leads.
+
+This is wrong.
+
+Receptionist needs access to existing gym members for:
+
+* member search
+* manual check-in
+* subscription warning
+* renew subscription
+* WhatsApp reminder
+* contact update
+
+Receptionist also needs limited access to Sales leads/prospects if the Sales CRM allows it.
+
+---
+
+# REQUIRED BEHAVIOR
+
+RECEPTIONIST should be able to see data from their own gym only.
+
+RECEPTIONIST can see:
+
+* members in their gym
+* member phone numbers
+* member email
+* subscription start/end date
+* subscription status
+* assigned coach
+* last check-in
+* attendance streak
+* Sales CRM prospect leads if Sales access is enabled
+* expiring members
+* expired members
+
+RECEPTIONIST cannot see:
+
+* members from other gyms
+* employees page
+* revenue page
+* full analytics
+* super admin pages
+* HR
+* platform-wide data
+
+---
+
+# BACKEND FIX — RECEPTION MEMBER SEARCH
+
+Check endpoint:
+
+GET /api/v1/reception/members/search?q=
+
+Allowed roles must include:
+
+* GYM_ADMIN
+* RECEPTIONIST
+
+Make sure the query searches existing users where:
+
+role = MEMBER
+
+gymId = authenticatedUser.gymId
+
+Search fields:
+
+* name
+* phoneNumber
+* email
+
+Do not return empty results just because role is RECEPTIONIST.
+
+Do not require GYM_ADMIN only.
+
+Never trust gymId from frontend.
+
+---
+
+# BACKEND FIX — RECEPTION TODAY / ALERTS
+
+These endpoints must allow RECEPTIONIST:
+
+GET /api/v1/reception/today
+
+GET /api/v1/reception/alerts
+
+They should return members from receptionist’s gym only.
+
+---
+
+# BACKEND FIX — CHECK-IN AND RENEWAL
+
+These endpoints must allow RECEPTIONIST:
+
+POST /api/v1/reception/checkin/{memberId}
+
+POST /api/v1/reception/members
+
+PUT /api/v1/reception/members/{memberId}/assign-coach
+
+PUT /api/v1/reception/members/{memberId}/contact
+
+PUT /api/v1/reception/members/{memberId}/renew
+
+For every endpoint:
+
+* verify authenticated user role is GYM_ADMIN or RECEPTIONIST
+* verify member belongs to authenticated user gym
+* verify coach belongs to authenticated user gym when assigning coach
+
+---
+
+# BACKEND FIX — SALES LEADS ACCESS FOR RECEPTIONIST
+
+If the Sales CRM endpoint exists:
+
+GET /api/v1/gym/leads
+
+Allow RECEPTIONIST limited read access.
+
+Allowed roles for GET should be:
+
+* GYM_ADMIN
+* SALES
+* RECEPTIONIST
+
+Receptionist can view:
+
+* PROSPECT leads
+* MEMBER CRM records
+* active members
+* expiring members
+* expired members
+
+Receptionist can perform limited actions:
+
+* WhatsApp
+* add prospect lead
+* convert prospect to member
+* renew member if renewal endpoint allows
+* add notes if already supported
+
+Receptionist cannot:
+
+* delete real member CRM records
+* access Sales analytics if restricted
+* access other gyms
+
+If DELETE /api/v1/gym/leads/{id} exists:
+
+Do not allow RECEPTIONIST to delete MEMBER records.
+
+If deleting prospects is allowed, only allow deleting PROSPECT records from same gym.
+
+---
+
+# FRONTEND FIX — RECEPTIONIST ROUTING
+
+When role = RECEPTIONIST logs in:
+
+Redirect to:
+
+/dashboard/reception
+
+Do not redirect to a blank placeholder if Reception dashboard exists.
+
+Receptionist sidebar should show:
+
+* Reception
+
+Optional if implemented:
+
+* Sales
+
+Do not show:
+
+* Dashboard analytics
+* Members full admin page
+* Coaches management
+* Employees
+* Revenue
+* Super Admin pages
+* Pricing/settings unless intended
+
+---
+
+# FRONTEND FIX — RECEPTION MEMBER SEARCH
+
+On Reception page:
+
+Member search must call:
+
+GET /api/v1/reception/members/search?q=
+
+using receptionist token.
+
+If response is 403:
+
+Fix backend security.
+
+If response is empty:
+
+Fix backend query to include members in same gym.
+
+Do not use admin-only members endpoint from Reception UI unless that endpoint also allows RECEPTIONIST safely.
+
+---
+
+# FRONTEND FIX — SALES PAGE FOR RECEPTIONIST
+
+If RECEPTIONIST has Sales sidebar access:
+
+Sales page must not block role = RECEPTIONIST.
+
+Update frontend route guard to allow:
+
+* GYM_ADMIN
+* SALES
+* RECEPTIONIST
+
+But hide restricted actions if needed.
+
+Receptionist should see existing leads and member CRM records from same gym.
+
+---
+
+# COMMON BUGS TO CHECK
+
+Check Spring Security config.
+
+Make sure these route matchers allow RECEPTIONIST:
+
+/api/v1/reception/**
+
+Check Sales CRM GET route:
+
+/api/v1/gym/leads
+
+Should include RECEPTIONIST for GET at least.
+
+Check frontend protected routes.
+
+Make sure RECEPTIONIST is included in allowedRoles for:
+
+* Reception route
+* Sales route if intended
+
+Check API service.
+
+Make sure Reception UI is not calling:
+
+/api/v1/admin/members
+
+if that endpoint is GYM_ADMIN only.
+
+Reception should use:
+
+/api/v1/reception/members/search
+
+---
+
+# TEST CASES
+
+## Test 1 — Receptionist login
+
+Login as RECEPTIONIST.
+
+Expected:
+
+* user lands on Reception dashboard
+* sidebar shows Reception
+* no Super Admin pages
+* no Employees page
+* no Revenue page
+
+---
+
+## Test 2 — Search existing member
+
+As RECEPTIONIST, go to Reception → Check-in.
+
+Search:
+
+Sam
+
+Expected:
+
+* Sam appears
+* phone/email shown if available
+* subscription status shown
+* Check In button visible
+
+---
+
+## Test 3 — Search by phone
+
+Search existing member phone number.
+
+Expected:
+
+* matching member appears
+
+---
+
+## Test 4 — Check-in existing member
+
+Click Check In.
+
+Expected:
+
+* attendance created or existing check-in returned
+* success message shown
+* recent check-ins updates
+
+---
+
+## Test 5 — Receptionist sees leads
+
+If Sales access is enabled for RECEPTIONIST:
+
+Go to Sales.
+
+Expected:
+
+* existing prospect leads appear
+* existing member CRM records appear
+* data is only from same gym
+
+---
+
+## Test 6 — Security
+
+Receptionist from Gym A must not see:
+
+* Gym B members
+* Gym B leads
+* Gym B attendance
+* Gym B devices
+
+---
+
+# FINAL RESULT
+
+Receptionist can see and search existing members from their own gym.
+
+Receptionist can check in members.
+
+Receptionist can see existing leads/member CRM records if Sales access is enabled.
+
+Receptionist still cannot access admin-only pages or other gyms.
+
+Patch only permissions, queries, and frontend route guards.

@@ -35,13 +35,15 @@ public class V3DataSeeder implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        Optional<com.qawi.entity.Gym> gymOpt = gymRepository.findAll().stream().findFirst();
+        Optional<com.qawi.entity.Gym> gymOpt = gymRepository.findByName("Iron Peak Gym")
+                .or(() -> gymRepository.findAll().stream().findFirst());
         if (gymOpt.isEmpty()) {
             log.info("No gym found, skipping V3 seeder.");
             return;
         }
 
         com.qawi.entity.Gym gym = gymOpt.get();
+        healStaffGymId(gym);
         String hashed = passwordEncoder.encode("password123");
 
         seedReceptionist(gym, hashed);
@@ -53,6 +55,23 @@ public class V3DataSeeder implements ApplicationRunner {
         seedAttendanceHistory(gym);
 
         log.info("V3 data seeding complete.");
+    }
+
+    /**
+     * Self-healing: if RECEPTIONIST / ACCOUNTANT / HR users already exist but were
+     * seeded against the wrong gym (e.g. due to non-deterministic findFirst ordering),
+     * re-assign them to the correct gym now.
+     */
+    private void healStaffGymId(Gym gym) {
+        List<String> staffEmails = List.of(
+                "reception@ironpeak.com", "accountant@ironpeak.com", "hr@ironpeak.com");
+        staffEmails.forEach(email -> userRepository.findByEmail(email).ifPresent(u -> {
+            if (!gym.getId().equals(u.getGymId())) {
+                u.setGymId(gym.getId());
+                userRepository.save(u);
+                log.info("Healed gymId for staff user: {}", email);
+            }
+        }));
     }
 
     private void seedReceptionist(Gym gym, String hashed) {

@@ -6,12 +6,15 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface GymRepository extends JpaRepository<Gym, UUID> {
 
     boolean existsByName(String name);
+
+    Optional<Gym> findByName(String name);
 
     @Query("SELECT COUNT(g) FROM Gym g WHERE g.subscriptionExpiresAt > :now")
     long countActiveGyms(LocalDateTime now);
