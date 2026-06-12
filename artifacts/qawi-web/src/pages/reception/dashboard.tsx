@@ -88,19 +88,20 @@ function RenewModal({ memberId, memberName, isAr, open, onClose, onSuccess }: {
         </DialogHeader>
         <div className="space-y-4 pt-2">
           <div>
-            <label className="text-sm text-muted-foreground mb-1 block">
-              {isAr ? 'مدة التجديد (أشهر)' : 'Duration (months)'}
+            <label className="text-sm text-muted-foreground mb-2 block">
+              {isAr ? 'مدة التجديد' : 'Duration'}
             </label>
-            <Select value={months} onValueChange={setMonths}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {[1,2,3,6,12].map(m => (
-                  <SelectItem key={m} value={String(m)}>
-                    {m} {isAr ? (m === 1 ? 'شهر' : 'أشهر') : (m === 1 ? 'month' : 'months')}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="grid grid-cols-4 gap-2">
+              {[1, 3, 6, 12].map(m => (
+                <button key={m} type="button" onClick={() => setMonths(String(m))}
+                  className={cn('py-2 rounded-lg text-sm font-medium border transition-colors',
+                    months === String(m)
+                      ? 'border-primary/60 bg-primary/15 text-primary'
+                      : 'border-white/10 bg-black/20 text-muted-foreground hover:bg-white/5 hover:border-white/20')}>
+                  {m}{isAr ? 'ش' : 'M'}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="flex gap-2 justify-end">
             <Button variant="ghost" onClick={onClose}>{isAr ? 'إلغاء' : 'Cancel'}</Button>
@@ -382,8 +383,8 @@ function AddMemberTab({ isAr }: { isAr: boolean }) {
   const [success, setSuccess] = useState<{ name: string; email: string; temporaryPassword: string } | null>(null);
 
   const coaches = useQuery<any[]>({
-    queryKey: ['reception', 'coaches'],
-    queryFn: () => apiFetch<any[]>('/reception/coaches').catch(() => []),
+    queryKey: ['gym', 'coaches'],
+    queryFn: () => apiFetch<any[]>('/gym/coaches').catch(() => []),
   });
 
   const validate = () => {
@@ -442,6 +443,22 @@ function AddMemberTab({ isAr }: { isAr: boolean }) {
         </div>
         <div>
           <label className="text-sm text-muted-foreground mb-1 block">{isAr ? 'تاريخ انتهاء الاشتراك' : 'Subscription End Date'}</label>
+          <div className="grid grid-cols-4 gap-1.5 mb-2">
+            {[1, 3, 6, 12].map(m => {
+              const d = new Date(); d.setMonth(d.getMonth() + m);
+              const val = d.toISOString().slice(0, 10);
+              return (
+                <button key={m} type="button"
+                  onClick={() => setForm(p => ({ ...p, subscriptionEndDate: val }))}
+                  className={cn('py-1.5 text-xs rounded-lg border transition-colors',
+                    form.subscriptionEndDate === val
+                      ? 'border-primary/60 bg-primary/15 text-primary font-semibold'
+                      : 'border-white/10 bg-black/20 text-muted-foreground hover:bg-primary/10 hover:text-primary/80 hover:border-primary/30')}>
+                  {m}{isAr ? 'ش' : 'M'}
+                </button>
+              );
+            })}
+          </div>
           <Input value={form.subscriptionEndDate} onChange={f('subscriptionEndDate')} type="date"
             min={new Date().toISOString().slice(0, 10)} />
         </div>

@@ -274,6 +274,21 @@ function ConvertDialog({ lead, coaches, onClose, lang }: { lead: CrmRecord | nul
           </Select>
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">{isAr ? 'تاريخ انتهاء الاشتراك' : 'Subscription End Date'}</label>
+            <div className="flex gap-1.5 mb-2">
+              {[1, 3, 6, 12].map(m => {
+                const d = new Date(); d.setMonth(d.getMonth() + m);
+                const val = d.toISOString().slice(0, 10);
+                return (
+                  <button key={m} type="button" onClick={() => setSubEnd(val)}
+                    className={cn('flex-1 py-1.5 text-xs rounded-lg border transition-colors',
+                      subEnd === val
+                        ? 'border-primary/60 bg-primary/15 text-primary font-semibold'
+                        : 'border-white/10 bg-white/5 text-muted-foreground hover:bg-primary/10 hover:text-primary/80 hover:border-primary/30')}>
+                    {m}{isAr ? 'ش' : 'M'}
+                  </button>
+                );
+              })}
+            </div>
             <Input type="date" value={subEnd} onChange={e => setSubEnd(e.target.value)} className="bg-white/5 border-white/10 text-foreground" />
           </div>
         </div>
@@ -362,6 +377,23 @@ function RenewDialog({ lead, onClose, lang }: { lead: CrmRecord | null; onClose:
         </DialogHeader>
         <div>
           <label className="text-xs text-muted-foreground mb-1 block">{isAr ? 'تاريخ انتهاء الاشتراك الجديد' : 'New Subscription End Date'}</label>
+          <div className="flex gap-1.5 mb-2">
+            {[1, 3, 6, 12].map(m => {
+              const base = lead?.subscriptionEndDate && new Date(lead.subscriptionEndDate) > new Date()
+                ? new Date(lead.subscriptionEndDate) : new Date();
+              const d = new Date(base); d.setMonth(d.getMonth() + m);
+              const val = d.toISOString().slice(0, 10);
+              return (
+                <button key={m} type="button" onClick={() => setSubEnd(val)}
+                  className={cn('flex-1 py-1.5 text-xs rounded-lg border transition-colors',
+                    subEnd === val
+                      ? 'border-primary/60 bg-primary/15 text-primary font-semibold'
+                      : 'border-white/10 bg-white/5 text-muted-foreground hover:bg-primary/10 hover:text-primary/80 hover:border-primary/30')}>
+                  {m}{isAr ? 'ش' : 'M'}
+                </button>
+              );
+            })}
+          </div>
           <Input type="date" value={subEnd} onChange={e => setSubEnd(e.target.value)} className="bg-white/5 border-white/10 text-foreground" />
         </div>
         <DialogFooter>
@@ -394,8 +426,8 @@ export default function AdminSalesPage() {
     queryFn: () => apiFetch('/gym/leads'),
   });
   const { data: coaches = [] } = useQuery<Coach[]>({
-    queryKey: ['admin', 'coaches'],
-    queryFn: () => apiFetch('/admin/coaches'),
+    queryKey: ['gym', 'coaches'],
+    queryFn: () => apiFetch('/gym/coaches'),
   });
   const { data: gymConfig } = useQuery({
     queryKey: ['me', 'gym-config'],

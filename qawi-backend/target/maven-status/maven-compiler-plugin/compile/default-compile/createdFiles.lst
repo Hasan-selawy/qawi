@@ -336,6 +336,7 @@ com/qawi/dto/PlatformTierRequest.class
 com/qawi/config/Phase4DataSeeder.class
 com/qawi/repository/StaffProfileRepository.class
 com/qawi/dto/CrmNoteRequest.class
+com/qawi/controller/GymSharedController.class
 com/qawi/repository/WorkoutPlanRepository.class
 com/qawi/entity/FoodEntry.class
 com/qawi/repository/GymRepository.class

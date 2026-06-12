@@ -61,6 +61,7 @@ export default function AdminMembers() {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [resetTarget, setResetTarget] = useState<{ id: string; name: string } | null>(null);
+  const [subEndDate, setSubEndDate] = useState('');
 
   const { data: members, isLoading } = useQuery<any[]>({
     queryKey: ['admin', 'members'],
@@ -120,7 +121,7 @@ export default function AdminMembers() {
       <PageHeader
         title={t('common.members')}
         actions={
-          <Dialog open={isAddOpen} onOpenChange={(v) => { setIsAddOpen(v); setFormErrors({}); }}>
+          <Dialog open={isAddOpen} onOpenChange={(v) => { setIsAddOpen(v); setFormErrors({}); if (!v) setSubEndDate(''); }}>
             <DialogTrigger asChild>
               <div className="flex items-center gap-3">
                 {limits.maxMembers !== null && (
@@ -173,8 +174,28 @@ export default function AdminMembers() {
                   {formErrors.password && <p className="text-red-400 text-xs mt-1">{formErrors.password}</p>}
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">Subscription End Date</label>
-                  <Input name="subscriptionEndDate" type="date" className={`bg-black/20 ${formErrors.subscriptionEndDate ? 'border-red-500' : ''}`} />
+                  <label className="text-xs text-muted-foreground mb-1 block">
+                    {lang === 'ar' ? 'تاريخ انتهاء الاشتراك' : 'Subscription End Date'}
+                  </label>
+                  <div className="flex gap-1.5 mb-2">
+                    {[1, 3, 6, 12].map(m => {
+                      const d = new Date(); d.setMonth(d.getMonth() + m);
+                      const val = d.toISOString().slice(0, 10);
+                      return (
+                        <button key={m} type="button" onClick={() => setSubEndDate(val)}
+                          className={`flex-1 py-1.5 text-xs rounded-lg border transition-colors ${
+                            subEndDate === val
+                              ? 'border-green-500/60 bg-green-500/15 text-green-400 font-semibold'
+                              : 'border-white/10 bg-black/20 text-muted-foreground hover:bg-green-500/10 hover:text-green-400/80 hover:border-green-500/30'
+                          }`}>
+                          {m}{lang === 'ar' ? 'ش' : 'M'}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <Input name="subscriptionEndDate" type="date" value={subEndDate}
+                    onChange={e => setSubEndDate(e.target.value)}
+                    className={`bg-black/20 ${formErrors.subscriptionEndDate ? 'border-red-500' : ''}`} />
                   {formErrors.subscriptionEndDate && <p className="text-red-400 text-xs mt-1">{formErrors.subscriptionEndDate}</p>}
                 </div>
                 <Button type="submit" className="w-full" disabled={addMember.isPending}>

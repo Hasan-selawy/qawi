@@ -19,6 +19,7 @@
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/MemberSubscriptionRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/GymClass.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/Attendance.java
+/home/runner/workspace/qawi-backend/src/main/java/com/qawi/controller/GymSharedController.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/FoodAnalysisRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/controller/PublicGymController.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/repository/ExerciseTemplateRepository.java
