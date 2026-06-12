@@ -180,6 +180,12 @@ export default function LoginPage() {
             <ArrowRight size={16} className="ml-2 rtl:rotate-180 rtl:mr-2 rtl:ml-0" />
           </Link>
         </div>
+
+        <div className="mt-3 text-center">
+          <Link href="/privacy" className="text-xs text-muted-foreground hover:text-primary transition-colors">
+            {isRTL ? "سياسة الخصوصية" : "Privacy Policy"}
+          </Link>
+        </div>
       </div>
 
       <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>

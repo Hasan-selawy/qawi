@@ -349,6 +349,12 @@ export default function RegisterPage() {
 
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-[120px] pointer-events-none" />
+
+      <div className="mt-4 text-center">
+        <Link href="/privacy" className="text-xs text-muted-foreground hover:text-primary transition-colors">
+          {lang === "ar" ? "سياسة الخصوصية" : "Privacy Policy"}
+        </Link>
+      </div>
     </div>
   );
 }

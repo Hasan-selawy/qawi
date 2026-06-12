@@ -14,6 +14,7 @@ import { OfflineBanner } from "@/components/OfflineBanner";
 import { RoleHome } from "@/pages/home";
 import LoginPage from "@/pages/login";
 import RegisterPage from "@/pages/register";
+import PrivacyPage from "@/pages/privacy";
 
 import AdminDashboard from "@/pages/admin/dashboard";
 import AdminMembers from "@/pages/admin/members";
@@ -59,6 +60,7 @@ function Router() {
       <Route path="/" component={RoleHome} />
       <Route path="/login" component={LoginPage} />
       <Route path="/register" component={RegisterPage} />
+      <Route path="/privacy" component={PrivacyPage} />
 
       {/* Admin Routes */}
       <Route path="/admin/dashboard">

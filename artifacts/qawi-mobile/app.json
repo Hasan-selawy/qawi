@@ -17,6 +17,7 @@
       "supportsTablet": false,
       "bundleIdentifier": "me.qawi.app",
       "buildNumber": "1",
+      "privacyPolicyUrl": "https://qawi.app/privacy",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleDevelopmentRegion": "en",
