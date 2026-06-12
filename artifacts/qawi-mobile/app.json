@@ -14,9 +14,14 @@
       "backgroundColor": "#0A0F1E"
     },
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "bundleIdentifier": "me.qawi.app",
+      "buildNumber": "1"
     },
-    "android": {},
+    "android": {
+      "package": "me.qawi.app",
+      "versionCode": 1
+    },
     "web": {
       "favicon": "./assets/images/icon.png"
     },
