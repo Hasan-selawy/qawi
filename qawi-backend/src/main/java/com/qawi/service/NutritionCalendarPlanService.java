@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 public class NutritionCalendarPlanService {
 
     private final UserRepository userRepository;
+    private final GymRepository gymRepository;
     private final NutritionCalendarPlanRepository planRepository;
     private final NutritionPlanDayRepository planDayRepository;
     private final MealSuggestionRepository mealSuggestionRepository;
@@ -353,16 +354,36 @@ public class NutritionCalendarPlanService {
 
     private void assertCanManagePlan(User caller, User member) {
         switch (caller.getRole()) {
-            case NUTRITIONIST, GYM_ADMIN, SUPER_ADMIN -> {
+            case GYM_ADMIN, SUPER_ADMIN -> {
                 if (caller.getRole() != Role.SUPER_ADMIN && !caller.getGymId().equals(member.getGymId()))
                     throw new AppException("Access denied", "غير مصرح لك", HttpStatus.FORBIDDEN);
             }
-            case COACH -> {
+            case NUTRITIONIST, COACH -> {
                 if (!caller.getGymId().equals(member.getGymId()))
                     throw new AppException("Access denied", "غير مصرح لك", HttpStatus.FORBIDDEN);
+                assertWorkflowAllowsWrite(caller);
             }
             default -> throw new AppException("Access denied", "غير مصرح لك", HttpStatus.FORBIDDEN);
         }
+    }
+
+    /**
+     * Enforces the gym's nutritionWorkflow setting for write operations.
+     * COACH_ONLY blocks NUTRITIONIST; NUTRITIONIST_ONLY blocks COACH.
+     * GYM_ADMIN and SUPER_ADMIN are exempt (handled before this call).
+     */
+    private void assertWorkflowAllowsWrite(User caller) {
+        NutritionWorkflow wf = gymRepository.findById(caller.getGymId())
+                .map(Gym::getNutritionWorkflow)
+                .orElse(NutritionWorkflow.COACH_ONLY);
+        if (caller.getRole() == Role.COACH && wf == NutritionWorkflow.NUTRITIONIST_ONLY)
+            throw new AppException(
+                    "Nutrition plans for this gym are managed by the nutrition department only.",
+                    "خطط التغذية في هذا النادي تديرها قسم التغذية فقط.", HttpStatus.FORBIDDEN);
+        if (caller.getRole() == Role.NUTRITIONIST && wf == NutritionWorkflow.COACH_ONLY)
+            throw new AppException(
+                    "Nutrition plans for this gym are managed by coaches only.",
+                    "خطط التغذية في هذا النادي يديرها المدربون فقط.", HttpStatus.FORBIDDEN);
     }
 
     private void assertCanViewMember(User caller, User member) {

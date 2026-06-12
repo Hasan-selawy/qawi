@@ -147,6 +147,7 @@ public class NutritionV2Service {
         UUID memberId = resolveMemberId(caller, req.getMemberId());
         User member = loadMemberById(memberId);
         assertCanViewMember(caller, member);
+        assertWorkflowAllowsWrite(caller);
 
         Map<String, Object> nutrition = resolveFood(req.getFoodName(), req.getQuantity(), req.getUnit(), caller);
         LocalDateTime loggedAt = req.getLoggedAt() != null ? req.getLoggedAt() : LocalDateTime.now();
@@ -190,6 +191,7 @@ public class NutritionV2Service {
         UUID memberId = resolveMemberId(caller, req.getMemberId());
         User member = loadMemberById(memberId);
         assertCanViewMember(caller, member);
+        assertWorkflowAllowsWrite(caller);
 
         LocalDateTime loggedAt = req.getLoggedAt() != null ? req.getLoggedAt() : LocalDateTime.now();
         FoodEntry entry = FoodEntry.builder()
@@ -230,6 +232,7 @@ public class NutritionV2Service {
         FoodEntry entry = foodEntryRepository.findById(entryId)
                 .orElseThrow(() -> new AppException("Entry not found", "السجل غير موجود", HttpStatus.NOT_FOUND));
         assertCanModifyEntry(caller, entry);
+        assertWorkflowAllowsWrite(caller);
 
         Map<String, Object> nutrition = resolveFood(entry.getFoodName(), req.getQuantity(), req.getUnit(), caller);
         entry.setQuantity(req.getQuantity());
@@ -261,6 +264,7 @@ public class NutritionV2Service {
         FoodEntry entry = foodEntryRepository.findById(entryId)
                 .orElseThrow(() -> new AppException("Entry not found", "السجل غير موجود", HttpStatus.NOT_FOUND));
         assertCanModifyEntry(caller, entry);
+        assertWorkflowAllowsWrite(caller);
         foodEntryRepository.delete(entry);
     }
 
@@ -332,6 +336,7 @@ public class NutritionV2Service {
         UUID memberId = resolveMemberId(caller, req.getMemberId());
         User member = loadMemberById(memberId);
         assertCanViewMember(caller, member);
+        assertWorkflowAllowsWrite(caller);
 
         LocalDateTime loggedAt = req.getLoggedAt() != null ? req.getLoggedAt() : LocalDateTime.now();
         WaterLog log = WaterLog.builder()
@@ -397,6 +402,7 @@ public class NutritionV2Service {
                 && caller.getRole() != Role.NUTRITIONIST
                 && caller.getRole() != Role.SUPER_ADMIN)
             throw new AppException("Access denied", "غير مصرح لك", HttpStatus.FORBIDDEN);
+        assertWorkflowAllowsWrite(caller);
         mealSuggestionRepository.delete(s);
     }
 
@@ -895,18 +901,38 @@ public class NutritionV2Service {
         }
     }
 
+    /**
+     * Enforces the gym's nutritionWorkflow setting for any write operation.
+     * <ul>
+     *   <li>COACH_ONLY      — NUTRITIONIST is blocked (403)</li>
+     *   <li>NUTRITIONIST_ONLY — COACH is blocked (403)</li>
+     *   <li>COACH_AND_NUTRITIONIST — both are allowed</li>
+     * </ul>
+     * MEMBER, GYM_ADMIN, and SUPER_ADMIN are always exempt.
+     * Read operations should never call this method.
+     */
+    private void assertWorkflowAllowsWrite(User caller) {
+        Role role = caller.getRole();
+        if (role == Role.MEMBER || role == Role.GYM_ADMIN || role == Role.SUPER_ADMIN) return;
+        if (role != Role.COACH && role != Role.NUTRITIONIST) return;
+        NutritionWorkflow wf = gymRepository.findById(caller.getGymId())
+                .map(Gym::getNutritionWorkflow)
+                .orElse(NutritionWorkflow.COACH_ONLY);
+        if (role == Role.COACH && wf == NutritionWorkflow.NUTRITIONIST_ONLY)
+            throw new AppException(
+                    "Nutrition plans for this gym are managed by the nutrition department only.",
+                    "خطط التغذية في هذا النادي تديرها قسم التغذية فقط.", HttpStatus.FORBIDDEN);
+        if (role == Role.NUTRITIONIST && wf == NutritionWorkflow.COACH_ONLY)
+            throw new AppException(
+                    "Nutrition plans for this gym are managed by coaches only.",
+                    "خطط التغذية في هذا النادي يديرها المدربون فقط.", HttpStatus.FORBIDDEN);
+    }
+
     private void assertCanManageTarget(User caller, User member) {
-        if (caller.getRole() == Role.NUTRITIONIST || caller.getRole() == Role.GYM_ADMIN || caller.getRole() == Role.SUPER_ADMIN) return;
-        if (caller.getRole() == Role.COACH) {
-            Optional<Gym> g = gymRepository.findById(caller.getGymId());
-            NutritionWorkflow wf = g.map(Gym::getNutritionWorkflow).orElse(NutritionWorkflow.COACH_ONLY);
-            if (wf == NutritionWorkflow.NUTRITIONIST_ONLY)
-                throw new AppException(
-                        "Nutrition targets are managed by the nutrition department.",
-                        "أهداف التغذية تديرها قسم التغذية.", HttpStatus.FORBIDDEN);
-        } else {
+        if (caller.getRole() == Role.GYM_ADMIN || caller.getRole() == Role.SUPER_ADMIN) return;
+        if (caller.getRole() != Role.COACH && caller.getRole() != Role.NUTRITIONIST)
             throw new AppException("Access denied", "غير مصرح لك", HttpStatus.FORBIDDEN);
-        }
+        assertWorkflowAllowsWrite(caller);
     }
 
     private void assertCanModifyEntry(User caller, FoodEntry entry) {
