@@ -16,6 +16,7 @@ import com.qawi.exception.AppException;
 import com.qawi.repository.ContactRequestRepository;
 import com.qawi.repository.GymRepository;
 import com.qawi.repository.UserRepository;
+import com.qawi.service.GymLeadService;
 import com.qawi.security.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -35,6 +36,7 @@ public class PublicGymService {
     private final ContactRequestRepository contactRequestRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final GymLeadService gymLeadService;
 
     @Transactional
     public RegisterGymResponse registerGym(RegisterGymRequest req) {
@@ -142,6 +144,8 @@ public class PublicGymService {
                 .city(req.getCity())
                 .message(req.getMessage())
                 .build());
+        gymLeadService.createLeadFromContact(
+                req.getGymName(), req.getFullName(), req.getPhoneNumber(), req.getCity());
         return ContactResponse.builder()
                 .message("We will contact you soon!")
                 .messageAr("سنتواصل معك قريباً!")

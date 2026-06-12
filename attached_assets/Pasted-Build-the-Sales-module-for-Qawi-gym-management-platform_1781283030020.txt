@@ -1,0 +1,165 @@
+Build the Sales module for Qawi (قوي) gym management platform.
+
+CONTEXT
+
+Read CLAUDE.md for full project context.
+Stack: Java 17 + Spring Boot 3, PostgreSQL, JWT auth, React 18 + TypeScript + Tailwind
+Theme: Background #0A0F1E, Accent #22C55E, dark throughout
+All endpoints must enforce gym isolation and role-based access control.
+
+
+THERE ARE 2 SEPARATE SALES CONCEPTS
+
+LEVEL 1 — SUPER ADMIN SALES PIPELINE
+
+Hasan's team tracking gyms to sell Qawi to.
+Only visible to SUPER_ADMIN role.
+
+LEVEL 2 — GYM-LEVEL MEMBER LEADS
+
+Each gym tracking potential members (walk-ins who didn't sign up yet).
+Visible to GYM_ADMIN and RECEPTIONIST roles within their gym only.
+
+
+LEVEL 1 — SUPER ADMIN GYM PIPELINE
+
+New entity: GymLead
+
+id (UUID)
+gymName (String)
+contactName (String)
+phoneNumber (String)
+city (String)
+source (Enum: WEBSITE_FORM, WHATSAPP, MANUAL_VISIT, REFERRAL)
+status (Enum: NEW, CONTACTED, DEMO_SCHEDULED, TRIAL_STARTED, CONVERTED, LOST)
+potentialPlanId (String, nullable) — which Qawi plan they might take
+notes (String, nullable)
+nextFollowUpDate (LocalDate, nullable)
+lastContactedAt (LocalDateTime, nullable)
+createdAt (LocalDateTime)
+assignedTo (String, nullable) — sales person name
+
+New endpoints (SUPER_ADMIN only):
+
+GET    /api/v1/super/leads               — all gym leads, filterable by status/city
+POST   /api/v1/super/leads               — create new gym lead manually
+PUT    /api/v1/super/leads/{id}/status   — update status + add note + set next follow-up
+POST   /api/v1/super/leads/{id}/note     — add a note to lead history
+GET    /api/v1/super/leads/pipeline      — pipeline summary: count + potential JOD per stage
+GET    /api/v1/super/leads/followups     — leads with follow-up due today or overdue
+
+Note: ContactRequest (existing entity) feeds into this — when a gym submits the contact
+form it auto-creates a GymLead with status=NEW.
+
+Web Dashboard — Super Admin Sales Pipeline:
+
+SIDEBAR ITEM: 🎯 Sales Pipeline (add to existing super admin sidebar)
+
+PIPELINE SCREEN (hero screen — Kanban board):
+
+
+6 columns: New | Contacted | Demo Scheduled | Trial Started | Converted | Lost
+Each card shows: gym name, city, contact name, phone number, days in stage,
+potential JOD/month, next follow-up date
+Drag and drop between columns → calls PUT /status endpoint
+Summary bar at top: Total Pipeline Value (JOD) | Converted This Month | Conversion Rate
+
+
+LEADS LIST SCREEN:
+
+
+Full table: Gym | Contact | Phone | City | Status | Source | Days | Next Follow-up
+Filters: All | New | Follow-up Today | Overdue | Hot
+Search by name, phone, city
+Click row → side panel opens:
+
+Full contact info
+Notes timeline (newest first)
+Status dropdown
+Next follow-up date picker
+Add note textarea
+"Open WhatsApp" button → opens wa.me/+962{phone}?text=... with pre-filled Arabic message
+"Schedule Demo" button → sets status to DEMO_SCHEDULED
+
+
+
+
+
+FOLLOW-UPS TODAY SCREEN:
+
+
+Prioritized list: Overdue (red) → Due Today (orange) → Done (green)
+Each row: Gym name | Contact | Phone | Last note | "Done" button | "Postpone 1 day" | "WhatsApp"
+
+
+
+LEVEL 2 — GYM-LEVEL MEMBER LEADS
+
+New entity: MemberLead (gym-scoped)
+
+id (UUID)
+gymId (UUID, FK → Gym) — strict gym isolation
+name (String)
+phoneNumber (String) — required
+notes (String, nullable)
+status (Enum: NEW, CONTACTED, VISIT_SCHEDULED, SIGNED_UP, LOST)
+createdBy (UUID, FK → User) — who added this lead
+createdAt (LocalDateTime)
+lastUpdatedAt (LocalDateTime)
+
+New endpoints (GYM_ADMIN + RECEPTIONIST, gym-scoped):
+
+GET    /api/v1/gym/leads                 — all member leads for this gym
+POST   /api/v1/gym/leads                 — add new member lead
+PUT    /api/v1/gym/leads/{id}            — update status + notes
+DELETE /api/v1/gym/leads/{id}            — delete lead
+POST   /api/v1/gym/leads/{id}/convert    — convert lead to full member
+        Request: { email, coachId, subscriptionEndDate, planId }
+        Action: creates User with MEMBER role, removes from leads
+
+Web Dashboard — Gym Sales Screen:
+
+NAVIGATION: Add "Sales" item to GYM_ADMIN and RECEPTIONIST sidebars.
+
+MEMBER LEADS SCREEN:
+
+
+Simple list (not Kanban — keep it clean for gym staff)
+Each row: Name | Phone | Status | Notes | Date Added | Actions
+Status badges: NEW (blue) | CONTACTED (orange) | VISIT_SCHEDULED (purple) |
+SIGNED_UP (green) | LOST (red)
+Action buttons per row:
+
+"WhatsApp" → opens wa.me/+962{phone}
+"Edit" → inline edit status + notes
+"Convert to Member" → opens modal to complete registration
+"Delete"
+
+
+
+"Add Lead" green button at top right
+Add Lead form: Name (required) | Phone (required) | Notes (optional)
+Search bar: filter by name or phone
+Filter tabs: All | New | Follow-up | Converted | Lost
+
+
+CONVERT TO MEMBER MODAL:
+When receptionist/admin clicks "Convert to Member":
+
+
+Pre-fills name and phone
+Asks for: email, assign coach (dropdown), subscription end date, plan
+On save: creates member account, removes lead, shows success toast
+"Ahmad has been added as a member! ✅"
+
+
+
+DESIGN NOTES
+
+
+Dark theme #0A0F1E throughout
+Kanban drag-and-drop uses @hello-pangea/dnd library
+WhatsApp buttons open wa.me links in new tab
+All text supports Arabic + English toggle
+Mobile-friendly (sales people use phones for gym-level leads)
+JOD currency, 2 decimal places

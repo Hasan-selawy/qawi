@@ -1,3 +1,4 @@
 - [Role routing pattern](role-routing.md) — all 7 roles need entries in ROLE_HOME map AND home.tsx; missing any causes infinite redirect loop.
 - [Nutrition goal enum](nutrition-enum.md) — backend expects MUSCLE_GAIN not GAIN_MUSCLE; valid values: WEIGHT_LOSS, MAINTENANCE, MUSCLE_GAIN, RECOMPOSITION.
 - [Mobile API URL](mobile-api-url.md) — must NOT include :9000 port; routes via Replit shared proxy at /api/v1 with no port.
+- [Spring Boot route conflict pattern](spring-boot-route-conflicts.md) — when adding a new controller owning a base path, remove any overlapping method mappings from existing controllers first or Spring fails to start with "Ambiguous mapping" error.

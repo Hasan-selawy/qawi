@@ -40,7 +40,9 @@ import SuperDashboard from "@/pages/super/dashboard";
 import SuperGyms from "@/pages/super/gyms";
 import SuperGymDetail from "@/pages/super/gym-detail";
 import SuperPricing from "@/pages/super/pricing";
+import SuperSales from "@/pages/super/sales";
 import AdminPricing from "@/pages/admin/pricing";
+import AdminSales from "@/pages/admin/sales";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -136,6 +138,13 @@ function Router() {
       </Route>
       <Route path="/super/pricing">
         <RoleRoute role="SUPER_ADMIN"><AppShell><ErrorBoundary><SuperPricing /></ErrorBoundary></AppShell></RoleRoute>
+      </Route>
+      <Route path="/super/sales">
+        <RoleRoute role="SUPER_ADMIN"><AppShell><ErrorBoundary><SuperSales /></ErrorBoundary></AppShell></RoleRoute>
+      </Route>
+
+      <Route path="/admin/sales">
+        <RoleRoute role={["GYM_ADMIN", "RECEPTIONIST"]}><AppShell><ErrorBoundary><AdminSales /></ErrorBoundary></AppShell></RoleRoute>
       </Route>
 
       <Route component={NotFound} />

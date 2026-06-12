@@ -6,7 +6,7 @@ import { useGymConfig } from '@/hooks/use-gym-config';
 import {
   LayoutDashboard, Users, UserSquare2, CreditCard, BarChart3,
   Dumbbell, Library, ChevronLeft, ChevronRight, Activity, Building2, UtensilsCrossed,
-  TrendingUp, Flag, Calendar, Tag, Home
+  TrendingUp, Flag, Calendar, Tag, Home, Target, UserPlus
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -108,6 +108,7 @@ export function Sidebar({ isOpen, setIsOpen, overlayMode }: SidebarProps) {
           links.push({ href: '/admin/classes', icon: Calendar, label: 'classes' });
         }
         links.push({ href: '/admin/pricing', icon: Tag, label: 'pricing' });
+        links.push({ href: '/admin/sales', icon: UserPlus, label: 'sales' });
         return links;
       }
       case 'COACH': {
@@ -126,6 +127,7 @@ export function Sidebar({ isOpen, setIsOpen, overlayMode }: SidebarProps) {
           { href: '/super/dashboard', icon: Activity, label: 'dashboard' },
           { href: '/super/gyms', icon: Building2, label: 'gyms' },
           { href: '/super/pricing', icon: Tag, label: 'pricing' },
+          { href: '/super/sales', icon: Target, label: 'salesPipeline' },
           { href: '/coach/library', icon: Library, label: 'library' },
         ];
       case 'MEMBER': {
@@ -141,6 +143,7 @@ export function Sidebar({ isOpen, setIsOpen, overlayMode }: SidebarProps) {
       case 'RECEPTIONIST':
         return [
           { href: '/reception/dashboard', icon: LayoutDashboard, label: 'dashboard' },
+          { href: '/admin/sales', icon: UserPlus, label: 'sales' },
         ];
       case 'ACCOUNTANT':
         return [
