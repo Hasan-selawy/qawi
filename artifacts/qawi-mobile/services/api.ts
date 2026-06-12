@@ -1,15 +1,16 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const HARDCODED_API_URL =
-  "https://d4769cb1-1efe-49e8-bc76-43e3163caa75-00-sdutkzkwul7u.pike.replit.dev/api/v1";
-
+// Resolved at build time — set EXPO_PUBLIC_API_URL or EXPO_PUBLIC_DOMAIN in your
+// environment (Replit Secrets / .env) before running the Expo Launch production build.
 export const API_BASE =
   process.env["EXPO_PUBLIC_API_URL"] ||
   (process.env["EXPO_PUBLIC_DOMAIN"]
     ? `https://${process.env["EXPO_PUBLIC_DOMAIN"]}/api/v1`
-    : HARDCODED_API_URL);
+    : "");
 
-console.log("=== API URL ===", API_BASE);
+if (__DEV__) {
+  console.log("[Qawi] API base:", API_BASE || "(none — set EXPO_PUBLIC_API_URL)");
+}
 
 export const TOKEN_KEY = "qawi_token";
 
