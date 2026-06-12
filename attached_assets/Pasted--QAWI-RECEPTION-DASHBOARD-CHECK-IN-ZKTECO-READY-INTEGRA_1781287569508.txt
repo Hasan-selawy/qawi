@@ -1,0 +1,1640 @@
+# QAWI — RECEPTION DASHBOARD + CHECK-IN + ZKTECO READY INTEGRATION
+
+## IMPORTANT
+
+Read CLAUDE.md and project documentation before making changes.
+
+Do NOT build the AI Nutrition system in this task.
+
+Do NOT build the full HR system.
+
+Do NOT rebuild Attendance from scratch if it already exists.
+
+Do NOT delete existing Attendance data.
+
+Do NOT break Member, Sales, Employees, or Coach features.
+
+This task is only for:
+
+* Reception dashboard
+* Member search
+* Manual check-in
+* Walk-in member creation
+* Subscription renewal at front desk
+* Expiring / expired subscription warnings
+* WhatsApp reminder buttons
+* ZKTeco biometric device receiver prepared for future real devices
+
+---
+
+# CONTEXT
+
+Qawi is a multi-tenant gym management SaaS.
+
+Current stack:
+
+* Backend: Java 17 + Spring Boot 3
+* Database: PostgreSQL
+* Auth: JWT + Spring Security
+* Frontend: React 18 + TypeScript + Tailwind CSS
+* Theme: dark Qawi theme
+
+Existing important entities may include:
+
+* User
+* Gym
+* Attendance
+* SubscriptionHistory
+* CoachMember
+* WorkoutPlan
+* Notification
+* Sales / MemberLead / CRM records if Sales patch was completed
+
+Existing roles may include:
+
+* SUPER_ADMIN
+* GYM_ADMIN
+* COACH
+* MEMBER
+* SALES
+* RECEPTIONIST
+* NUTRITIONIST
+
+If RECEPTIONIST role already exists, reuse it.
+
+If RECEPTIONIST does not exist yet, add it safely.
+
+---
+
+# GOAL
+
+Build a professional Reception dashboard for gym front-desk staff.
+
+Receptionist should be able to:
+
+* Search members by name, phone, or email
+* Check members in manually
+* See subscription warnings before check-in
+* Add new walk-in members
+* Assign coach to new member
+* Renew member subscription with cash payment
+* Update member contact info
+* View today’s check-ins
+* View expiring subscriptions
+* View important member alerts
+* Register ZKTeco devices
+* Map members to ZKTeco device user IDs
+
+The Reception dashboard should help gyms replace:
+
+* paper check-in sheets
+* Excel member lists
+* WhatsApp reminders
+* manual subscription tracking
+* fingerprint device exports
+
+---
+
+# ROLE ACCESS
+
+## RECEPTIONIST can:
+
+* Access Reception dashboard
+* Search members inside their own gym
+* Check in members
+* Add walk-in members
+* Update member phone/email
+* Assign coach when adding member
+* Renew subscriptions using cash payment
+* View today’s check-ins
+* View expiring / expired subscription warnings
+* Use WhatsApp reminder buttons
+* View ZKTeco device status
+* Mark member as enrolled on a device if allowed
+
+## RECEPTIONIST cannot:
+
+* Access Super Admin pages
+* Access other gyms
+* View platform-wide analytics
+* Manage gym settings
+* Delete members
+* Manage employees
+* View full financial reports
+* Access HR
+* Access Sales analytics unless already allowed separately
+
+## GYM_ADMIN can:
+
+* Access everything Receptionist can access
+* Register ZKTeco devices
+* Manage device mappings
+* Use Reception dashboard
+
+## COACH cannot:
+
+* Access Reception dashboard
+
+## MEMBER cannot:
+
+* Access Reception dashboard
+
+## SALES cannot:
+
+* Access Reception dashboard unless explicitly allowed later
+
+---
+
+# BACKEND — RECEPTION ENDPOINTS
+
+Base path:
+
+/api/v1/reception
+
+Allowed roles:
+
+* GYM_ADMIN
+* RECEPTIONIST
+
+All endpoints must be gym-scoped.
+
+Never trust gymId from frontend.
+
+Always get gymId from authenticated user.
+
+---
+
+## GET /api/v1/reception/today
+
+Return today’s reception overview.
+
+Response:
+
+checkedInToday
+
+expectedToday
+
+expiringThisWeekCount
+
+expiredMembersCount
+
+newMembersThisWeek
+
+recentCheckins
+
+expiringThisWeek
+
+alertsCount
+
+recentCheckins item:
+
+attendanceId
+
+memberId
+
+memberName
+
+memberPhone
+
+checkedInAt
+
+streak
+
+subscriptionStatus
+
+daysUntilExpiry
+
+Expiring item:
+
+memberId
+
+memberName
+
+phoneNumber
+
+subscriptionEndDate
+
+daysUntilExpiry
+
+coachName
+
+---
+
+## GET /api/v1/reception/members/search?q=
+
+Search members in current gym only.
+
+Search by:
+
+* name
+* phoneNumber
+* email
+
+Return:
+
+memberId
+
+name
+
+email
+
+phoneNumber
+
+avatarUrl if available
+
+coachId
+
+coachName
+
+subscriptionStartDate
+
+subscriptionEndDate
+
+subscriptionStatus
+
+daysUntilExpiry
+
+lastCheckinAt
+
+streak
+
+hasWorkoutPlan
+
+hasNutritionTarget if available
+
+canCheckIn
+
+warning
+
+warning can be:
+
+null
+
+EXPIRING_SOON
+
+EXPIRED
+
+NO_COACH
+
+NO_WORKOUT_PLAN
+
+---
+
+## POST /api/v1/reception/checkin/{memberId}
+
+Manual check-in by receptionist.
+
+Backend logic:
+
+1. Validate authenticated user is GYM_ADMIN or RECEPTIONIST.
+2. Validate member belongs to same gym.
+3. Check member subscription status.
+4. If member already checked in today, do not duplicate unless existing attendance logic allows multiple.
+5. Create Attendance record or return existing today’s record.
+6. Calculate streak.
+7. Return check-in result and warning if subscription is expiring or expired.
+
+Request body optional:
+
+notes
+
+source = MANUAL_RECEPTION
+
+Response:
+
+checkinRecord
+
+memberId
+
+memberName
+
+checkedInAt
+
+streak
+
+subscriptionStatus
+
+daysUntilExpiry
+
+warning
+
+message
+
+If subscription expired:
+
+Return success but include warning:
+
+EXPIRED
+
+Do not block check-in unless the existing business logic already blocks expired members.
+
+The receptionist should see a red warning and can renew immediately.
+
+---
+
+## POST /api/v1/reception/members
+
+Create walk-in member from reception.
+
+Request:
+
+name
+
+phoneNumber
+
+email optional
+
+coachId optional
+
+subscriptionStartDate
+
+subscriptionEndDate
+
+planId optional
+
+notes optional
+
+autoGeneratePassword boolean default true
+
+Rules:
+
+* name required
+* phoneNumber required
+* email optional if current auth allows optional email; otherwise required
+* gymId from authenticated user
+* role = MEMBER
+* isActive = true
+
+On create:
+
+* create User with role MEMBER
+* save phoneNumber
+* assign coach if coachId provided
+* create SubscriptionHistory if subscription info exists
+* create or update Sales CRM member record if Sales CRM exists
+* return temporary password only once if generated
+
+Response:
+
+memberId
+
+name
+
+email
+
+phoneNumber
+
+temporaryPassword if generated
+
+subscriptionEndDate
+
+coachName
+
+---
+
+## PUT /api/v1/reception/members/{memberId}/assign-coach
+
+Assign or change member coach.
+
+Request:
+
+coachId
+
+Rules:
+
+* member must belong to same gym
+* coach must belong to same gym
+* coach must have role COACH
+* update CoachMember relationship using existing logic if available
+
+---
+
+## PUT /api/v1/reception/members/{memberId}/contact
+
+Update member contact info only.
+
+Request:
+
+phoneNumber
+
+email
+
+Rules:
+
+* member must belong to same gym
+* receptionist can only update phone/email
+* do not allow role changes
+* do not allow subscription changes here
+
+---
+
+## PUT /api/v1/reception/members/{memberId}/renew
+
+Renew member subscription at front desk.
+
+Request:
+
+planId optional
+
+durationMonths
+
+paymentMethod
+
+amount optional
+
+notes optional
+
+Allowed paymentMethod for now:
+
+CASH
+
+Backend logic:
+
+1. Validate member belongs to same gym.
+2. Calculate new subscription start date.
+3. If current subscriptionEndDate is in the future, extend from current end date.
+4. If expired, start from today.
+5. Add durationMonths.
+6. Update member subscriptionStartDate / subscriptionEndDate.
+7. Create SubscriptionHistory record.
+8. Update Sales CRM status if Sales CRM exists.
+9. Return updated member.
+
+Response:
+
+memberId
+
+name
+
+oldSubscriptionEndDate
+
+newSubscriptionEndDate
+
+paymentMethod
+
+amount
+
+subscriptionStatus
+
+message
+
+---
+
+## GET /api/v1/reception/alerts
+
+Return members needing front desk action.
+
+Groups:
+
+expiredSubscriptions
+
+expiringSoon
+
+noCoachAssigned
+
+inactive14Days
+
+newMembersNoWorkoutPlan
+
+newMembersNoNutritionTarget if available
+
+Each alert item:
+
+type
+
+memberId
+
+memberName
+
+phoneNumber
+
+message
+
+severity
+
+createdAt
+
+actionLabel
+
+Suggested actions:
+
+* Renew
+* WhatsApp
+* Assign Coach
+* View Profile
+* Check In
+
+---
+
+# SUBSCRIPTION STATUS LOGIC
+
+Use these statuses:
+
+ACTIVE
+
+EXPIRING_SOON
+
+EXPIRED
+
+UNKNOWN
+
+Rules:
+
+ACTIVE:
+
+subscriptionEndDate is more than 7 days away
+
+EXPIRING_SOON:
+
+subscriptionEndDate is today or within next 7 days
+
+EXPIRED:
+
+subscriptionEndDate is before today
+
+UNKNOWN:
+
+subscriptionEndDate is null
+
+Use this consistently in:
+
+* Reception search
+* Reception check-in
+* Reception overview
+* Alerts
+* Sales CRM integration if available
+
+---
+
+# ZKTECO BIOMETRIC INTEGRATION
+
+## IMPORTANT
+
+Do not build face recognition AI.
+
+Do not build fingerprint matching.
+
+ZKTeco devices handle fingerprint/face recognition on the device.
+
+Qawi only needs to:
+
+* register device serial numbers
+* map device user IDs to Qawi members
+* receive attendance scan events from the device
+* create Qawi Attendance records
+
+Actual biometric enrollment happens on the physical ZKTeco device.
+
+---
+
+# ZKTECO ENTITIES
+
+## BiometricDevice
+
+id UUID
+
+gymId UUID
+
+deviceSerial String unique
+
+deviceName String
+
+deviceModel String nullable
+
+location String nullable
+
+isActive Boolean
+
+lastSeenAt LocalDateTime nullable
+
+registeredAt LocalDateTime
+
+---
+
+## BiometricEnrollment
+
+id UUID
+
+gymId UUID
+
+memberId UUID
+
+deviceSerial String
+
+deviceUserId String
+
+templateType enum:
+
+FINGERPRINT
+
+FACE
+
+CARD
+
+UNKNOWN
+
+enrolledAt LocalDateTime
+
+isActive Boolean
+
+Important:
+
+deviceUserId is the ID/PIN stored on the ZKTeco device.
+
+When the device sends attendance, it usually sends this device user ID.
+
+Qawi must map:
+
+deviceSerial + deviceUserId
+
+to:
+
+memberId
+
+---
+
+# ZKTECO DEVICE ENDPOINTS
+
+Base path:
+
+/api/v1/zkteco
+
+---
+
+## POST /api/v1/zkteco/devices/register
+
+Allowed roles:
+
+* GYM_ADMIN
+
+Request:
+
+deviceSerial
+
+deviceName
+
+deviceModel optional
+
+location optional
+
+Creates or updates device for authenticated gym.
+
+---
+
+## GET /api/v1/zkteco/devices
+
+Allowed roles:
+
+* GYM_ADMIN
+* RECEPTIONIST
+
+Returns devices for current gym:
+
+id
+
+deviceSerial
+
+deviceName
+
+deviceModel
+
+location
+
+isActive
+
+lastSeenAt
+
+registeredAt
+
+onlineStatus
+
+onlineStatus:
+
+ONLINE if lastSeenAt within last 10 minutes
+
+OFFLINE otherwise
+
+---
+
+## POST /api/v1/zkteco/members/{memberId}/enroll
+
+Allowed roles:
+
+* GYM_ADMIN
+* RECEPTIONIST if safe
+
+Request:
+
+deviceSerial
+
+deviceUserId
+
+templateType
+
+Rules:
+
+* member must belong to same gym
+* device must belong to same gym
+* create or update BiometricEnrollment
+* do not store real fingerprint data
+* do not store face images
+
+---
+
+## GET /api/v1/zkteco/enrollments
+
+Allowed roles:
+
+* GYM_ADMIN
+* RECEPTIONIST
+
+Return member-device mappings for the current gym.
+
+---
+
+# ZKTECO ADMS RECEIVER
+
+ZKTeco devices may call the server without JWT auth.
+
+So device receiver endpoints should not require normal user login.
+
+But they must be safe:
+
+* identify gym by device serial
+* reject unknown device serial
+* update device lastSeenAt
+* rate-limit if possible
+* never expose private data
+
+Implement flexible parsing because devices may send form fields, query params, or plain text logs.
+
+---
+
+## GET /api/v1/zkteco/adms
+
+Device ping endpoint.
+
+No JWT auth.
+
+Accept query params like:
+
+SN
+
+device_sn
+
+serial
+
+Update lastSeenAt if device is known.
+
+Return plain text response.
+
+Example response:
+
+OK
+
+or:
+
+ATTLOGStamp=9999
+OPERLOGStamp=9999
+ATTPHOTOStamp=9999
+
+Keep response simple because devices expect plain text.
+
+---
+
+## POST /api/v1/zkteco/adms
+
+Device attendance push endpoint.
+
+No JWT auth.
+
+Accept possible fields:
+
+SN
+
+device_sn
+
+serial
+
+user_id
+
+PIN
+
+uid
+
+timestamp
+
+time
+
+checktime
+
+status
+
+Also support raw text body lines if device sends attendance logs.
+
+Backend logic:
+
+1. Extract device serial.
+2. Find BiometricDevice by serial.
+3. If not found, return 404 or OK with warning log.
+4. Update device lastSeenAt.
+5. Extract device user ID.
+6. Find BiometricEnrollment by deviceSerial + deviceUserId.
+7. If no enrollment found, log unmatched scan but do not crash.
+8. If enrollment found, get member.
+9. Validate member belongs to device gym.
+10. Create Attendance record using same service as manual check-in.
+11. Avoid duplicate attendance for same member within a short window.
+12. Return plain text OK.
+
+Attendance source should be:
+
+ZKTECO
+
+If Attendance entity does not have source field, add safely if easy.
+
+---
+
+## OPTIONAL COMPATIBILITY ENDPOINTS
+
+If simple, also support these paths because some ADMS devices use them:
+
+GET /iclock/cdata
+
+POST /iclock/cdata
+
+GET /iclock/getrequest
+
+POST /iclock/devicecmd
+
+Map them internally to the same ZKTeco service.
+
+If this is too much, only build /api/v1/zkteco/adms now.
+
+---
+
+# ZKTECO SETUP INSTRUCTIONS CARD
+
+Frontend Devices page should show instructions:
+
+1. Open ZKTeco device menu.
+2. Go to Network settings.
+3. Open ADMS / Cloud Server settings.
+4. Set server address to your deployed backend domain.
+5. Set server path to /api/v1/zkteco/adms.
+6. Use HTTPS / port 443 if available.
+7. Save and restart device.
+8. Register the device serial inside Qawi.
+9. Enroll members on the device.
+10. Add each member’s device user ID in Qawi.
+
+Add note:
+
+Different ZKTeco models may use slightly different menu names.
+
+---
+
+# FRONTEND — RECEPTION DASHBOARD
+
+Replace the Reception placeholder if it exists.
+
+Add route:
+
+/dashboard/reception
+
+or use existing routing pattern.
+
+For RECEPTIONIST login:
+
+redirect to Reception dashboard.
+
+For GYM_ADMIN:
+
+add sidebar item:
+
+Reception
+
+---
+
+# RECEPTION SIDEBAR
+
+For RECEPTIONIST role, sidebar should show:
+
+* Overview
+* Member Search
+* Check In
+* Add Member
+* Renew Subscription
+* Alerts
+* Devices
+
+Do not show:
+
+* Employees
+* Super Admin
+* Revenue
+* HR
+* Gym settings
+
+For GYM_ADMIN, Reception can appear as a normal sidebar item.
+
+---
+
+# SCREEN 1 — OVERVIEW
+
+Title:
+
+Reception
+
+Subtitle:
+
+Front desk check-ins, renewals, and member alerts
+
+Top stat cards:
+
+* Checked In Today
+* Expected Today
+* Expiring This Week
+* Expired Members
+* New Members This Week
+* Alerts
+
+Live Check-in Feed:
+
+* auto-refresh every 30 seconds
+* show last 20 check-ins
+* member name
+* phone
+* time
+* streak
+* source: Manual or ZKTeco
+
+Expiring This Week widget:
+
+* member name
+* phone
+* days left
+* coach
+* WhatsApp button
+* Renew button
+
+---
+
+# SCREEN 2 — MEMBER SEARCH / CHECK-IN
+
+Large search bar:
+
+Search by name, phone, or email
+
+Results as cards.
+
+Each member card:
+
+* avatar or initials
+* name
+* phone
+* email
+* coach name
+* subscription badge
+* days left
+* last check-in
+* streak
+* Check In button
+* Renew button
+* WhatsApp button
+* View Profile button
+
+Subscription badge colors:
+
+ACTIVE = green
+
+EXPIRING_SOON = orange
+
+EXPIRED = red
+
+UNKNOWN = gray
+
+On successful check-in:
+
+Show green success animation/card:
+
+{name} checked in successfully
+
+Show streak:
+
+🔥 {streak}-day streak
+
+If expiring:
+
+Show orange warning:
+
+Subscription expires in {daysUntilExpiry} days.
+
+Buttons:
+
+* WhatsApp Reminder
+* Renew Now
+
+If expired:
+
+Show red warning:
+
+Subscription expired on {subscriptionEndDate}.
+
+Buttons:
+
+* Renew Now
+* WhatsApp
+
+---
+
+# SCREEN 3 — ADD MEMBER
+
+Form:
+
+Full Name required
+
+Phone Number required
+
+Email optional or required based on backend auth rules
+
+Assign Coach dropdown optional
+
+Subscription Start Date
+
+Subscription End Date
+
+Plan optional
+
+Notes optional
+
+Auto-generate password checkbox
+
+On save:
+
+* create member
+* show generated password if available
+* show copy button
+* show success toast
+* member should appear in Sales CRM automatically if Sales CRM exists
+
+---
+
+# SCREEN 4 — RENEW SUBSCRIPTION
+
+Can be opened from:
+
+* member card
+* expiring widget
+* alerts
+* search result
+
+Modal fields:
+
+Member name
+
+Current expiry date
+
+Plan
+
+Duration:
+
+* 1 month
+* 3 months
+* 6 months
+* 12 months
+
+Payment method:
+
+* Cash
+
+Amount optional
+
+New expiry preview
+
+Confirm Renewal button
+
+On success:
+
+* update subscription
+* create SubscriptionHistory
+* refresh page
+* show success toast
+
+---
+
+# SCREEN 5 — ALERTS
+
+Grouped alert sections:
+
+Expired Subscriptions
+
+Expiring Soon
+
+No Coach Assigned
+
+Inactive 14+ Days
+
+New Members Without Workout Plan
+
+New Members Without Nutrition Target if available
+
+Each alert row:
+
+* member name
+* phone
+* issue
+* severity
+* action buttons
+
+Actions:
+
+* WhatsApp
+* Renew
+* Assign Coach
+* View Profile
+
+---
+
+# SCREEN 6 — DEVICES
+
+Title:
+
+ZKTeco Devices
+
+Sections:
+
+## Device List
+
+Show:
+
+* device name
+* serial number
+* model
+* location
+* online/offline status
+* last seen
+
+Button:
+
+Register Device
+
+## Register Device Modal
+
+Fields:
+
+deviceSerial required
+
+deviceName required
+
+deviceModel optional
+
+location optional
+
+## Member Enrollment Table
+
+Show:
+
+* member name
+* phone
+* device
+* deviceUserId
+* templateType
+* enrolledAt
+
+Button:
+
+Enroll Member
+
+## Enroll Member Modal
+
+Fields:
+
+member search
+
+device dropdown
+
+deviceUserId
+
+templateType:
+
+* Fingerprint
+* Face
+* Card
+* Unknown
+
+Important text:
+
+Enrollment must be done on the ZKTeco device first. Qawi only stores the mapping.
+
+## Setup Instructions Card
+
+Show the ZKTeco setup steps from above.
+
+---
+
+# WHATSAPP BUTTONS
+
+Use wa.me links.
+
+Normalize Jordanian phone numbers.
+
+If phone starts with 07, convert to 9627.
+
+Example:
+
+0781234567
+
+becomes:
+
+962781234567
+
+Messages:
+
+## Expiring soon
+
+مرحبا {name}، اشتراكك في {gymName} سينتهي بتاريخ {subscriptionEndDate}. يسعدنا تجديد اشتراكك 💪
+
+## Expired
+
+مرحبا {name}، اشتراكك في {gymName} انتهى بتاريخ {subscriptionEndDate}. يمكنك التجديد في أي وقت، ونرحب برجعتك معنا 💪
+
+## General
+
+مرحبا {name}، معك فريق {gymName}. إذا تحتاج أي مساعدة احنا جاهزين 💪
+
+Open WhatsApp in new tab.
+
+---
+
+# SALES CRM INTEGRATION
+
+If Sales CRM exists:
+
+When Reception creates a new member:
+
+* create or update Sales CRM record
+* type = MEMBER
+* memberId = created member id
+* status calculated from subscription
+* phoneNumber saved
+
+When Reception renews a member:
+
+* update Sales CRM status
+* member should become ACTIVE if subscriptionEndDate is valid
+* renewedThisMonth should show if Sales CRM supports it
+
+Do not duplicate CRM records.
+
+One member = one Sales CRM record.
+
+If Sales CRM does not exist, skip this safely without breaking Reception.
+
+---
+
+# DESIGN
+
+Use Qawi design system:
+
+Background:
+#0A0F1E
+
+Surface:
+#111827
+
+Card:
+#1E293B
+
+Accent:
+#22C55E
+
+Danger:
+#EF4444
+
+Warning:
+#F59E0B
+
+Text Primary:
+#F8FAFC
+
+Text Secondary:
+#94A3B8
+
+Border radius:
+16px cards
+
+Arabic font:
+Cairo
+
+English font:
+Inter
+
+Reception-specific design:
+
+* large touch-friendly buttons
+* high contrast
+* fast search
+* tablet-friendly layout
+* clear red/orange warnings
+* green success feedback
+
+---
+
+# SECURITY
+
+Every Reception endpoint must check:
+
+authenticated user role is:
+
+* GYM_ADMIN
+* RECEPTIONIST
+
+Every query must filter by gymId from authenticated user.
+
+Never trust gymId from frontend.
+
+Validate member belongs to same gym.
+
+Validate coach belongs to same gym.
+
+Validate device belongs to same gym.
+
+RECEPTIONIST cannot access:
+
+* Employees endpoints
+* Super Admin endpoints
+* other gyms
+* financial reports
+* HR
+
+ZKTeco ADMS endpoint is no-auth, but must identify gym by registered device serial.
+
+Unknown device serial should not create attendance.
+
+---
+
+# MIGRATION SAFETY
+
+Do not drop existing Attendance table.
+
+Do not delete attendance history.
+
+Do not delete members.
+
+Do not delete SubscriptionHistory.
+
+If phoneNumber already exists, reuse it.
+
+If phoneNumber does not exist, add it safely.
+
+Old members without phone numbers should still work.
+
+If Attendance source field is added, default old records to:
+
+MANUAL
+
+If ZKTeco tables are added, they should start empty.
+
+---
+
+# IMPLEMENTATION ORDER
+
+1. Inspect existing Attendance, User, SubscriptionHistory, CoachMember, and Sales CRM logic.
+2. Confirm RECEPTIONIST role exists; add if missing.
+3. Add/confirm phoneNumber on User.
+4. Add Reception backend DTOs.
+5. Add Reception service.
+6. Add Reception controller endpoints.
+7. Reuse existing Attendance service where possible.
+8. Add renewal logic using existing subscription update logic.
+9. Add ZKTeco entities.
+10. Add ZKTeco device endpoints.
+11. Add ZKTeco ADMS receiver endpoint.
+12. Add frontend Reception routes.
+13. Replace Reception placeholder if it exists.
+14. Add Reception sidebar for RECEPTIONIST.
+15. Add Reception sidebar item for GYM_ADMIN.
+16. Build Overview screen.
+17. Build Member Search / Check-in screen.
+18. Build Add Member screen.
+19. Build Renew modal.
+20. Build Alerts screen.
+21. Build Devices screen.
+22. Test with GYM_ADMIN.
+23. Test with RECEPTIONIST.
+24. Test ZKTeco receiver manually using a mock POST request.
+
+---
+
+# TEST CASES
+
+## Test 1 — Receptionist login
+
+Create or use:
+
+[reception.test@ironpeak.com](mailto:reception.test@ironpeak.com)
+
+Login as RECEPTIONIST.
+
+Expected:
+
+* lands on Reception dashboard
+* does not see Employees page
+* does not see Super Admin pages
+* does not see Revenue page
+
+---
+
+## Test 2 — Gym Admin access
+
+Login as:
+
+[admin@ironpeak.com](mailto:admin@ironpeak.com)
+
+Expected:
+
+* sidebar includes Reception
+* Reception page opens
+* can use all reception actions
+
+---
+
+## Test 3 — Member search
+
+Search existing member by:
+
+* name
+* phone
+* email
+
+Expected:
+
+Member appears with subscription status, coach, last check-in, and buttons.
+
+---
+
+## Test 4 — Manual check-in
+
+Click Check In.
+
+Expected:
+
+* Attendance record created
+* success message shown
+* recent check-in feed updates
+* streak shown
+
+---
+
+## Test 5 — Duplicate check-in
+
+Check in same member twice on same day.
+
+Expected:
+
+* app should not create duplicate unless intended
+* should show already checked in today or return same record safely
+
+---
+
+## Test 6 — Expiring warning
+
+Set member subscriptionEndDate within 7 days.
+
+Search member or check in.
+
+Expected:
+
+* orange EXPIRING_SOON warning
+* WhatsApp reminder button
+* Renew button
+
+---
+
+## Test 7 — Expired warning
+
+Set member subscriptionEndDate to yesterday.
+
+Search member or check in.
+
+Expected:
+
+* red EXPIRED warning
+* Renew button
+* WhatsApp button
+
+---
+
+## Test 8 — Renew subscription
+
+Renew member for 1 month with Cash.
+
+Expected:
+
+* subscriptionEndDate updated
+* SubscriptionHistory created
+* member becomes ACTIVE
+* Sales CRM updates if available
+
+---
+
+## Test 9 — Add member
+
+Create new member from Reception.
+
+Expected:
+
+* User created with role MEMBER
+* phoneNumber saved
+* coach assigned if selected
+* temporary password shown if generated
+* member appears in Members page
+* member appears in Sales CRM if available
+
+---
+
+## Test 10 — Register ZKTeco device
+
+Register:
+
+deviceSerial = TEST123
+
+deviceName = Main Entrance
+
+Expected:
+
+Device appears in Devices page.
+
+---
+
+## Test 11 — Enroll member mapping
+
+Enroll a member:
+
+deviceSerial = TEST123
+
+deviceUserId = 1001
+
+templateType = FINGERPRINT
+
+Expected:
+
+Mapping saved.
+
+---
+
+## Test 12 — Mock ZKTeco attendance push
+
+Send mock POST to:
+
+/api/v1/zkteco/adms
+
+With:
+
+device_sn = TEST123
+
+user_id = 1001
+
+timestamp = current time
+
+Expected:
+
+* device lastSeenAt updates
+* member is found by enrollment
+* Attendance record created
+* Reception feed shows check-in source ZKTeco
+
+---
+
+## Test 13 — Gym isolation
+
+Receptionist from Gym A must not see:
+
+* Gym B members
+* Gym B attendance
+* Gym B devices
+
+---
+
+# FINAL RESULT EXPECTED
+
+Reception dashboard is working.
+
+Receptionist can:
+
+* search members
+* check in members manually
+* add new members
+* renew subscriptions
+* see expiring and expired warnings
+* send WhatsApp reminders
+* view alerts
+* register and monitor ZKTeco devices
+* receive mock biometric attendance pushes
+
+ZKTeco integration should be ready for real device testing later.
+
+Do not build Nutrition in this task.
+
+Do not build HR in this task.

@@ -94,10 +94,13 @@ export default function AdminMembers() {
   const validateForm = (fd: FormData): Record<string, string> => {
     const errors: Record<string, string> = {};
     const name = String(fd.get('name') || '').trim();
+    const phone = String(fd.get('phoneNumber') || '').trim();
     const email = String(fd.get('email') || '').trim();
     const password = String(fd.get('password') || '').trim();
     const date = String(fd.get('subscriptionEndDate') || '').trim();
     if (name.length < 2) errors.name = 'Name must be at least 2 characters';
+    if (!phone) errors.phoneNumber = 'Phone number is required';
+    else if (!/^(\+9627|07)\d{8}$/.test(phone.replace(/\s/g, ''))) errors.phoneNumber = 'Enter a valid phone (07xxxxxxxx or +9627xxxxxxxx)';
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = 'Enter a valid email address';
     if (password.length < 6) errors.password = 'Password must be at least 6 characters';
     if (!date) errors.subscriptionEndDate = 'Subscription end date is required';
@@ -107,7 +110,7 @@ export default function AdminMembers() {
 
   const filteredMembers = (members || []).filter((m: any) => {
     const status = getSubStatus(m.subscriptionEndDate);
-    const matchesSearch = m.name.toLowerCase().includes(search.toLowerCase()) || m.email.toLowerCase().includes(search.toLowerCase());
+    const matchesSearch = m.name.toLowerCase().includes(search.toLowerCase()) || m.email.toLowerCase().includes(search.toLowerCase()) || (m.phone || '').includes(search);
     const matchesStatus = statusFilter === 'ALL' || status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -156,6 +159,10 @@ export default function AdminMembers() {
                 <div>
                   <Input name="name" placeholder={t('common.name')} className={`bg-black/20 ${formErrors.name ? 'border-red-500' : ''}`} />
                   {formErrors.name && <p className="text-red-400 text-xs mt-1">{formErrors.name}</p>}
+                </div>
+                <div>
+                  <Input name="phoneNumber" placeholder="0791234567" className={`bg-black/20 ${formErrors.phoneNumber ? 'border-red-500' : ''}`} />
+                  {formErrors.phoneNumber && <p className="text-red-400 text-xs mt-1">{formErrors.phoneNumber}</p>}
                 </div>
                 <div>
                   <Input name="email" type="email" placeholder={t('common.email')} className={`bg-black/20 ${formErrors.email ? 'border-red-500' : ''}`} />
@@ -224,7 +231,7 @@ export default function AdminMembers() {
                 <TableHeader className="bg-black/20">
                   <TableRow className="border-white/10">
                     <TableHead>Member</TableHead>
-                    <TableHead>Email</TableHead>
+                    <TableHead>Phone</TableHead>
                     <TableHead>End Date</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -239,7 +246,7 @@ export default function AdminMembers() {
                           <GradientAvatar name={member.name} size="sm" />
                           <span className="font-medium">{member.name}</span>
                         </TableCell>
-                        <TableCell className="text-muted-foreground">{member.email}</TableCell>
+                        <TableCell className="text-muted-foreground text-sm">{member.phone || <span className="text-white/30">—</span>}</TableCell>
                         <TableCell>{member.subscriptionEndDate ? format(new Date(member.subscriptionEndDate), 'PP') : '-'}</TableCell>
                         <TableCell>
                           <StatusBadge status={status as BadgeStatus} label={t(`common.${status.toLowerCase()}`)} />
@@ -346,6 +353,18 @@ function MemberDetailsSheet({ member, coaches }: { member: any; coaches: any[] }
                 <p className="text-xs text-muted-foreground">Subscription End</p>
                 <p className="font-medium mt-1">{member.subscriptionEndDate ? format(new Date(member.subscriptionEndDate), 'PP') : '-'}</p>
               </div>
+            </div>
+            <div className="glass-card p-4">
+              <p className="text-xs text-muted-foreground mb-1">Phone</p>
+              {member.phone ? (
+                <a href={`tel:${member.phone}`} className="font-medium text-green-400 hover:underline">{member.phone}</a>
+              ) : (
+                <p className="text-muted-foreground text-sm">No phone on record</p>
+              )}
+            </div>
+            <div className="glass-card p-4">
+              <p className="text-xs text-muted-foreground mb-1">Email</p>
+              <p className="font-medium text-sm break-all">{member.email}</p>
             </div>
           </TabsContent>
           <TabsContent value="subscription" className="space-y-4">

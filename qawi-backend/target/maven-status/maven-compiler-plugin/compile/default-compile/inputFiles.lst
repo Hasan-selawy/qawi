@@ -62,8 +62,8 @@
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/repository/NutritionTargetRepository.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/PlanInfo.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/filter/RateLimitFilter.java
-/home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/CreateGymUserRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/CreateWalkInMemberRequest.java
+/home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/CreateGymUserRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/CreateWorkoutPlanRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/filter/RequestLoggingFilter.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/MealType.java

@@ -10,6 +10,7 @@ import java.time.LocalDate;
 @Data
 public class CreateGymUserRequest {
     @NotBlank private String name;
+    private String phoneNumber;
     @NotBlank @Email private String email;
     @NotBlank @Size(min = 6) private String password;
     private LocalDate subscriptionEndDate;

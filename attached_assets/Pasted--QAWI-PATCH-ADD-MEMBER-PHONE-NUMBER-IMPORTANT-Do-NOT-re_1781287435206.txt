@@ -1,0 +1,257 @@
+# QAWI — PATCH ADD MEMBER PHONE NUMBER
+
+## IMPORTANT
+
+Do NOT rebuild the Sales module.
+
+Do NOT rebuild the Members page.
+
+Do NOT rebuild authentication.
+
+Do NOT create a second Add Member modal.
+
+Only patch the existing Add Member flow.
+
+---
+
+# PROBLEM
+
+In the Gym Admin Members page, the Add Member modal still does not include phone number.
+
+Current modal fields are:
+
+* Name
+* Email
+* Password
+* Subscription End Date
+
+This is wrong.
+
+Qawi now needs phone number for:
+
+* Sales CRM
+* Reception search
+* WhatsApp reminders
+* subscription renewal follow-ups
+* member contact info
+
+---
+
+# REQUIRED FIX
+
+Add phone number to the existing Add Member modal.
+
+The form should become:
+
+* Name
+* Phone Number
+* Email
+* Password
+* Subscription End Date
+
+Phone Number should be required for new members.
+
+Old existing members with null phone numbers should still work.
+
+Do not break old data.
+
+---
+
+# FRONTEND CHANGES
+
+Find the current Gym Admin Add Member modal.
+
+Add input field:
+
+Phone Number
+
+Placeholder:
+
+Phone Number
+
+or:
+
+0791234567
+
+Place it directly after Name and before Email.
+
+Validation:
+
+* required
+* allow Jordanian format like 07xxxxxxxx
+* also allow +9627xxxxxxxx
+* show clear error if empty
+
+When submitting the form, include:
+
+phoneNumber
+
+in the request body.
+
+Example request:
+
+{
+"name": "Ahmad Ali",
+"phoneNumber": "0791234567",
+"email": "[ahmad@example.com](mailto:ahmad@example.com)",
+"password": "password123",
+"subscriptionEndDate": "2026-07-12"
+}
+
+---
+
+# BACKEND CHANGES
+
+Check the existing Admin Add Member endpoint.
+
+It is likely:
+
+POST /api/v1/admin/members
+
+or similar.
+
+Update the request DTO to include:
+
+phoneNumber
+
+Validation:
+
+* required for new members
+* nullable for old existing members only
+
+Update User entity if phoneNumber does not exist yet:
+
+phoneNumber String
+
+Do not make database column non-null immediately if old users exist.
+
+Instead:
+
+* database column nullable
+* backend validation requires phoneNumber only when creating new members
+
+When creating the User with role MEMBER, save:
+
+phoneNumber = request.phoneNumber
+
+---
+
+# MEMBERS TABLE
+
+Update Members page table/card if needed to show phone number.
+
+Columns should include:
+
+* Member
+* Email
+* Phone
+* End Date
+* Status
+
+If the table is too crowded, at least show phone number under the member email or in member details.
+
+---
+
+# SALES CRM INTEGRATION
+
+When a new member is created from Admin Add Member:
+
+* create or update the Sales CRM record if Sales CRM exists
+* type = MEMBER
+* memberId = created user id
+* phoneNumber = saved phone number
+* status calculated from subscriptionEndDate
+* do not create duplicate CRM records
+
+One member = one Sales CRM record.
+
+---
+
+# RECEPTION COMPATIBILITY
+
+Make sure this same phoneNumber field is available later for:
+
+* Reception member search
+* WhatsApp reminders
+* renewal alerts
+
+No Reception dashboard work is needed in this patch.
+
+Just save phone number correctly on the member.
+
+---
+
+# TEST CASES
+
+## Test 1 — Add member with phone
+
+Login as Gym Admin.
+
+Open Members page.
+
+Click Add Member.
+
+Form should show:
+
+* Name
+* Phone Number
+* Email
+* Password
+* Subscription End Date
+
+Create:
+
+Name: Phone Test
+Phone: 0799999999
+Email: [phone.test@ironpeak.com](mailto:phone.test@ironpeak.com)
+Password: password123
+Subscription End Date: next month
+
+Expected:
+
+* member created successfully
+* phone number saved
+* member appears in Members page
+* phone number is visible somewhere
+* member appears in Sales CRM with same phone number
+
+---
+
+## Test 2 — Missing phone validation
+
+Try to add member without phone number.
+
+Expected:
+
+* frontend shows validation error
+* backend also rejects request safely
+
+---
+
+## Test 3 — Old members still work
+
+Existing members with no phone number should not crash the Members page or Sales page.
+
+Show:
+
+No phone
+
+or:
+
+—
+
+---
+
+# FINAL RESULT
+
+Gym Admin can add a member with phone number.
+
+Phone number is saved to User.
+
+Phone number appears in Members and Sales CRM.
+
+Old members without phone numbers still work.
+
+Do not rebuild anything.
+
+Patch the existing Add Member flow only.

@@ -28,6 +28,7 @@ public class GymAdminService {
     private final NotificationService notificationService;
     private final GymRepository gymRepository;
     private final GymFeatureService gymFeatureService;
+    private final MemberLeadRepository memberLeadRepository;
 
     // ── COACH CRUD ──────────────────────────────────────────────────────────
 
@@ -66,12 +67,33 @@ public class GymAdminService {
             }
         }
 
-        return userRepository.save(User.builder()
+        User saved = userRepository.save(User.builder()
                 .name(req.getName()).email(req.getEmail())
                 .password(passwordEncoder.encode(req.getPassword()))
                 .role(Role.MEMBER).gymId(gymId)
+                .phone(req.getPhoneNumber())
                 .subscriptionEndDate(req.getSubscriptionEndDate())
                 .build());
+
+        // Upsert Sales CRM record
+        MemberLeadStatus crmStatus = MemberLeadStatus.ACTIVE;
+        if (req.getSubscriptionEndDate() != null) {
+            LocalDate today = LocalDate.now();
+            if (req.getSubscriptionEndDate().isBefore(today)) {
+                crmStatus = MemberLeadStatus.EXPIRED;
+            } else if (!req.getSubscriptionEndDate().isAfter(today.plusDays(7))) {
+                crmStatus = MemberLeadStatus.EXPIRING_SOON;
+            }
+        }
+        MemberLead crm = memberLeadRepository.findByMemberIdAndGymId(saved.getId(), gymId)
+                .orElseGet(() -> MemberLead.builder().gymId(gymId).memberId(saved.getId()).build());
+        crm.setName(saved.getName());
+        crm.setPhoneNumber(req.getPhoneNumber());
+        crm.setType(MemberLeadType.MEMBER);
+        crm.setStatus(crmStatus);
+        memberLeadRepository.save(crm);
+
+        return saved;
     }
 
     public List<User> getMembers(String adminEmail) {
