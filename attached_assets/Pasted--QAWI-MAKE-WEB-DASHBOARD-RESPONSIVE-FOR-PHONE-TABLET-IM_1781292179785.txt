@@ -1,0 +1,721 @@
+# QAWI — MAKE WEB DASHBOARD RESPONSIVE FOR PHONE + TABLET
+
+## IMPORTANT
+
+Read CLAUDE.md and project documentation before making changes.
+
+Do NOT rebuild the dashboard.
+
+Do NOT redesign the entire UI.
+
+Do NOT change backend logic.
+
+Do NOT delete existing pages.
+
+Do NOT create duplicate layouts.
+
+Only patch the existing web dashboard layouts so they work properly on:
+
+* mobile phones
+* tablets
+* small laptops
+* desktop screens
+
+The dashboard currently works best on desktop, but Qawi users will often use:
+
+* phones
+* iPads/tablets
+* reception tablets
+* sales phones
+* gym owner phones
+
+So the dashboard must be responsive.
+
+---
+
+# GOAL
+
+Make the entire Qawi web dashboard responsive and usable on all screen sizes.
+
+Target devices:
+
+Mobile:
+
+* 360px width
+* 375px width
+* 390px width
+* 414px width
+
+Tablet:
+
+* 768px width
+* 820px width
+* 1024px width
+
+Desktop:
+
+* 1280px+
+* 1440px+
+
+---
+
+# GLOBAL RESPONSIVE RULES
+
+Use Tailwind responsive utilities.
+
+Use breakpoints:
+
+* mobile: default
+* sm: 640px
+* md: 768px
+* lg: 1024px
+* xl: 1280px
+
+Do not allow the whole page to horizontally scroll.
+
+Only specific components can scroll horizontally if needed:
+
+* tables
+* kanban boards
+* calendar grids
+
+Main app container should always fit screen width.
+
+Cards should stack on mobile.
+
+Large grids should become 1 column on mobile.
+
+Tables should become scrollable or card-style on mobile.
+
+Modals should fit mobile screens.
+
+Buttons should be touch-friendly.
+
+Minimum touch target:
+
+44px height
+
+---
+
+# SIDEBAR RESPONSIVENESS
+
+Current sidebar works on desktop.
+
+Patch behavior:
+
+## Desktop / large tablet
+
+Sidebar stays visible on the left.
+
+Width can remain current.
+
+## Mobile / small tablet
+
+Sidebar should collapse into a hamburger menu.
+
+Top bar should show:
+
+* hamburger icon
+* page title or Qawi logo
+* language toggle
+* notifications
+* user avatar
+
+When hamburger is clicked:
+
+* show sidebar as slide-over drawer
+* dark overlay behind it
+* clicking overlay closes sidebar
+* clicking a nav item closes sidebar
+* ESC key closes sidebar if implemented
+
+Sidebar drawer width:
+
+* 80% screen width on phone
+* max 280px
+
+Do not make dashboard content squeezed beside sidebar on mobile.
+
+---
+
+# TOP BAR RESPONSIVENESS
+
+Top bar should never overflow.
+
+On mobile:
+
+* hide long role text if needed
+* show avatar
+* show initials
+* keep AR/EN toggle
+* keep notification icon
+* page title can wrap or shrink
+
+Use responsive text sizes.
+
+---
+
+# DASHBOARD CONTENT RESPONSIVENESS
+
+All pages should use a responsive content wrapper:
+
+Desktop:
+
+* normal padding
+
+Tablet:
+
+* medium padding
+
+Mobile:
+
+* smaller padding
+
+Example spacing idea:
+
+* mobile: p-4
+* tablet: p-5
+* desktop: p-6 or p-8
+
+Page titles:
+
+* mobile: text-2xl
+* desktop: text-3xl
+
+Do not let page title overlap actions.
+
+Top action buttons should wrap under the title on mobile.
+
+---
+
+# STAT CARDS
+
+Stats cards appear in many pages.
+
+Patch all stat card grids:
+
+Desktop:
+
+* 3 or 4 columns
+
+Tablet:
+
+* 2 columns
+
+Mobile:
+
+* 1 column
+
+Use responsive grid classes.
+
+Cards should not have fixed widths that break mobile.
+
+---
+
+# TABLES
+
+Many pages use tables:
+
+* Members
+* Sales CRM
+* Employees
+* Subscriptions
+* Revenue
+* Reception alerts
+* Nutrition staff members
+* ZKTeco enrollments
+
+Patch tables for mobile.
+
+Use one of these patterns:
+
+## Preferred for mobile
+
+Convert rows into cards on mobile.
+
+Each card shows labels:
+
+Name: Sam
+Phone: 079...
+Status: Active
+Actions: buttons
+
+## Acceptable fallback
+
+Wrap table in:
+
+overflow-x-auto
+
+and ensure table min-width is reasonable.
+
+Important:
+
+The whole page should not scroll sideways.
+
+Only the table wrapper can scroll sideways.
+
+---
+
+# MODALS
+
+Patch all modals:
+
+* Add Member
+* Add Lead
+* Convert Lead
+* Renew Subscription
+* Add Employee
+* Edit Employee
+* Register Device
+* Enroll Member
+* Add Food
+* Set Nutrition Targets
+* Add Meal Suggestion
+* Nutrition Plan Day Editor
+
+Mobile modal rules:
+
+* width: calc(100vw - 32px)
+* max-height: 90vh
+* overflow-y-auto
+* buttons full width if needed
+* close button visible
+* inputs full width
+* no content cut off below screen
+
+Desktop modal can stay centered.
+
+---
+
+# FORMS
+
+Patch forms:
+
+On desktop:
+
+* two-column fields allowed
+
+On mobile:
+
+* one column only
+* full-width inputs
+* full-width buttons
+* enough spacing between fields
+* date inputs should not overflow
+* select dropdowns should fit width
+
+---
+
+# BUTTONS
+
+On mobile:
+
+* buttons should be at least 44px tall
+* icon-only buttons need accessible title/aria-label
+* action groups should wrap
+* if many actions exist, stack them or use dropdown menu
+
+Examples:
+
+Sales row actions:
+
+Desktop:
+
+WhatsApp | Edit | Convert | Delete
+
+Mobile:
+
+Use vertical buttons or compact action menu.
+
+---
+
+# SALES CRM RESPONSIVE FIXES
+
+Sales CRM page must work on phone because sales staff will use phones.
+
+Patch:
+
+* stats cards stack on mobile
+* filter tabs scroll horizontally on mobile
+* search bar full width
+* table becomes cards or horizontal scroll
+* action buttons wrap
+* WhatsApp button easy to tap
+* long Arabic messages should not break layout
+
+Filter tabs:
+
+Use horizontal scroll:
+
+All | Leads | Active | Expiring | Expired | Renewed | Lost
+
+Do not squeeze tabs into tiny text.
+
+---
+
+# SUPER ADMIN SALES PIPELINE RESPONSIVE FIXES
+
+Kanban board is wide.
+
+Desktop:
+
+* show all columns horizontally
+
+Mobile/tablet:
+
+* allow horizontal scroll inside Kanban area
+* each column min-width around 280px
+* do not let whole page overflow
+* drag/drop should still work if possible
+* if drag/drop is hard on mobile, allow status dropdown fallback on lead card
+
+---
+
+# EMPLOYEES RESPONSIVE FIXES
+
+Employees page:
+
+Mobile:
+
+* stats cards stack
+* employee table becomes cards or horizontal scroll
+* Add Employee button full width under title
+* role badges should wrap properly
+* action buttons should not overflow
+
+Add Employee modal:
+
+* role dropdown full width
+* generated password modal fits mobile
+* copy button full width if needed
+
+---
+
+# RECEPTION RESPONSIVE FIXES
+
+Reception must be very tablet-friendly.
+
+Patch:
+
+* tabs should scroll horizontally on mobile/tablet
+* Overview cards stack on mobile
+* Check-in search full width
+* member cards stack
+* buttons large and touch-friendly
+* Devices page cards stack
+* ZKTeco setup guide should wrap text
+* long backend URL should break/wrap safely
+
+Reception tabs:
+
+Overview | Check-in | Add Member | Alerts | Devices
+
+On phone:
+
+horizontal scroll tabs.
+
+Do not let them squeeze or overflow page.
+
+---
+
+# NUTRITION RESPONSIVE FIXES
+
+Nutrition dashboard must work on mobile/tablet.
+
+Patch coach/nutritionist nutrition dashboard:
+
+Desktop:
+
+* left member list + right detail panel
+
+Mobile:
+
+* member list full width first
+* selected member detail below
+* or use drawer/accordion
+* charts should resize
+* macro bars should fit
+* target cards stack
+* buttons wrap
+
+Nutrition calendar plan:
+
+Desktop:
+
+* calendar grid like workout plan
+
+Mobile:
+
+* calendar days should become 2 columns or horizontal scroll
+* day cards should remain readable
+* day editor modal should fit mobile
+
+Member nutrition page:
+
+* Add Food button full width
+* macro bars fit screen
+* meal sections stack
+* Arabic food text should wrap correctly
+* no clipped Arabic text
+
+---
+
+# WORKOUT PLAN / MEMBER PROFILE RESPONSIVE FIXES
+
+The workout calendar shown in member/coach profile should also be responsive.
+
+Desktop:
+
+* calendar grid as currently shown
+
+Tablet:
+
+* reduce columns if needed
+
+Mobile:
+
+* use 2-column grid or horizontal scroll calendar
+* day cards should remain readable
+* New Plan button should not overlap
+* tabs should scroll horizontally
+
+Profile card:
+
+* stack above plan on mobile
+* plan calendar below
+
+---
+
+# REVENUE / ANALYTICS CHARTS
+
+Charts must not overflow.
+
+Patch Recharts containers:
+
+* use ResponsiveContainer
+* set min-height
+* allow horizontal scroll only if chart is too dense
+* legends should wrap
+* tooltips should fit mobile
+
+---
+
+# CLASS BOOKING RESPONSIVE FIXES
+
+Class booking must work for members on mobile.
+
+Patch:
+
+* class cards stack on mobile
+* booking button full width
+* show capacity/status clearly
+* if table exists, convert to cards or horizontal scroll
+
+---
+
+# ERROR DISPLAY RESPONSIVENESS
+
+Toasts and error messages should work on mobile.
+
+Rules:
+
+* toast width should not exceed screen
+* error messages wrap
+* form errors appear under fields
+* no generic "Unknown error" if backend sends message
+
+---
+
+# ACCESSIBILITY BASICS
+
+Add where simple:
+
+* aria-label for icon buttons
+* visible focus states
+* keyboard close for modals if already pattern exists
+* buttons not too small
+* color contrast preserved
+
+---
+
+# TECHNICAL RULES
+
+Do not add a heavy UI framework.
+
+Use existing Tailwind CSS.
+
+Reuse existing components where possible.
+
+If there is a Layout component, patch it globally.
+
+If there are reusable Card/Table/Modal components, patch those first.
+
+Avoid editing every page manually if shared components can solve it.
+
+But inspect pages that have custom fixed widths.
+
+Remove or replace problematic classes like:
+
+* fixed desktop widths
+* min-w too large on main containers
+* overflow-hidden that cuts content
+* absolute positioning that breaks mobile
+* tables without overflow wrapper
+* modals with fixed width only
+
+---
+
+# COMMON FIXES TO APPLY
+
+Use:
+
+w-full
+
+max-w-full
+
+min-w-0
+
+flex-wrap
+
+overflow-x-auto for table/kanban wrappers only
+
+grid-cols-1 md:grid-cols-2 lg:grid-cols-3
+
+text-sm md:text-base
+
+p-4 md:p-6
+
+gap-4 md:gap-6
+
+hidden md:block where needed
+
+block md:hidden where needed
+
+Do not use:
+
+w-screen inside nested layout if it causes overflow
+
+fixed px widths without max-width
+
+large negative margins
+
+---
+
+# TEST PAGES
+
+Test responsiveness on these pages:
+
+## Gym Admin
+
+* Dashboard
+* Members
+* Add Member modal
+* Coaches
+* Employees
+* Sales CRM
+* Reception
+* Subscriptions
+* Analytics
+* Revenue
+* Classes
+* Pricing
+
+## Sales
+
+* Sales CRM
+* Add Lead modal
+* Convert modal
+
+## Receptionist
+
+* Reception Overview
+* Check-in
+* Add Member
+* Alerts
+* Devices
+* Register Device modal
+* Enroll Member modal
+
+## Coach
+
+* Dashboard
+* Member profile
+* Workout plan calendar
+* Nutrition dashboard
+* Nutrition plan calendar
+* Add target/suggestion modals
+
+## Nutritionist
+
+* Nutrition dashboard
+* Member list
+* Nutrition calendar
+* Day editor
+
+## Member
+
+* Nutrition page
+* Add Food flow
+* Workout plan
+* Class booking
+* Attendance
+* Measurements
+
+## Super Admin
+
+* Dashboard
+* Gyms
+* Sales Pipeline Kanban
+* Pricing
+* Library
+
+---
+
+# TEST SCREEN SIZES
+
+Use browser responsive mode and test:
+
+* 360 x 800
+* 375 x 812
+* 390 x 844
+* 414 x 896
+* 768 x 1024
+* 820 x 1180
+* 1024 x 1366
+* 1280 x 720
+* 1440 x 900
+
+Expected:
+
+* no full-page horizontal scroll
+* sidebar works
+* modals fit
+* tables usable
+* buttons tappable
+* content readable
+* Arabic text does not break layout
+
+---
+
+# FINAL RESULT EXPECTED
+
+Qawi web dashboard should be usable on:
+
+* phone
+* tablet
+* laptop
+* desktop
+
+Gym owners can open dashboard from phone.
+
+Reception can use tablet at front desk.
+
+Sales can use phone during gym visits.
+
+Coach can check members from phone/tablet.
+
+Nutritionist can manage plans from tablet.
+
+Do not rebuild the UI.
+
+Patch existing layout and components to be responsive.

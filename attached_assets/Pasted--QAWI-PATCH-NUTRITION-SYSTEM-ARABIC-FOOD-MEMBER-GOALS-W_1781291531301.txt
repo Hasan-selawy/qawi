@@ -1,0 +1,1299 @@
+# QAWI — PATCH NUTRITION SYSTEM: ARABIC FOOD + MEMBER GOALS + WEEK/MONTH NUTRITION PLAN
+
+## IMPORTANT
+
+Do NOT rebuild the whole Nutrition module.
+
+Do NOT delete existing nutrition tables.
+
+Do NOT break current coach nutrition dashboard.
+
+Do NOT break member food logging.
+
+Do NOT build unrelated features in this task.
+
+Only patch and extend the existing Nutrition system.
+
+Current problem:
+
+1. Member/player cannot enter food in Arabic.
+2. Arabic food search/database is missing or not working.
+3. Member/player cannot see the nutrition goal/target set by coach.
+4. Member/player cannot see meal suggestions created by coach.
+5. Coach can only set a simple daily target, but needs to create nutrition plans for a week or month, similar to the workout calendar UI.
+
+---
+
+# GOAL
+
+Make Nutrition work like this:
+
+Coach/Nutritionist can create a nutrition plan for:
+
+* 1 day
+* 1 week
+* 1 month
+* custom date range
+
+Each day can have:
+
+* calories target
+* protein target
+* carbs target
+* fat target
+* water target
+* goal
+* notes
+* meal suggestions
+
+Member/player can open Nutrition and see:
+
+* today’s target
+* today’s coach/nutritionist meal suggestions
+* today’s food log
+* progress toward target
+* Arabic food search
+* Arabic food logging
+
+---
+
+# PART 1 — FIX ARABIC FOOD ENTRY
+
+## Problem
+
+Member cannot enter Arabic food names like:
+
+* شاورما دجاج
+* منسف
+* حمص
+* فلافل
+* كنافة
+* رز
+* بيض
+* تونا
+
+Food search and food logging must support Arabic text.
+
+---
+
+## Backend Requirements
+
+Make sure the database, DTOs, controllers, and frontend support UTF-8 Arabic text.
+
+Food fields must support Arabic:
+
+foodName
+
+foodNameAr
+
+searchKeywords
+
+notes
+
+descriptionAr
+
+Do not reject Arabic characters in validation.
+
+Do not strip Arabic letters.
+
+Do not break RTL text.
+
+---
+
+## Arabic Food Cache
+
+If ArabicFoodCache already exists, fix it.
+
+If it does not exist, add it safely.
+
+ArabicFoodCache fields:
+
+id
+
+foodName English
+
+foodNameAr Arabic
+
+searchKeywords nullable
+
+defaultQuantity
+
+defaultUnit
+
+calories
+
+protein
+
+carbs
+
+fat
+
+fiber nullable
+
+sugar nullable
+
+sodium nullable
+
+source enum:
+
+SEEDED
+
+AI
+
+MANUAL
+
+searchCount default 0
+
+createdAt
+
+updatedAt
+
+ArabicFoodCache is global, not gym-specific.
+
+---
+
+## Seed Arabic Food Database
+
+Seed these foods if not already seeded.
+
+Do not duplicate existing rows.
+
+Use Arabic and English names.
+
+Foods:
+
+Chicken Shawarma / شاورما دجاج
+300g
+450 kcal
+38g protein
+35g carbs
+16g fat
+
+Beef Shawarma / شاورما لحمة
+300g
+550 kcal
+32g protein
+35g carbs
+28g fat
+
+Mansaf / منسف
+400g
+800 kcal
+45g protein
+90g carbs
+28g fat
+
+Falafel / فلافل
+1 piece
+57 kcal
+2g protein
+6g carbs
+3g fat
+
+Hummus / حمص
+100g
+166 kcal
+8g protein
+14g carbs
+10g fat
+
+Knafeh / كنافة
+100g
+400 kcal
+8g protein
+55g carbs
+18g fat
+
+Musakhan / مسخن
+350g
+650 kcal
+35g protein
+70g carbs
+25g fat
+
+Maqluba / مقلوبة
+350g
+550 kcal
+28g protein
+65g carbs
+18g fat
+
+Tabbouleh / تبولة
+100g
+100 kcal
+3g protein
+12g carbs
+5g fat
+
+Fattoush / فتوش
+100g
+90 kcal
+2g protein
+14g carbs
+3g fat
+
+Arabic Bread / خبز عربي
+1 piece
+370 kcal
+12g protein
+76g carbs
+2g fat
+
+White Rice Cooked / أرز أبيض مطبوخ
+200g
+260 kcal
+5g protein
+57g carbs
+0g fat
+
+Grilled Chicken / دجاج مشوي
+150g
+230 kcal
+43g protein
+0g carbs
+5g fat
+
+Egg / بيض
+1 large
+78 kcal
+6g protein
+0g carbs
+5g fat
+
+Yogurt / لبن
+200g
+120 kcal
+8g protein
+16g carbs
+2g fat
+
+Olive Oil / زيت زيتون
+1 tbsp
+119 kcal
+0g protein
+0g carbs
+14g fat
+
+Tuna / تونا
+100g
+132 kcal
+29g protein
+0g carbs
+1g fat
+
+Banana / موز
+1 medium
+105 kcal
+1g protein
+27g carbs
+0g fat
+
+Dates / تمر
+1 piece
+23 kcal
+0g protein
+6g carbs
+0g fat
+
+Oats / شوفان
+100g
+389 kcal
+17g protein
+66g carbs
+7g fat
+
+Potato / بطاطا
+100g
+87 kcal
+2g protein
+20g carbs
+0g fat
+
+Sweet Potato / بطاطا حلوة
+100g
+86 kcal
+2g protein
+20g carbs
+0g fat
+
+Milk / حليب
+250ml
+150 kcal
+8g protein
+12g carbs
+8g fat
+
+Labneh / لبنة
+100g
+200 kcal
+10g protein
+6g carbs
+16g fat
+
+Cheese / جبنة
+100g
+300 kcal
+20g protein
+3g carbs
+24g fat
+
+---
+
+## Arabic Search Behavior
+
+Search endpoint:
+
+GET /api/v1/nutrition/search?q=
+
+Must work with Arabic and English.
+
+Examples:
+
+q=شاورما
+
+should return:
+
+شاورما دجاج
+
+شاورما لحمة
+
+q=shawarma
+
+should return:
+
+Chicken Shawarma
+
+Beef Shawarma
+
+q=حمص
+
+should return:
+
+Hummus / حمص
+
+Search should check:
+
+* foodName
+* foodNameAr
+* searchKeywords
+
+Add Arabic normalization:
+
+* ignore diacritics
+* normalize أ إ آ to ا
+* normalize ة to ه or support both
+* normalize ى to ي
+* trim spaces
+
+Do not call AI on every search keystroke.
+
+Search should use local ArabicFoodCache only.
+
+AI should only be used when user presses Calculate or Add and no strong local match exists.
+
+---
+
+## Food Logging With Arabic
+
+Member should be able to enter:
+
+شاورما دجاج 300 جرام
+
+or:
+
+منسف صحن
+
+or:
+
+بيضتين
+
+The system should:
+
+1. Accept Arabic input.
+2. Search cache first.
+3. If found, calculate macros.
+4. If not found, call AI.
+5. Save FoodEntry with foodName and foodNameAr.
+6. Show Arabic food name in Arabic mode.
+
+---
+
+# PART 2 — FIX MEMBER VISIBILITY OF TARGETS AND SUGGESTIONS
+
+## Problem
+
+Coach sets targets, but member/player cannot see them.
+
+Coach adds meal suggestions, but member/player cannot see them.
+
+This must be fixed.
+
+---
+
+## Backend Fix
+
+Member must be allowed to call:
+
+GET /api/v1/nutrition/targets/{memberId}
+
+for their own memberId only.
+
+If authenticated user role = MEMBER:
+
+* memberId must equal authenticated user id
+* return current active target
+* return today’s plan target if date-specific target exists
+
+Member must be allowed to call:
+
+GET /api/v1/nutrition/suggestions/{memberId}
+
+for their own memberId only.
+
+If authenticated user role = MEMBER:
+
+* memberId must equal authenticated user id
+* return suggestions for today
+* return general suggestions if no date-specific suggestions exist
+
+Member must be allowed to call:
+
+GET /api/v1/nutrition/log/today/{memberId}
+
+for their own memberId only.
+
+This response should include:
+
+target
+
+todayPlanDay
+
+entries grouped by mealType
+
+totals
+
+water
+
+suggestions
+
+---
+
+## Member Nutrition Screen
+
+Member/player nutrition screen must show:
+
+1. Today’s target
+
+* calories
+* protein
+* carbs
+* fat
+* water
+* goal
+* notes from coach/nutritionist
+
+2. Today’s meal suggestions
+
+Grouped by meal type:
+
+* Breakfast
+* Lunch
+* Dinner
+* Snack
+* Pre-workout
+* Post-workout
+
+Each suggestion shows:
+
+* description
+* descriptionAr if Arabic mode
+* target calories if provided
+* target protein if provided
+
+3. Food logging section
+
+* Arabic/English search
+* Add food
+* Recent foods
+
+4. Progress section
+
+* calories consumed / target
+* protein consumed / target
+* carbs consumed / target
+* fat consumed / target
+* water consumed / target
+
+If no target exists:
+
+Show:
+
+No nutrition target has been set yet.
+
+Arabic:
+
+لم يتم تحديد هدف غذائي بعد.
+
+If no suggestions exist:
+
+Show:
+
+No meal suggestions for today.
+
+Arabic:
+
+لا توجد اقتراحات وجبات لهذا اليوم.
+
+---
+
+# PART 3 — WEEK / MONTH NUTRITION PLAN LIKE WORKOUT PLAN
+
+## Problem
+
+Coach can only add one daily target.
+
+But in real gyms, coach/nutritionist should prepare nutrition for a week or month, same idea as workout calendar.
+
+Look at the workout plan UI:
+
+* plan date range
+* calendar days
+* each day has exercises
+
+Nutrition should work similarly:
+
+* nutrition plan date range
+* calendar days
+* each day has target and meal suggestions
+
+---
+
+# New Concept
+
+Add Nutrition Calendar Plan.
+
+Coach or Nutritionist creates a plan:
+
+Example:
+
+Nutrition Plan: Cut Phase Week 1
+
+Start Date: June 2, 2026
+
+End Date: July 9, 2026
+
+Then each day can have:
+
+* calories target
+* protein target
+* carbs target
+* fat target
+* water target
+* goal
+* notes
+* meal suggestions
+
+This should look similar to the workout plan calendar UI.
+
+---
+
+# Database Additions
+
+Do not delete current NutritionTarget.
+
+Extend safely.
+
+Add new entity:
+
+NutritionCalendarPlan
+
+Fields:
+
+id
+
+gymId
+
+memberId
+
+createdByUserId
+
+createdByRole
+
+title
+
+startDate
+
+endDate
+
+isActive
+
+createdAt
+
+updatedAt
+
+---
+
+Add new entity:
+
+NutritionPlanDay
+
+Fields:
+
+id
+
+planId
+
+gymId
+
+memberId
+
+dayDate
+
+dayName
+
+dayNameAr
+
+targetCalories
+
+targetProtein
+
+targetCarbs
+
+targetFat
+
+targetWater
+
+goal
+
+notes
+
+notesAr
+
+isCompleted nullable
+
+createdAt
+
+updatedAt
+
+---
+
+Update MealSuggestion or add date support.
+
+Preferred:
+
+Add fields to existing MealSuggestion if it already exists:
+
+planDayId nullable
+
+suggestionDate nullable
+
+If no MealSuggestion exists, create it:
+
+MealSuggestion
+
+id
+
+gymId
+
+memberId
+
+createdByUserId
+
+planDayId nullable
+
+suggestionDate nullable
+
+mealType enum:
+
+BREAKFAST
+
+LUNCH
+
+DINNER
+
+SNACK
+
+PRE_WORKOUT
+
+POST_WORKOUT
+
+description
+
+descriptionAr
+
+targetCalories nullable
+
+targetProtein nullable
+
+createdAt
+
+updatedAt
+
+---
+
+# Plan Logic
+
+A member can have one active nutrition calendar plan at a time.
+
+Today’s target should be resolved in this order:
+
+1. If there is an active NutritionCalendarPlan with a NutritionPlanDay for today, use that day target.
+2. Else use active NutritionTarget default target.
+3. Else return null target.
+
+Today’s suggestions should be resolved in this order:
+
+1. Suggestions linked to today’s NutritionPlanDay.
+2. Suggestions with suggestionDate = today.
+3. General suggestions for member with no date if needed.
+4. Else empty list.
+
+---
+
+# Backend Endpoints For Nutrition Calendar
+
+Base path:
+
+/api/v1/nutrition/plans
+
+Allowed roles:
+
+* COACH if workflow allows
+* NUTRITIONIST
+* GYM_ADMIN
+
+---
+
+## POST /api/v1/nutrition/plans
+
+Create nutrition calendar plan.
+
+Request:
+
+memberId
+
+title
+
+startDate
+
+endDate
+
+defaultTargetCalories
+
+defaultTargetProtein
+
+defaultTargetCarbs
+
+defaultTargetFat
+
+defaultTargetWater
+
+goal
+
+notes optional
+
+Behavior:
+
+* create NutritionCalendarPlan
+* auto-create NutritionPlanDay for every day between startDate and endDate
+* fill each day with default targets
+* set isActive = true
+* deactivate old active plans for same member if needed
+
+---
+
+## GET /api/v1/nutrition/plans/member/{memberId}
+
+Return active and previous nutrition calendar plans for member.
+
+Allowed:
+
+* member self
+* assigned coach
+* nutritionist same gym
+* gym admin same gym
+
+---
+
+## GET /api/v1/nutrition/plans/{planId}
+
+Return:
+
+plan details
+
+days list
+
+each day includes:
+
+* date
+* target calories/protein/carbs/fat/water
+* goal
+* notes
+* meal suggestion count
+* whether member logged food that day
+* total calories consumed that day
+* adherence status
+
+---
+
+## PUT /api/v1/nutrition/plans/days/{dayId}
+
+Update one day target.
+
+Request:
+
+targetCalories
+
+targetProtein
+
+targetCarbs
+
+targetFat
+
+targetWater
+
+goal
+
+notes
+
+notesAr
+
+---
+
+## POST /api/v1/nutrition/plans/days/{dayId}/suggestions
+
+Add meal suggestion to a specific day.
+
+Request:
+
+mealType
+
+description
+
+descriptionAr
+
+targetCalories optional
+
+targetProtein optional
+
+---
+
+## PUT /api/v1/nutrition/plans/days/{dayId}/copy
+
+Copy one day target and suggestions.
+
+Request:
+
+copyToDates array
+
+or:
+
+copyToRangeStart
+
+copyToRangeEnd
+
+This lets coach create one day and copy to week/month.
+
+---
+
+## DELETE /api/v1/nutrition/plans/{planId}
+
+Soft delete or deactivate plan.
+
+Do not delete food logs.
+
+---
+
+# Coach / Nutritionist UI
+
+In Nutrition dashboard, add a calendar plan view similar to workout plan screen.
+
+For selected member:
+
+Top card:
+
+* member name
+* active nutrition plan title
+* date range
+* New Nutrition Plan button
+
+Calendar grid:
+
+Each day card shows:
+
+* day name
+* day number
+* calories target
+* protein target
+* meal suggestion count
+* logged calories if member logged food
+* status
+
+Status colors:
+
+No target = gray
+
+Target set = blue
+
+On track = green
+
+Off target = orange/red
+
+Click day card opens side panel/modal:
+
+Nutrition Day Editor
+
+Fields:
+
+* calories
+* protein
+* carbs
+* fat
+* water
+* goal
+* notes
+* notesAr
+
+Meal suggestions section:
+
+* Breakfast
+* Lunch
+* Dinner
+* Snack
+* Pre-workout
+* Post-workout
+
+Add suggestion button:
+
+Fields:
+
+* meal type
+* description English
+* description Arabic
+* target calories optional
+* target protein optional
+
+Buttons:
+
+* Save Day
+* Copy to Week
+* Copy to Month
+* Copy to Custom Range
+
+---
+
+# New Nutrition Plan Modal
+
+Button:
+
+New Nutrition Plan
+
+Fields:
+
+* title
+* startDate
+* endDate
+* default calories
+* default protein
+* default carbs
+* default fat
+* default water
+* goal
+* notes
+
+Quick options:
+
+* 7 days
+* 14 days
+* 30 days
+* custom
+
+On create:
+
+* create plan
+* generate day cards
+* show calendar
+
+---
+
+# Member / Player UI
+
+Member Nutrition screen should show:
+
+## Today
+
+* target from today’s NutritionPlanDay if available
+* otherwise default target
+* meal suggestions for today
+* food log progress
+
+## Plan Calendar
+
+Member can view nutrition plan calendar read-only.
+
+Show days:
+
+* calories target
+* protein target
+* meal suggestions
+* whether goal met
+
+Member cannot edit plan days.
+
+Member can only log food and water.
+
+---
+
+# Arabic UI Requirements
+
+Arabic mode should show:
+
+* foodNameAr
+* descriptionAr
+* notesAr
+* Arabic labels
+* RTL layout if existing app supports it
+
+Add placeholders:
+
+Search food:
+
+ابحث عن طعام...
+
+Manual input:
+
+ماذا أكلت؟
+
+Examples:
+
+شاورما دجاج 300 جرام
+
+بيضتين
+
+صحن منسف
+
+كوب رز
+
+Buttons:
+
+Calculate:
+
+احسب
+
+Add to Log:
+
+أضف للسجل
+
+Meal suggestions:
+
+اقتراحات الوجبات
+
+Today’s target:
+
+هدف اليوم
+
+---
+
+# Permissions
+
+Coach:
+
+Can edit nutrition plan only if:
+
+nutritionWorkflow = COACH_ONLY
+
+or workflow allows coach edit.
+
+Nutritionist:
+
+Can edit nutrition plan for same gym.
+
+Gym Admin:
+
+Can view and manage if allowed.
+
+Member:
+
+Can view own nutrition plan and suggestions.
+
+Can log food.
+
+Cannot edit targets or suggestions.
+
+---
+
+# Error Fixes For This Feature
+
+Do not show generic “Unknown error” for nutrition actions.
+
+Return useful backend error messages.
+
+Examples:
+
+If member has no target:
+
+"No nutrition target found for this member."
+
+If member cannot access data:
+
+"You do not have permission to view this nutrition plan."
+
+If Arabic food search fails:
+
+"No matching food found."
+
+If AI calculation fails:
+
+"Could not calculate nutrition right now. Try again or enter manually."
+
+Frontend should display backend message when available.
+
+---
+
+# Test Cases
+
+## Test 1 — Arabic Search
+
+As member, search:
+
+شاورما
+
+Expected:
+
+Arabic food appears.
+
+No AI call needed.
+
+---
+
+## Test 2 — Arabic Food Logging
+
+As member, log:
+
+شاورما دجاج 300 جرام
+
+Expected:
+
+FoodEntry saved.
+
+foodNameAr saved.
+
+Calories/macros shown.
+
+Daily totals update.
+
+---
+
+## Test 3 — Member Sees Target
+
+Coach sets target for Sam.
+
+Login as Sam.
+
+Open Nutrition.
+
+Expected:
+
+Sam sees calories/protein/carbs/fat/water target.
+
+---
+
+## Test 4 — Member Sees Suggestions
+
+Coach adds meal suggestion for today.
+
+Login as member.
+
+Expected:
+
+Suggestion appears under today’s nutrition.
+
+---
+
+## Test 5 — Create Weekly Nutrition Plan
+
+Coach creates 7-day nutrition plan.
+
+Expected:
+
+Calendar appears with 7 day cards.
+
+Each day has targets.
+
+---
+
+## Test 6 — Create Monthly Nutrition Plan
+
+Coach creates 30-day nutrition plan.
+
+Expected:
+
+Calendar appears like workout plan calendar.
+
+---
+
+## Test 7 — Edit One Day
+
+Coach clicks a day.
+
+Changes calories/protein.
+
+Expected:
+
+Only that day changes.
+
+---
+
+## Test 8 — Copy Day To Week
+
+Coach creates suggestions for Monday.
+
+Clicks Copy to Week.
+
+Expected:
+
+Suggestions/targets copy to selected dates.
+
+---
+
+## Test 9 — Member Read-only Calendar
+
+Member opens nutrition plan calendar.
+
+Expected:
+
+Can view days and suggestions.
+
+Cannot edit.
+
+---
+
+## Test 10 — Permission
+
+Member A cannot view Member B nutrition.
+
+Coach cannot edit if workflow = NUTRITIONIST_ONLY.
+
+Nutritionist can edit same gym.
+
+---
+
+# FINAL RESULT
+
+Nutrition should now support:
+
+* Arabic food entry
+* Arabic food database
+* Arabic search
+* member visibility of coach goals
+* member visibility of meal suggestions
+* weekly nutrition plans
+* monthly nutrition plans
+* calendar UI similar to workout plan
+* daily nutrition targets inside plan days
+* meal suggestions per day
+* useful error messages instead of unknown error
+
+Patch existing Nutrition system only.
+
+Do not rebuild the entire app.

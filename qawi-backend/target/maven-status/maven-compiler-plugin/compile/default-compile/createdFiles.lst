@@ -2,6 +2,7 @@ com/qawi/repository/ContactRequestRepository.class
 com/qawi/dto/CreateGymResponse$CreateGymResponseBuilder.class
 com/qawi/controller/HrController.class
 com/qawi/dto/GymLeadNoteRequest.class
+com/qawi/entity/NutritionPlanDay$NutritionPlanDayBuilder.class
 com/qawi/service/WorkoutPlanService.class
 com/qawi/entity/CoachMember$CoachMemberBuilder.class
 com/qawi/service/NotificationService.class
@@ -17,6 +18,7 @@ com/qawi/entity/AiNutritionLog$AiNutritionLogBuilder.class
 com/qawi/entity/GymLeadNote$GymLeadNoteBuilder.class
 com/qawi/entity/User$UserBuilder.class
 com/qawi/repository/MealSuggestionRepository.class
+com/qawi/entity/NutritionCalendarPlan$NutritionCalendarPlanBuilder.class
 com/qawi/dto/MemberLeadUpdateRequest.class
 com/qawi/dto/ReceptionTodayStats$ReceptionTodayStatsBuilder.class
 com/qawi/entity/CoachNote$CoachNoteBuilder.class
@@ -87,6 +89,7 @@ com/qawi/entity/MemberSuggestion.class
 com/qawi/entity/SubscriptionHistory$SubscriptionHistoryBuilder.class
 com/qawi/entity/MealSuggestion.class
 com/qawi/dto/CheckInResponse.class
+com/qawi/repository/NutritionCalendarPlanRepository.class
 com/qawi/repository/FoodEntryRepository.class
 com/qawi/entity/WorkoutTemplateDayExercise.class
 com/qawi/service/AccessGuard$1.class
@@ -128,11 +131,13 @@ com/qawi/controller/WorkoutTemplateController.class
 com/qawi/entity/CoachNote.class
 com/qawi/dto/RenewalRequestDto.class
 com/qawi/service/GymFeatureService$Feature.class
+com/qawi/dto/AddDaySuggestionRequest.class
 com/qawi/entity/GymExerciseOverride.class
 com/qawi/dto/LogWorkoutRequest.class
 com/qawi/entity/ContactRequest.class
 com/qawi/entity/WaterLog.class
 com/qawi/QawiApplication.class
+com/qawi/repository/NutritionPlanDayRepository.class
 com/qawi/entity/MemberPlanDuration.class
 com/qawi/service/ExerciseService.class
 com/qawi/dto/CreateMealRequest.class
@@ -160,6 +165,7 @@ com/qawi/dto/RegisterGymResponse.class
 com/qawi/entity/SubscriptionPlan.class
 com/qawi/entity/ExerciseTemplate$ExerciseTemplateBuilder.class
 com/qawi/entity/Attendance$AttendanceBuilder.class
+com/qawi/entity/NutritionCalendarPlan.class
 com/qawi/service/AttendanceService.class
 com/qawi/dto/NutritionTargetSetRequest.class
 com/qawi/entity/PlanExercise.class
@@ -196,6 +202,7 @@ com/qawi/entity/BiometricDevice$BiometricDeviceBuilder.class
 com/qawi/entity/StaffAttendance.class
 com/qawi/dto/RegisterRequest.class
 com/qawi/config/DataSeeder.class
+com/qawi/dto/CopyDayRequest.class
 com/qawi/dto/MemberLeadResponse.class
 com/qawi/entity/RenewalRequest.class
 com/qawi/dto/EnrollMemberRequest.class
@@ -212,6 +219,7 @@ com/qawi/controller/FinanceController.class
 com/qawi/repository/UserRepository.class
 com/qawi/repository/GymMemberPlanRepository.class
 com/qawi/entity/BodyMeasurement$BodyMeasurementBuilder.class
+com/qawi/entity/NutritionPlanDay.class
 com/qawi/entity/StaffProfile$StaffProfileBuilder.class
 com/qawi/service/AccessGuard.class
 com/qawi/repository/ArabicFoodCacheRepository.class
@@ -253,7 +261,9 @@ com/qawi/entity/ArabicFoodCache.class
 com/qawi/entity/EmploymentType.class
 com/qawi/repository/MemberReportRepository.class
 com/qawi/dto/MarkContactedResponse.class
+com/qawi/service/NutritionCalendarPlanService$1.class
 com/qawi/dto/ReceptionTodayStats.class
+com/qawi/service/NutritionCalendarPlanService.class
 com/qawi/entity/BiometricEnrollment$BiometricEnrollmentBuilder.class
 com/qawi/repository/MealLogRepository.class
 com/qawi/dto/ChangePasswordRequest.class
@@ -280,6 +290,7 @@ com/qawi/config/NutritionFoodSeeder.class
 com/qawi/service/HrService.class
 com/qawi/controller/EmployeeController.class
 com/qawi/dto/MealSuggestionRequest.class
+com/qawi/dto/CreateNutritionCalendarPlanRequest.class
 com/qawi/entity/MemberSubscriptionPlan.class
 com/qawi/repository/PlatformPricingPageRepository.class
 com/qawi/dto/CreateGymRequest.class
@@ -293,6 +304,7 @@ com/qawi/service/MemberLeadService.class
 com/qawi/dto/RenewalRequestDto$RenewalRequestDtoBuilder.class
 com/qawi/entity/MemberSuggestion$MemberSuggestionBuilder.class
 com/qawi/entity/GymLeadStatus.class
+com/qawi/dto/UpdateNutritionPlanDayRequest.class
 com/qawi/dto/CreateWalkInMemberRequest.class
 com/qawi/dto/FoodLogRequest.class
 com/qawi/dto/ReceptionMemberResult.class

@@ -37,6 +37,8 @@ public class NutritionV2Service {
     private final MealSuggestionRepository mealSuggestionRepository;
     private final AiNutritionLogRepository aiNutritionLogRepository;
     private final CoachMemberRepository coachMemberRepository;
+    private final NutritionCalendarPlanRepository nutritionCalendarPlanRepository;
+    private final NutritionPlanDayRepository nutritionPlanDayRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Value("${OPENAI_API_KEY:}")
@@ -98,8 +100,32 @@ public class NutritionV2Service {
 
     public List<Map<String, Object>> searchFood(String q) {
         if (q == null || q.isBlank()) return List.of();
-        return foodCacheRepository.search(q.trim()).stream()
-                .limit(10).map(this::buildCacheItemMap).collect(Collectors.toList());
+        String trimmed = q.trim();
+        String normalized = normalizeArabic(trimmed);
+        // Search with original, then normalized if different — deduplicate by id
+        List<ArabicFoodCache> hits = new ArrayList<>(foodCacheRepository.search(trimmed));
+        if (!normalized.equals(trimmed)) {
+            List<ArabicFoodCache> extra = foodCacheRepository.search(normalized);
+            Set<UUID> seen = hits.stream().map(ArabicFoodCache::getId).collect(Collectors.toSet());
+            for (ArabicFoodCache f : extra) if (seen.add(f.getId())) hits.add(f);
+        }
+        return hits.stream().limit(10).map(this::buildCacheItemMap).collect(Collectors.toList());
+    }
+
+    /**
+     * Normalize Arabic text for fuzzy search:
+     * - strip diacritics (tashkeel) U+064B–U+065F, U+0670
+     * - normalize أ إ آ → ا
+     * - normalize ة → ه
+     * - normalize ى → ي
+     */
+    private String normalizeArabic(String input) {
+        if (input == null) return "";
+        return input
+                .replaceAll("[\\u064B-\\u065F\\u0670]", "")
+                .replace('\u0623', '\u0627').replace('\u0625', '\u0627').replace('\u0622', '\u0627')
+                .replace('\u0629', '\u0647')
+                .replace('\u0649', '\u064A');
     }
 
     // ─────────────────────────────────────────────────────────
@@ -660,37 +686,92 @@ public class NutritionV2Service {
             grouped.computeIfAbsent(mt, k -> new ArrayList<>()).add(buildEntryMap(e));
         }
 
-        double totalCal = entries.stream().mapToDouble(e -> e.getCalories() != null ? e.getCalories() : 0).sum();
-        double totalProt = entries.stream().mapToDouble(e -> e.getProteinG() != null ? e.getProteinG() : 0).sum();
+        double totalCal   = entries.stream().mapToDouble(e -> e.getCalories() != null ? e.getCalories() : 0).sum();
+        double totalProt  = entries.stream().mapToDouble(e -> e.getProteinG() != null ? e.getProteinG() : 0).sum();
         double totalCarbs = entries.stream().mapToDouble(e -> e.getCarbsG() != null ? e.getCarbsG() : 0).sum();
-        double totalFat = entries.stream().mapToDouble(e -> e.getFatG() != null ? e.getFatG() : 0).sum();
+        double totalFat   = entries.stream().mapToDouble(e -> e.getFatG() != null ? e.getFatG() : 0).sum();
         int waterMl = waterLogs.stream().mapToInt(w -> w.getAmountMl() != null ? w.getAmountMl() : 0).sum();
 
+        // Resolve targets: NutritionPlanDay takes priority over NutritionTarget default
+        Optional<NutritionPlanDay> planDay = nutritionPlanDayRepository
+                .findActiveplanDayForMemberAndDate(memberId, date);
         Optional<NutritionTarget> tOpt = nutritionTargetRepository.findByMemberId(memberId);
-        int tCal = tOpt.map(NutritionTarget::getCalories).orElse(0);
-        int tProt = tOpt.map(NutritionTarget::getProteinG).orElse(0);
-        int tCarbs = tOpt.map(NutritionTarget::getCarbsG).orElse(0);
-        int tFat = tOpt.map(NutritionTarget::getFatG).orElse(0);
-        int tWaterMl = tOpt.map(t -> t.getWaterMl() != null ? t.getWaterMl() : 2000).orElse(2000);
+
+        int tCal, tProt, tCarbs, tFat, tWaterMl;
+        Map<String, Object> targetMap;
+        Map<String, Object> planDayMap = null;
+
+        if (planDay.isPresent()) {
+            NutritionPlanDay pd = planDay.get();
+            tCal    = pd.getTargetCalories() != null ? pd.getTargetCalories() : (tOpt.map(NutritionTarget::getCalories).orElse(0));
+            tProt   = pd.getTargetProtein()  != null ? pd.getTargetProtein()  : (tOpt.map(NutritionTarget::getProteinG).orElse(0));
+            tCarbs  = pd.getTargetCarbs()    != null ? pd.getTargetCarbs()    : (tOpt.map(NutritionTarget::getCarbsG).orElse(0));
+            tFat    = pd.getTargetFat()      != null ? pd.getTargetFat()      : (tOpt.map(NutritionTarget::getFatG).orElse(0));
+            tWaterMl = pd.getTargetWater()   != null ? pd.getTargetWater()    : (tOpt.map(t -> t.getWaterMl() != null ? t.getWaterMl() : 2000).orElse(2000));
+            // Build a blended target map for the response
+            targetMap = new LinkedHashMap<>();
+            targetMap.put("targetCalories", tCal); targetMap.put("targetProtein", tProt);
+            targetMap.put("targetCarbs", tCarbs);  targetMap.put("targetFat", tFat);
+            targetMap.put("targetWater", tWaterMl / 1000.0);
+            targetMap.put("goal", pd.getGoal() != null ? pd.getGoal() : tOpt.map(NutritionTarget::getGoal).orElse(null));
+            targetMap.put("notes", pd.getNotes());
+            targetMap.put("notesAr", pd.getNotesAr());
+            targetMap.put("source", "PLAN_DAY");
+            planDayMap = buildPlanDayTargetMap(pd);
+        } else {
+            tCal    = tOpt.map(NutritionTarget::getCalories).orElse(0);
+            tProt   = tOpt.map(NutritionTarget::getProteinG).orElse(0);
+            tCarbs  = tOpt.map(NutritionTarget::getCarbsG).orElse(0);
+            tFat    = tOpt.map(NutritionTarget::getFatG).orElse(0);
+            tWaterMl = tOpt.map(t -> t.getWaterMl() != null ? t.getWaterMl() : 2000).orElse(2000);
+            targetMap = tOpt.map(t -> { Map<String, Object> m = buildTargetMap(t); m.put("source", "DEFAULT"); return m; }).orElse(null);
+        }
 
         Map<String, Object> totals = new LinkedHashMap<>();
         totals.put("calories", macroSummary(totalCal, tCal));
-        totals.put("protein", macroSummary(totalProt, tProt));
-        totals.put("carbs", macroSummary(totalCarbs, tCarbs));
-        totals.put("fat", macroSummary(totalFat, tFat));
+        totals.put("protein",  macroSummary(totalProt, tProt));
+        totals.put("carbs",    macroSummary(totalCarbs, tCarbs));
+        totals.put("fat",      macroSummary(totalFat, tFat));
         totals.put("water", Map.of(
-                "consumed", waterMl / 1000.0, "target", tWaterMl / 1000.0,
-                "remaining", Math.max(0, (tWaterMl - waterMl) / 1000.0),
+                "consumed",   waterMl / 1000.0,
+                "target",     tWaterMl / 1000.0,
+                "remaining",  Math.max(0, (tWaterMl - waterMl) / 1000.0),
                 "percentage", tWaterMl > 0 ? Math.round(waterMl * 100.0 / tWaterMl) : 0));
 
+        // Resolve suggestions: plan-day first, then by date, then general
+        List<Map<String, Object>> suggestions;
+        if (planDay.isPresent()) {
+            suggestions = mealSuggestionRepository.findByPlanDayIdOrderByCreatedAtAsc(planDay.get().getId())
+                    .stream().map(this::buildSuggestionMap).collect(Collectors.toList());
+        } else {
+            suggestions = mealSuggestionRepository.findByMemberIdAndSuggestionDateOrderByCreatedAtAsc(memberId, date)
+                    .stream().map(this::buildSuggestionMap).collect(Collectors.toList());
+            if (suggestions.isEmpty()) {
+                suggestions = mealSuggestionRepository.findGeneralSuggestionsForMember(memberId)
+                        .stream().limit(5).map(this::buildSuggestionMap).collect(Collectors.toList());
+            }
+        }
+
         Map<String, Object> result = new LinkedHashMap<>();
-        result.put("date", date.toString());
-        result.put("target", tOpt.map(this::buildTargetMap).orElse(null));
+        result.put("date",          date.toString());
+        result.put("target",        targetMap);
+        result.put("todayPlanDay",  planDayMap);
         result.put("entriesByMeal", grouped);
-        result.put("totals", totals);
-        result.put("suggestions", mealSuggestionRepository.findByMemberIdOrderByCreatedAtDesc(memberId)
-                .stream().limit(5).map(this::buildSuggestionMap).collect(Collectors.toList()));
+        result.put("totals",        totals);
+        result.put("suggestions",   suggestions);
         return result;
+    }
+
+    private Map<String, Object> buildPlanDayTargetMap(NutritionPlanDay d) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("id", d.getId()); m.put("planId", d.getPlanId());
+        m.put("dayDate", d.getDayDate().toString()); m.put("dayName", d.getDayName());
+        m.put("dayNameAr", d.getDayNameAr());
+        m.put("targetCalories", d.getTargetCalories()); m.put("targetProtein", d.getTargetProtein());
+        m.put("targetCarbs", d.getTargetCarbs()); m.put("targetFat", d.getTargetFat());
+        m.put("targetWater", d.getTargetWater() != null ? d.getTargetWater() / 1000.0 : null);
+        m.put("goal", d.getGoal()); m.put("notes", d.getNotes()); m.put("notesAr", d.getNotesAr());
+        return m;
     }
 
     private Map<String, Object> macroSummary(double consumed, int target) {

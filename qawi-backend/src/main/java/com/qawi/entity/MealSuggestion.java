@@ -3,6 +3,7 @@ package com.qawi.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -38,6 +39,12 @@ public class MealSuggestion {
 
     @Column(name = "target_protein")
     private Integer targetProtein;
+
+    @Column(name = "plan_day_id")
+    private UUID planDayId;
+
+    @Column(name = "suggestion_date")
+    private LocalDate suggestionDate;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     @Builder.Default

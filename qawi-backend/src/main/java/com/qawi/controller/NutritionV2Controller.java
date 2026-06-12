@@ -1,6 +1,7 @@
 package com.qawi.controller;
 
 import com.qawi.dto.*;
+import com.qawi.service.NutritionCalendarPlanService;
 import com.qawi.service.NutritionV2Service;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ import java.util.UUID;
 public class NutritionV2Controller {
 
     private final NutritionV2Service svc;
+    private final NutritionCalendarPlanService planSvc;
 
     // ── Targets ──────────────────────────────────────────────
 
@@ -165,6 +167,82 @@ public class NutritionV2Controller {
     public ResponseEntity<List<Map<String, Object>>> getRecentFoods(
             @AuthenticationPrincipal UserDetails ud) {
         return ResponseEntity.ok(svc.getRecentFoods(ud.getUsername()));
+    }
+
+    // ── Nutrition Calendar Plans (/nutrition/calendar-plans) ──
+
+    @PostMapping("/calendar-plans")
+    @PreAuthorize("hasAnyRole('COACH','NUTRITIONIST','GYM_ADMIN','SUPER_ADMIN')")
+    public ResponseEntity<Map<String, Object>> createCalendarPlan(
+            @Valid @RequestBody CreateNutritionCalendarPlanRequest req,
+            @AuthenticationPrincipal UserDetails ud) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(planSvc.createPlan(ud.getUsername(), req));
+    }
+
+    @GetMapping("/calendar-plans/member/{memberId}")
+    public ResponseEntity<List<Map<String, Object>>> getCalendarPlansByMember(
+            @PathVariable UUID memberId,
+            @AuthenticationPrincipal UserDetails ud) {
+        return ResponseEntity.ok(planSvc.getPlansByMember(ud.getUsername(), memberId));
+    }
+
+    @GetMapping("/calendar-plans/{planId}")
+    public ResponseEntity<Map<String, Object>> getCalendarPlanById(
+            @PathVariable UUID planId,
+            @AuthenticationPrincipal UserDetails ud) {
+        return ResponseEntity.ok(planSvc.getPlanById(ud.getUsername(), planId));
+    }
+
+    @GetMapping("/calendar-plans/days/{dayId}")
+    public ResponseEntity<Map<String, Object>> getCalendarDayDetail(
+            @PathVariable UUID dayId,
+            @AuthenticationPrincipal UserDetails ud) {
+        return ResponseEntity.ok(planSvc.getDayDetail(ud.getUsername(), dayId));
+    }
+
+    @PutMapping("/calendar-plans/days/{dayId}")
+    @PreAuthorize("hasAnyRole('COACH','NUTRITIONIST','GYM_ADMIN','SUPER_ADMIN')")
+    public ResponseEntity<Map<String, Object>> updateCalendarPlanDay(
+            @PathVariable UUID dayId,
+            @Valid @RequestBody UpdateNutritionPlanDayRequest req,
+            @AuthenticationPrincipal UserDetails ud) {
+        return ResponseEntity.ok(planSvc.updatePlanDay(ud.getUsername(), dayId, req));
+    }
+
+    @PostMapping("/calendar-plans/days/{dayId}/suggestions")
+    @PreAuthorize("hasAnyRole('COACH','NUTRITIONIST','GYM_ADMIN','SUPER_ADMIN')")
+    public ResponseEntity<Map<String, Object>> addCalendarDaySuggestion(
+            @PathVariable UUID dayId,
+            @Valid @RequestBody AddDaySuggestionRequest req,
+            @AuthenticationPrincipal UserDetails ud) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(planSvc.addDaySuggestion(ud.getUsername(), dayId, req));
+    }
+
+    @DeleteMapping("/calendar-plans/suggestions/{suggestionId}")
+    @PreAuthorize("hasAnyRole('COACH','NUTRITIONIST','GYM_ADMIN','SUPER_ADMIN')")
+    public ResponseEntity<Void> deleteCalendarDaySuggestion(
+            @PathVariable UUID suggestionId,
+            @AuthenticationPrincipal UserDetails ud) {
+        planSvc.deleteDaySuggestion(ud.getUsername(), suggestionId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/calendar-plans/days/{dayId}/copy")
+    @PreAuthorize("hasAnyRole('COACH','NUTRITIONIST','GYM_ADMIN','SUPER_ADMIN')")
+    public ResponseEntity<Map<String, Object>> copyCalendarDay(
+            @PathVariable UUID dayId,
+            @RequestBody CopyDayRequest req,
+            @AuthenticationPrincipal UserDetails ud) {
+        return ResponseEntity.ok(planSvc.copyDay(ud.getUsername(), dayId, req));
+    }
+
+    @DeleteMapping("/calendar-plans/{planId}")
+    @PreAuthorize("hasAnyRole('COACH','NUTRITIONIST','GYM_ADMIN','SUPER_ADMIN')")
+    public ResponseEntity<Void> deactivateCalendarPlan(
+            @PathVariable UUID planId,
+            @AuthenticationPrincipal UserDetails ud) {
+        planSvc.deactivatePlan(ud.getUsername(), planId);
+        return ResponseEntity.noContent().build();
     }
 
     // ── Staff: member list + overview ─────────────────────────

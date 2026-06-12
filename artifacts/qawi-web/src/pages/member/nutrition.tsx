@@ -568,6 +568,40 @@ export default function MemberNutrition() {
             );
           })}
 
+          {/* Today's Plan Day card */}
+          {data?.todayPlanDay && (
+            <div className="glass-card border-primary/15 rounded-2xl p-4 space-y-2">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-sm">📅</span>
+                <h3 className="text-sm font-semibold text-white">
+                  {isAr ? `خطة اليوم — ${data.todayPlanDay.dayNameAr ?? data.todayPlanDay.dayName}` : `Today's Plan — ${data.todayPlanDay.dayName}`}
+                </h3>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-primary/15 text-primary ml-auto">
+                  {isAr ? 'نشطة' : 'Active Plan'}
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                {[
+                  { l: isAr ? 'سعرات' : 'Cal', v: `${data.todayPlanDay.targetCalories ?? '—'} kcal`, c: N.calories },
+                  { l: isAr ? 'بروتين' : 'Prot', v: `${data.todayPlanDay.targetProtein ?? '—'}g`, c: N.protein },
+                  { l: isAr ? 'كربوهيدرات' : 'Carbs', v: `${data.todayPlanDay.targetCarbs ?? '—'}g`, c: N.carbs },
+                  { l: isAr ? 'دهون' : 'Fat', v: `${data.todayPlanDay.targetFat ?? '—'}g`, c: N.fat },
+                  { l: isAr ? 'ماء' : 'Water', v: `${data.todayPlanDay.targetWater ?? 2}L`, c: N.water },
+                ].map(({ l, v, c }) => (
+                  <div key={l} className="bg-white/5 rounded-lg p-2 text-center">
+                    <div className="text-muted-foreground mb-0.5">{l}</div>
+                    <div className="font-semibold" style={{ color: c }}>{v}</div>
+                  </div>
+                ))}
+              </div>
+              {(data.todayPlanDay.notesAr || data.todayPlanDay.notes) && (
+                <p className="text-xs text-muted-foreground bg-white/5 rounded px-3 py-2 italic">
+                  📝 {isAr && data.todayPlanDay.notesAr ? data.todayPlanDay.notesAr : data.todayPlanDay.notes}
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Suggestions from coach/nutritionist */}
           {suggestions.length > 0 && (
             <div className="glass-card border-primary/20 rounded-2xl p-4">

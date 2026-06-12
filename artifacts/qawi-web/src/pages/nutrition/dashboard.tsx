@@ -6,6 +6,7 @@ import {
 import {
   UtensilsCrossed, Target, TrendingUp, Users, ChevronRight, CheckCircle,
   AlertCircle, XCircle, Loader2, Plus, Trash2, Droplets, Flame, Zap,
+  CalendarDays, ChevronDown, ChevronUp, Calendar, NotebookPen,
 } from 'lucide-react';
 import { apiFetch } from '@/services/api';
 import { useLanguage } from '@/hooks/use-language';
@@ -289,6 +290,526 @@ function AddSuggestionModal({
   );
 }
 
+// ─── Create Calendar Plan Modal ───────────────────────────────
+
+function CreateCalendarPlanModal({
+  memberId, memberName, isAr, onClose,
+}: { memberId: string; memberName: string; isAr: boolean; onClose: () => void }) {
+  const qc = useQueryClient();
+  const today = new Date().toISOString().slice(0, 10);
+  const nextMonth = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+  const [form, setForm] = useState({
+    title: isAr ? `خطة تغذية — ${memberName}` : `Nutrition Plan — ${memberName}`,
+    startDate: today, endDate: nextMonth,
+    targetCalories: '2000', targetProtein: '150',
+    targetCarbs: '200', targetFat: '65', targetWater: '2',
+    goal: 'MAINTENANCE', notes: '',
+  });
+
+  const save = useMutation({
+    mutationFn: () => apiFetch('/nutrition/calendar-plans', {
+      method: 'POST',
+      data: {
+        memberId,
+        title: form.title,
+        startDate: form.startDate,
+        endDate: form.endDate,
+        defaultTargetCalories: parseInt(form.targetCalories) || 2000,
+        defaultTargetProtein: parseInt(form.targetProtein) || 150,
+        defaultTargetCarbs: parseInt(form.targetCarbs) || 200,
+        defaultTargetFat: parseInt(form.targetFat) || 65,
+        defaultTargetWater: parseFloat(form.targetWater) || 2,
+        goal: form.goal,
+        notes: form.notes || null,
+      },
+    }),
+    onSuccess: () => {
+      toast.success(isAr ? 'تم إنشاء الخطة' : 'Plan created');
+      qc.invalidateQueries({ queryKey: ['nutrition', 'calendar-plans', memberId] });
+      onClose();
+    },
+    onError: (e: any) => toast.error((isAr ? e?.messageAr : e?.error) || 'Failed'),
+  });
+
+  const f = (k: keyof typeof form, lbl: string, lbAr: string, color: string, sfx: string, type = 'number') => (
+    <div>
+      <label className="text-xs mb-1 block" style={{ color }}>{isAr ? lbAr : lbl} ({sfx})</label>
+      <input
+        type={type}
+        value={form[k]}
+        onChange={(e) => setForm((p) => ({ ...p, [k]: e.target.value }))}
+        className="w-full bg-black/20 border border-white/10 rounded-md text-sm text-white px-3 py-2"
+      />
+    </div>
+  );
+
+  return (
+    <DialogContent className="glass-card border-white/10 max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogTitle>{isAr ? `خطة تغذية جديدة — ${memberName}` : `New Nutrition Plan — ${memberName}`}</DialogTitle>
+      <DialogDescription className="text-muted-foreground text-sm">
+        {isAr ? 'سيتم إنشاء أيام تلقائياً للفترة المحددة' : 'Days will be auto-generated for the selected period'}
+      </DialogDescription>
+      <div className="space-y-4 pt-2">
+        <div>
+          <label className="text-xs text-muted-foreground mb-1 block">{isAr ? 'عنوان الخطة' : 'Plan Title'}</label>
+          <input
+            type="text" value={form.title}
+            onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
+            className="w-full bg-black/20 border border-white/10 rounded-md text-sm text-white px-3 py-2"
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          {f('startDate', 'Start Date', 'تاريخ البداية', N.protein, '', 'date')}
+          {f('endDate', 'End Date', 'تاريخ الانتهاء', N.calories, '', 'date')}
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {f('targetCalories', 'Calories', 'سعرات', N.calories, 'kcal')}
+          {f('targetProtein', 'Protein', 'بروتين', N.protein, 'g')}
+          {f('targetCarbs', 'Carbs', 'كربوهيدرات', N.carbs, 'g')}
+          {f('targetFat', 'Fat', 'دهون', N.fat, 'g')}
+          {f('targetWater', 'Water', 'ماء', N.water, 'L')}
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground mb-2 block">{isAr ? 'الهدف' : 'Goal'}</label>
+          <div className="flex flex-wrap gap-2">
+            {GOALS.map((g) => (
+              <button key={g.key} type="button"
+                onClick={() => setForm((p) => ({ ...p, goal: g.key }))}
+                className={cn('px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors',
+                  form.goal === g.key ? 'border-primary bg-primary/15 text-primary' : 'border-white/10 bg-black/20 text-muted-foreground hover:border-white/20')}
+              >{isAr ? g.ar : g.en}</button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground mb-1 block">{isAr ? 'ملاحظات' : 'Notes'}</label>
+          <input type="text" value={form.notes}
+            onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
+            className="w-full bg-black/20 border border-white/10 rounded-md text-sm text-white px-3 py-2"
+            placeholder={isAr ? 'أي ملاحظات خاصة...' : 'Any special notes...'}
+          />
+        </div>
+        <Button onClick={() => save.mutate()} disabled={save.isPending || !form.title.trim()} className="w-full">
+          {save.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CalendarDays size={14} className="mr-2" />}
+          {isAr ? 'إنشاء الخطة' : 'Create Plan'}
+        </Button>
+      </div>
+    </DialogContent>
+  );
+}
+
+// ─── Day Editor Modal ──────────────────────────────────────────
+
+function DayEditorModal({
+  dayId, isAr, onClose,
+}: { dayId: string; isAr: boolean; onClose: () => void }) {
+  const qc = useQueryClient();
+  const [addSugg, setAddSugg] = useState(false);
+  const [suggForm, setSuggForm] = useState({ mealType: 'BREAKFAST', description: '', descriptionAr: '', targetCalories: '', targetProtein: '' });
+  const [editTargets, setEditTargets] = useState(false);
+  const [tForm, setTForm] = useState<any>(null);
+
+  const { data: day, isLoading } = useQuery({
+    queryKey: ['nutrition', 'calendar-day', dayId],
+    queryFn: () => apiFetch<any>(`/nutrition/calendar-plans/days/${dayId}`),
+  });
+
+  const updateDay = useMutation({
+    mutationFn: () => apiFetch(`/nutrition/calendar-plans/days/${dayId}`, {
+      method: 'PUT',
+      data: {
+        targetCalories: parseInt(tForm.targetCalories) || null,
+        targetProtein: parseInt(tForm.targetProtein) || null,
+        targetCarbs: parseInt(tForm.targetCarbs) || null,
+        targetFat: parseInt(tForm.targetFat) || null,
+        targetWater: parseFloat(tForm.targetWater) || null,
+        notes: tForm.notes || null,
+        notesAr: tForm.notesAr || null,
+      },
+    }),
+    onSuccess: () => {
+      toast.success(isAr ? 'تم التحديث' : 'Updated');
+      qc.invalidateQueries({ queryKey: ['nutrition', 'calendar-day', dayId] });
+      qc.invalidateQueries({ queryKey: ['nutrition', 'calendar-plans'] });
+      setEditTargets(false);
+    },
+    onError: (e: any) => toast.error((isAr ? e?.messageAr : e?.error) || 'Failed'),
+  });
+
+  const addSuggestion = useMutation({
+    mutationFn: () => apiFetch(`/nutrition/calendar-plans/days/${dayId}/suggestions`, {
+      method: 'POST',
+      data: {
+        mealType: suggForm.mealType,
+        description: suggForm.description || null,
+        descriptionAr: suggForm.descriptionAr || null,
+        targetCalories: parseInt(suggForm.targetCalories) || null,
+        targetProtein: parseInt(suggForm.targetProtein) || null,
+      },
+    }),
+    onSuccess: () => {
+      toast.success(isAr ? 'تم إضافة الاقتراح' : 'Suggestion added');
+      qc.invalidateQueries({ queryKey: ['nutrition', 'calendar-day', dayId] });
+      setSuggForm({ mealType: 'BREAKFAST', description: '', descriptionAr: '', targetCalories: '', targetProtein: '' });
+      setAddSugg(false);
+    },
+    onError: (e: any) => toast.error((isAr ? e?.messageAr : e?.error) || 'Failed'),
+  });
+
+  const deleteSugg = useMutation({
+    mutationFn: (id: string) => apiFetch(`/nutrition/calendar-plans/suggestions/${id}`, { method: 'DELETE' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['nutrition', 'calendar-day', dayId] }),
+  });
+
+  if (isLoading) return (
+    <DialogContent className="glass-card border-white/10 max-w-md">
+      <DialogTitle>{isAr ? 'تفاصيل اليوم' : 'Day Details'}</DialogTitle>
+      <DialogDescription className="text-muted-foreground text-sm sr-only">
+        {isAr ? 'جارٍ تحميل بيانات اليوم' : 'Loading day details'}
+      </DialogDescription>
+      <div className="py-8 flex justify-center"><Loader2 className="animate-spin text-primary" /></div>
+    </DialogContent>
+  );
+
+  if (!day) return null;
+
+  return (
+    <DialogContent className="glass-card border-white/10 max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogTitle>
+        {isAr ? day.dayNameAr : day.dayName} — {day.dayDate}
+      </DialogTitle>
+      <DialogDescription className="text-muted-foreground text-sm">
+        {GOALS.find((g) => g.key === day.goal)?.[isAr ? 'ar' : 'en'] ?? ''}
+      </DialogDescription>
+      <div className="space-y-4 pt-1">
+        {/* Targets */}
+        <div className="glass-card border-white/5 rounded-xl p-3">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              {isAr ? 'الأهداف' : 'Targets'}
+            </span>
+            <button onClick={() => { setEditTargets((v) => !v); setTForm({ targetCalories: String(day.targetCalories ?? ''), targetProtein: String(day.targetProtein ?? ''), targetCarbs: String(day.targetCarbs ?? ''), targetFat: String(day.targetFat ?? ''), targetWater: String(day.targetWater ?? '2'), notes: day.notes ?? '', notesAr: day.notesAr ?? '' }); }}
+              className="text-xs text-primary hover:underline"
+            >{isAr ? 'تعديل' : 'Edit'}</button>
+          </div>
+          {editTargets && tForm ? (
+            <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  ['targetCalories', 'Cal', 'سعرات', N.calories, 'kcal'],
+                  ['targetProtein', 'Prot', 'بروتين', N.protein, 'g'],
+                  ['targetCarbs', 'Carbs', 'كربوهيدرات', N.carbs, 'g'],
+                  ['targetFat', 'Fat', 'دهون', N.fat, 'g'],
+                  ['targetWater', 'Water', 'ماء', N.water, 'L'],
+                ].map(([k, l, la, c, u]) => (
+                  <div key={k}>
+                    <label className="text-xs mb-1 block" style={{ color: c }}>{isAr ? la : l} ({u})</label>
+                    <input type="number" value={tForm[k]}
+                      onChange={(e) => setTForm((p: any) => ({ ...p, [k]: e.target.value }))}
+                      className="w-full bg-black/20 border border-white/10 rounded text-xs text-white px-2 py-1.5"
+                    />
+                  </div>
+                ))}
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">{isAr ? 'ملاحظات (ع)' : 'Notes (AR)'}</label>
+                <input type="text" value={tForm.notesAr} dir="rtl"
+                  onChange={(e) => setTForm((p: any) => ({ ...p, notesAr: e.target.value }))}
+                  className="w-full bg-black/20 border border-white/10 rounded text-xs text-white px-2 py-1.5"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">{isAr ? 'ملاحظات (ع)' : 'Notes (EN)'}</label>
+                <input type="text" value={tForm.notes}
+                  onChange={(e) => setTForm((p: any) => ({ ...p, notes: e.target.value }))}
+                  className="w-full bg-black/20 border border-white/10 rounded text-xs text-white px-2 py-1.5"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" onClick={() => updateDay.mutate()} disabled={updateDay.isPending} className="flex-1">
+                  {updateDay.isPending ? <Loader2 size={12} className="animate-spin mr-1" /> : null}{isAr ? 'حفظ' : 'Save'}
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setEditTargets(false)} className="border-white/10">{isAr ? 'إلغاء' : 'Cancel'}</Button>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              {[
+                { l: isAr ? 'سعرات' : 'Cal', v: `${day.targetCalories ?? '—'} kcal`, c: N.calories },
+                { l: isAr ? 'بروتين' : 'Prot', v: `${day.targetProtein ?? '—'}g`, c: N.protein },
+                { l: isAr ? 'كربوهيدرات' : 'Carbs', v: `${day.targetCarbs ?? '—'}g`, c: N.carbs },
+                { l: isAr ? 'دهون' : 'Fat', v: `${day.targetFat ?? '—'}g`, c: N.fat },
+                { l: isAr ? 'ماء' : 'Water', v: `${day.targetWater ?? 2}L`, c: N.water },
+              ].map(({ l, v, c }) => (
+                <div key={l} className="bg-white/5 rounded p-2">
+                  <div className="text-muted-foreground mb-0.5">{l}</div>
+                  <div className="font-semibold" style={{ color: c }}>{v}</div>
+                </div>
+              ))}
+            </div>
+          )}
+          {day.notes && !editTargets && (
+            <p className="text-xs text-muted-foreground mt-2 italic">📝 {isAr && day.notesAr ? day.notesAr : day.notes}</p>
+          )}
+        </div>
+
+        {/* Suggestions */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              {isAr ? 'اقتراحات الوجبات' : 'Meal Suggestions'}
+            </span>
+            <button onClick={() => setAddSugg((v) => !v)} className="text-xs text-primary hover:underline flex items-center gap-1">
+              <Plus size={12} />{isAr ? 'إضافة' : 'Add'}
+            </button>
+          </div>
+
+          {addSugg && (
+            <div className="bg-white/5 rounded-xl p-3 mb-3 space-y-2">
+              <div className="flex flex-wrap gap-1">
+                {Object.entries(MEAL_LABELS).map(([k, v]) => (
+                  <button key={k} onClick={() => setSuggForm((p) => ({ ...p, mealType: k }))}
+                    className={cn('px-2 py-1 rounded text-xs font-medium border transition-colors',
+                      suggForm.mealType === k ? 'border-primary bg-primary/15 text-primary' : 'border-white/10 bg-black/20 text-muted-foreground')}
+                  >{v.emoji} {isAr ? v.ar : v.en}</button>
+                ))}
+              </div>
+              <input type="text" value={suggForm.descriptionAr} dir="rtl"
+                onChange={(e) => setSuggForm((p) => ({ ...p, descriptionAr: e.target.value }))}
+                className="w-full bg-black/20 border border-white/10 rounded text-xs text-white px-2 py-1.5"
+                placeholder="الوصف بالعربي..."
+              />
+              <input type="text" value={suggForm.description}
+                onChange={(e) => setSuggForm((p) => ({ ...p, description: e.target.value }))}
+                className="w-full bg-black/20 border border-white/10 rounded text-xs text-white px-2 py-1.5"
+                placeholder="Description in English..."
+              />
+              <div className="flex gap-2">
+                <input type="number" value={suggForm.targetCalories}
+                  onChange={(e) => setSuggForm((p) => ({ ...p, targetCalories: e.target.value }))}
+                  className="flex-1 bg-black/20 border border-white/10 rounded text-xs text-white px-2 py-1.5"
+                  placeholder={isAr ? 'سعرات' : 'Cal'}
+                />
+                <input type="number" value={suggForm.targetProtein}
+                  onChange={(e) => setSuggForm((p) => ({ ...p, targetProtein: e.target.value }))}
+                  className="flex-1 bg-black/20 border border-white/10 rounded text-xs text-white px-2 py-1.5"
+                  placeholder={isAr ? 'بروتين (g)' : 'Protein (g)'}
+                />
+              </div>
+              <Button size="sm" onClick={() => addSuggestion.mutate()}
+                disabled={addSuggestion.isPending || (!suggForm.description && !suggForm.descriptionAr)} className="w-full">
+                {addSuggestion.isPending ? <Loader2 size={12} className="animate-spin mr-1" /> : null}
+                {isAr ? 'إضافة اقتراح' : 'Add Suggestion'}
+              </Button>
+            </div>
+          )}
+
+          {(day.suggestions ?? []).length === 0 ? (
+            <p className="text-xs text-muted-foreground text-center py-2">{isAr ? 'لا توجد اقتراحات' : 'No suggestions yet'}</p>
+          ) : (
+            <div className="space-y-2">
+              {day.suggestions.map((s: any) => {
+                const ml = MEAL_LABELS[s.mealType];
+                return (
+                  <div key={s.id} className="flex items-start justify-between gap-2 bg-white/5 rounded-lg p-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs text-muted-foreground">{ml?.emoji} {isAr ? ml?.ar : ml?.en}</div>
+                      <p className="text-xs text-white">{isAr && s.descriptionAr ? s.descriptionAr : s.description}</p>
+                      {(s.targetCalories || s.targetProtein) && (
+                        <p className="text-xs text-muted-foreground">{s.targetCalories ? `${s.targetCalories} kcal` : ''}{s.targetProtein ? ` · ${s.targetProtein}g` : ''}</p>
+                      )}
+                    </div>
+                    <button onClick={() => deleteSugg.mutate(s.id)} className="text-red-400/50 hover:text-red-400"><Trash2 size={12} /></button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </DialogContent>
+  );
+}
+
+// ─── Calendar Plan Section (inside MemberOverviewPanel) ───────
+
+const DAY_STATUS_COLOR: Record<string, string> = {
+  ON_TRACK: '#22C55E', UNDER: '#3B82F6', OVER: '#EF4444',
+  NO_LOG: '#F59E0B', UPCOMING: 'rgba(255,255,255,0.15)', NO_TARGET: 'rgba(255,255,255,0.08)',
+};
+
+function CalendarPlanSection({ memberId, isAr }: { memberId: string; isAr: boolean }) {
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [selectedDayId, setSelectedDayId] = useState<string | null>(null);
+  const [activePlanId, setActivePlanId] = useState<string | null>(null);
+
+  const { data: plans = [], isLoading } = useQuery<any[]>({
+    queryKey: ['nutrition', 'calendar-plans', memberId],
+    queryFn: () => apiFetch<any[]>(`/nutrition/calendar-plans/member/${memberId}`),
+    enabled: !!memberId,
+  });
+
+  const activePlan = plans.find((p) => p.isActive) ?? plans[0];
+
+  const { data: planDetail } = useQuery({
+    queryKey: ['nutrition', 'calendar-plan-detail', activePlan?.id],
+    queryFn: () => apiFetch<any>(`/nutrition/calendar-plans/${activePlan?.id}`),
+    enabled: !!activePlan?.id,
+  });
+
+  const deactivate = useMutation({
+    mutationFn: (id: string) => apiFetch(`/nutrition/calendar-plans/${id}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      toast.success(isAr ? 'تم إلغاء الخطة' : 'Plan deactivated');
+      qc.invalidateQueries({ queryKey: ['nutrition', 'calendar-plans', memberId] });
+    },
+  });
+
+  const days: any[] = planDetail?.days ?? [];
+
+  return (
+    <div className="glass-card border-white/5 rounded-xl overflow-hidden">
+      <button
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/5 transition-colors"
+        onClick={() => setOpen((v) => !v)}
+      >
+        <div className="flex items-center gap-2">
+          <CalendarDays size={15} className="text-primary" />
+          <span className="text-sm font-semibold text-white">
+            {isAr ? 'خطة التقويم الغذائي' : 'Nutrition Calendar Plan'}
+          </span>
+          {activePlan && (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-primary/15 text-primary">
+              {isAr ? 'نشطة' : 'Active'}
+            </span>
+          )}
+        </div>
+        {open ? <ChevronUp size={14} className="text-muted-foreground" /> : <ChevronDown size={14} className="text-muted-foreground" />}
+      </button>
+
+      {open && (
+        <div className="px-4 pb-4 space-y-3 border-t border-white/5">
+          {/* Toolbar */}
+          <div className="flex items-center justify-between pt-3">
+            <span className="text-xs text-muted-foreground">
+              {plans.length > 0
+                ? (isAr ? `${plans.length} خطط` : `${plans.length} plan${plans.length !== 1 ? 's' : ''}`)
+                : (isAr ? 'لا توجد خطط' : 'No plans yet')}
+            </span>
+            <Button size="sm" variant="outline" className="border-primary/40 text-primary h-7 text-xs"
+              onClick={() => setCreateOpen(true)}>
+              <Plus size={12} className="mr-1" />{isAr ? 'خطة جديدة' : 'New Plan'}
+            </Button>
+          </div>
+
+          {isLoading ? (
+            <div className="space-y-2">{[1, 2].map((i) => <Skeleton key={i} className="h-10 rounded-lg" />)}</div>
+          ) : !activePlan ? (
+            <div className="text-center py-6">
+              <Calendar size={28} className="mx-auto text-muted-foreground/30 mb-2" />
+              <p className="text-xs text-muted-foreground">{isAr ? 'أنشئ خطة تقويمية للعضو' : 'Create a calendar plan for this member'}</p>
+            </div>
+          ) : (
+            <>
+              {/* Active plan header */}
+              <div className="bg-primary/8 rounded-xl p-3 border border-primary/15">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-sm font-semibold text-white">{activePlan.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {activePlan.startDate} → {activePlan.endDate}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => deactivate.mutate(activePlan.id)}
+                    className="text-xs text-red-400/50 hover:text-red-400 transition-colors"
+                  >{isAr ? 'إلغاء' : 'Deactivate'}</button>
+                </div>
+              </div>
+
+              {/* Day grid */}
+              {days.length > 0 && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    {isAr ? 'انقر على يوم لعرض/تعديل التفاصيل' : 'Click a day to view/edit details'}
+                  </p>
+                  <div className="grid grid-cols-7 gap-1">
+                    {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map((d) => (
+                      <div key={d} className="text-center text-xs text-muted-foreground/50 pb-1">{d}</div>
+                    ))}
+                    {/* Leading empty cells */}
+                    {Array.from({ length: (new Date(days[0]?.dayDate).getDay() + 6) % 7 }).map((_, i) => (
+                      <div key={`e-${i}`} />
+                    ))}
+                    {days.map((d: any) => {
+                      const dotColor = DAY_STATUS_COLOR[d.status] ?? 'rgba(255,255,255,0.08)';
+                      const isToday = d.dayDate === new Date().toISOString().slice(0, 10);
+                      return (
+                        <button
+                          key={d.id}
+                          onClick={() => setSelectedDayId(d.id)}
+                          title={d.dayDate}
+                          className={cn(
+                            'relative aspect-square rounded-lg flex flex-col items-center justify-center transition-all hover:scale-105',
+                            isToday ? 'ring-1 ring-primary/60' : '',
+                          )}
+                          style={{ backgroundColor: `${dotColor}25`, border: `1px solid ${dotColor}40` }}
+                        >
+                          <span className="text-xs font-medium" style={{ color: dotColor }}>
+                            {new Date(d.dayDate + 'T00:00:00').getDate()}
+                          </span>
+                          {d.suggestionCount > 0 && (
+                            <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-primary" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {/* Legend */}
+                  <div className="flex flex-wrap gap-3 mt-2 text-xs text-muted-foreground">
+                    {[
+                      { key: 'ON_TRACK', en: 'On Track', ar: 'مناسب' },
+                      { key: 'UNDER', en: 'Under', ar: 'أقل' },
+                      { key: 'OVER', en: 'Over', ar: 'أكثر' },
+                      { key: 'NO_LOG', en: 'No Log', ar: 'لا سجل' },
+                      { key: 'UPCOMING', en: 'Upcoming', ar: 'قادم' },
+                    ].map(({ key, en, ar }) => (
+                      <span key={key} className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: DAY_STATUS_COLOR[key] }} />
+                        {isAr ? ar : en}
+                      </span>
+                    ))}
+                    <span className="flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block" /> {isAr ? 'يوجد اقتراح' : 'Has suggestion'}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Create plan modal */}
+      <Dialog open={createOpen} onOpenChange={(v) => !v && setCreateOpen(false)}>
+        <CreateCalendarPlanModal
+          memberId={memberId} memberName="" isAr={isAr}
+          onClose={() => setCreateOpen(false)}
+        />
+      </Dialog>
+
+      {/* Day editor modal */}
+      <Dialog open={!!selectedDayId} onOpenChange={(v) => !v && setSelectedDayId(null)}>
+        {selectedDayId && (
+          <DayEditorModal dayId={selectedDayId} isAr={isAr} onClose={() => setSelectedDayId(null)} />
+        )}
+      </Dialog>
+    </div>
+  );
+}
+
 // ─── Member Overview Panel ────────────────────────────────────
 
 function MemberOverviewPanel({
@@ -498,6 +1019,9 @@ function MemberOverviewPanel({
           )}
         </div>
       )}
+
+      {/* Calendar Plan Section */}
+      <CalendarPlanSection memberId={memberId} isAr={isAr} />
 
       {/* Meal Suggestions */}
       {overview.suggestions?.length > 0 && (

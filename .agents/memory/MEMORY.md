@@ -1,6 +1,2 @@
-- [Role routing pattern](role-routing.md) — all 7 roles need entries in ROLE_HOME map AND home.tsx; missing any causes infinite redirect loop.
-- [Nutrition goal enum](nutrition-enum.md) — backend expects MUSCLE_GAIN not GAIN_MUSCLE; valid values: WEIGHT_LOSS, MAINTENANCE, MUSCLE_GAIN, RECOMPOSITION.
-- [Mobile API URL](mobile-api-url.md) — must NOT include :9000 port; routes via Replit shared proxy at /api/v1 with no port.
-- [Spring Boot route conflict pattern](spring-boot-route-conflicts.md) — when adding a new controller owning a base path, remove any overlapping method mappings from existing controllers first or Spring fails to start with "Ambiguous mapping" error.
-- [Nutrition V2 API conventions](nutrition-v2-api.md) — endpoint paths, request bodies, and response shapes for the NutritionV2 system (V3 endpoints are obsolete)
-- [Staff gymId seeder bug](staff-gymid-seeder.md) — V3DataSeeder used findAll().stream().findFirst() to find gym; non-deterministic ordering assigned RECEPTIONIST/ACCOUNTANT/HR to wrong gym; fixed with findByName("Iron Peak Gym") + self-heal step
+- [Nutrition V2 system](nutrition-v2.md) — endpoint at /api/v1/nutrition/search (not /foods/search); calendar plans at /api/v1/nutrition/calendar-plans
+- [Mobile API URL env](mobile-api-url.md) — EXPO_PUBLIC_API_URL in artifacts/qawi-mobile/.env must NOT include :9000; proxy routes through shared proxy at port 80

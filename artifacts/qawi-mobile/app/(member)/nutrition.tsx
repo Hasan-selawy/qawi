@@ -537,6 +537,33 @@ function AddFoodModal({
   const [unit, setUnit] = useState("servings");
   const [mealType, setMealType] = useState(initialMealType || "BREAKFAST");
   const [aiResult, setAiResult] = useState<any>(null);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const searchTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Debounced cache search — fires 300ms after user stops typing
+  const handleFoodInputChange = (text: string) => {
+    setFoodInput(text);
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    if (!text.trim() || text.trim().length < 2) { setSearchResults([]); return; }
+    searchTimerRef.current = setTimeout(async () => {
+      try {
+        setSearchLoading(true);
+        const hits = await apiFetch<any[]>(`/nutrition/search?q=${encodeURIComponent(text.trim())}`);
+        setSearchResults(Array.isArray(hits) ? hits.slice(0, 6) : []);
+      } catch { setSearchResults([]); }
+      finally { setSearchLoading(false); }
+    }, 300);
+  };
+
+  const pickCachedFood = (item: any) => {
+    const name = lang === "ar" && item.nameAr ? item.nameAr : item.name;
+    setFoodInput(name);
+    setSearchResults([]);
+    // Auto-fill quantity from serving size hint
+    if (item.servingSize) setQuantity(String(item.servingSize));
+    if (item.servingUnit) setUnit(item.servingUnit);
+  };
 
   const reset = () => {
     setPhase("input");
@@ -545,6 +572,8 @@ function AddFoodModal({
     setUnit("servings");
     setMealType(initialMealType || "BREAKFAST");
     setAiResult(null);
+    setSearchResults([]);
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
   };
 
   const handleClose = () => {
@@ -851,7 +880,7 @@ function AddFoodModal({
                 </Text>
                 <TextInput
                   value={foodInput}
-                  onChangeText={setFoodInput}
+                  onChangeText={handleFoodInputChange}
                   placeholder={
                     lang === "ar"
                       ? "مثال: شاورما دجاج / 2 eggs scrambled"
@@ -865,12 +894,62 @@ function AddFoodModal({
                     color: "white",
                     fontSize: 16,
                     borderWidth: 1,
-                    borderColor: "rgba(255,255,255,0.1)",
+                    borderColor: searchResults.length > 0 ? "rgba(34,197,94,0.4)" : "rgba(255,255,255,0.1)",
                     textAlign: isRTL ? "right" : "left",
                   }}
                   multiline
                   numberOfLines={2}
                 />
+
+                {/* Search Results Autocomplete */}
+                {searchLoading && (
+                  <View style={{ flexDirection: "row", alignItems: "center", marginTop: 6, gap: 6 }}>
+                    <ActivityIndicator size="small" color={N_COLORS.protein} />
+                    <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 12 }}>
+                      {lang === "ar" ? "جارٍ البحث..." : "Searching cache..."}
+                    </Text>
+                  </View>
+                )}
+
+                {searchResults.length > 0 && (
+                  <View style={{ marginTop: 6, borderRadius: 10, overflow: "hidden", borderWidth: 1, borderColor: "rgba(34,197,94,0.2)" }}>
+                    <View style={{ backgroundColor: "rgba(34,197,94,0.06)", paddingHorizontal: 10, paddingVertical: 5, flexDirection: "row", alignItems: "center" }}>
+                      <Text style={{ color: N_COLORS.protein, fontSize: 11, fontWeight: "700" }}>
+                        ⚡ {lang === "ar" ? "نتائج سريعة من القاموس" : "Quick matches from cache"}
+                      </Text>
+                    </View>
+                    {searchResults.map((item, idx) => {
+                      const name = lang === "ar" && item.nameAr ? item.nameAr : item.name;
+                      const altName = lang === "ar" ? item.name : item.nameAr;
+                      return (
+                        <TouchableOpacity
+                          key={item.id ?? idx}
+                          onPress={() => pickCachedFood(item)}
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            padding: 10,
+                            backgroundColor: idx % 2 === 0 ? "rgba(255,255,255,0.03)" : "transparent",
+                            borderTopWidth: idx > 0 ? 1 : 0,
+                            borderTopColor: "rgba(255,255,255,0.05)",
+                          }}
+                        >
+                          <View style={{ flex: 1 }}>
+                            <Text style={{ color: "white", fontSize: 14, fontWeight: "600" }}>{name}</Text>
+                            {altName ? <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11 }}>{altName}</Text> : null}
+                          </View>
+                          <View style={{ alignItems: "flex-end", marginLeft: 8 }}>
+                            <Text style={{ color: N_COLORS.calories, fontSize: 12, fontWeight: "700" }}>
+                              {item.caloriesPer100g ?? "—"} kcal
+                            </Text>
+                            <Text style={{ color: "rgba(255,255,255,0.3)", fontSize: 10 }}>per 100g</Text>
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                )}
               </View>
 
               <View style={{ flexDirection: "row", gap: 10 }}>
@@ -1263,6 +1342,89 @@ export default function NutritionScreen() {
               onAdd={(ml) => logWater.mutate(ml)}
               adding={logWater.isPending}
             />
+
+            {/* Today's Plan Day Card */}
+            {data?.todayPlanDay && (
+              <View
+                style={{
+                  backgroundColor: "rgba(34,197,94,0.06)",
+                  borderRadius: 16,
+                  padding: 14,
+                  borderWidth: 1,
+                  borderColor: "rgba(34,197,94,0.15)",
+                }}
+              >
+                <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
+                  <Text style={{ fontSize: 16, marginRight: 8 }}>📅</Text>
+                  <Text style={{ color: "white", fontWeight: "700", fontSize: 14, flex: 1 }}>
+                    {lang === "ar"
+                      ? `خطة اليوم — ${data.todayPlanDay.dayNameAr ?? data.todayPlanDay.dayName}`
+                      : `Today's Plan — ${data.todayPlanDay.dayName}`}
+                  </Text>
+                  <View style={{ backgroundColor: "rgba(34,197,94,0.15)", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
+                    <Text style={{ color: N_COLORS.protein, fontSize: 10, fontWeight: "700" }}>
+                      {lang === "ar" ? "خطة نشطة" : "Active Plan"}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                  {[
+                    { l: lang === "ar" ? "سعرات" : "Cal", v: data.todayPlanDay.targetCalories ? `${data.todayPlanDay.targetCalories} kcal` : "—", c: N_COLORS.calories },
+                    { l: lang === "ar" ? "بروتين" : "Protein", v: data.todayPlanDay.targetProtein ? `${data.todayPlanDay.targetProtein}g` : "—", c: N_COLORS.protein },
+                    { l: lang === "ar" ? "كربوهيدرات" : "Carbs", v: data.todayPlanDay.targetCarbs ? `${data.todayPlanDay.targetCarbs}g` : "—", c: N_COLORS.carbs },
+                    { l: lang === "ar" ? "دهون" : "Fat", v: data.todayPlanDay.targetFat ? `${data.todayPlanDay.targetFat}g` : "—", c: N_COLORS.fat },
+                    { l: lang === "ar" ? "ماء" : "Water", v: data.todayPlanDay.targetWater ? `${data.todayPlanDay.targetWater}L` : "2L", c: N_COLORS.water },
+                  ].map(({ l, v, c }) => (
+                    <View key={l} style={{ backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 10, padding: 8, alignItems: "center", minWidth: 60 }}>
+                      <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 10, marginBottom: 2 }}>{l}</Text>
+                      <Text style={{ color: c, fontWeight: "700", fontSize: 12 }}>{v}</Text>
+                    </View>
+                  ))}
+                </View>
+
+                {(data.todayPlanDay.notesAr || data.todayPlanDay.notes) ? (
+                  <Text style={{ color: "rgba(255,255,255,0.45)", fontSize: 12, marginTop: 8, fontStyle: "italic" }}>
+                    📝 {lang === "ar" && data.todayPlanDay.notesAr ? data.todayPlanDay.notesAr : data.todayPlanDay.notes}
+                  </Text>
+                ) : null}
+
+                {/* Plan day suggestions */}
+                {(data?.suggestions ?? []).length > 0 ? (
+                  <View style={{ marginTop: 10, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.07)", paddingTop: 10 }}>
+                    <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: "600", marginBottom: 6 }}>
+                      {lang === "ar" ? "💡 اقتراحات المدرب" : "💡 Coach Suggestions"}
+                    </Text>
+                    {(data.suggestions as any[]).slice(0, 3).map((s: any) => {
+                      const MEAL_MAP: Record<string, { emoji: string; en: string; ar: string }> = {
+                        BREAKFAST: { emoji: "🌅", en: "Breakfast", ar: "الإفطار" },
+                        LUNCH: { emoji: "☀️", en: "Lunch", ar: "الغداء" },
+                        DINNER: { emoji: "🌙", en: "Dinner", ar: "العشاء" },
+                        SNACK: { emoji: "🍎", en: "Snack", ar: "وجبة خفيفة" },
+                        PRE_WORKOUT: { emoji: "💪", en: "Pre-Workout", ar: "قبل التمرين" },
+                        POST_WORKOUT: { emoji: "⚡", en: "Post-Workout", ar: "بعد التمرين" },
+                      };
+                      const ml = MEAL_MAP[s.mealType] ?? { emoji: "🍽", en: s.mealType, ar: s.mealType };
+                      return (
+                        <View key={s.id} style={{ backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 8, padding: 8, marginBottom: 4 }}>
+                          <Text style={{ color: "rgba(255,255,255,0.45)", fontSize: 10, marginBottom: 2 }}>
+                            {ml.emoji} {lang === "ar" ? ml.ar : ml.en}
+                          </Text>
+                          <Text style={{ color: "white", fontSize: 12 }}>
+                            {lang === "ar" && s.descriptionAr ? s.descriptionAr : s.description}
+                          </Text>
+                          {(s.targetCalories || s.targetProtein) ? (
+                            <Text style={{ color: N_COLORS.calories, fontSize: 11, marginTop: 2 }}>
+                              {s.targetCalories ? `${s.targetCalories} kcal` : ""}{s.targetProtein ? ` · ${s.targetProtein}g protein` : ""}
+                            </Text>
+                          ) : null}
+                        </View>
+                      );
+                    })}
+                  </View>
+                ) : null}
+              </View>
+            )}
 
             {/* Add Food Button */}
             <TouchableOpacity
