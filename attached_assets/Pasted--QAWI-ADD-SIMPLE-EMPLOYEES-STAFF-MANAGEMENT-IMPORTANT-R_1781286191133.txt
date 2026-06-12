@@ -1,0 +1,1287 @@
+# QAWI — ADD SIMPLE EMPLOYEES / STAFF MANAGEMENT
+
+## IMPORTANT
+
+Read CLAUDE.md and project documentation before making changes.
+
+Do NOT build the full HR dashboard.
+
+Do NOT build payroll.
+
+Do NOT build staff attendance.
+
+Do NOT build performance reports.
+
+Do NOT rebuild the Coaches page.
+
+Do NOT build the full Nutrition dashboard.
+
+Do NOT rebuild the Nutrition module.
+
+This task is only to add a simple Employees / Staff Account Management system so a Gym Admin can create staff users with the correct role.
+
+The goal is to support gym staff roles like:
+
+* COACH
+* SALES
+* RECEPTIONIST
+* NUTRITIONIST
+
+Later we will add:
+
+* ACCOUNTANT
+* HR
+
+But do not build Accountant or HR now.
+
+---
+
+# CONTEXT
+
+Qawi is a multi-tenant gym management SaaS.
+
+Current stack:
+
+* Backend: Java 17 + Spring Boot 3
+* Database: PostgreSQL
+* Auth: JWT + Spring Security
+* Frontend: React 18 + TypeScript + Tailwind CSS
+* Theme: dark Qawi theme
+
+Current roles include:
+
+* SUPER_ADMIN
+* GYM_ADMIN
+* COACH
+* MEMBER
+
+SALES may already exist if the Sales CRM patch was completed.
+
+RECEPTIONIST may not exist yet.
+
+NUTRITIONIST does not exist yet.
+
+This prompt should safely add missing staff roles without breaking existing users.
+
+---
+
+# MAIN IDEA
+
+Right now Gym Admin can add coaches only.
+
+That is not enough.
+
+Gym Admin should have a new page called:
+
+Employees
+
+or
+
+Staff
+
+This page lets the gym admin create gym staff accounts and choose their role.
+
+Example:
+
+Name: Ahmad
+Email: [ahmad@ironpeak.com](mailto:ahmad@ironpeak.com)
+Phone: 0791234567
+Role: SALES
+Status: Active
+
+Then Ahmad logs in and only sees the pages allowed for SALES.
+
+Another example:
+
+Name: Sara
+Email: [sara@ironpeak.com](mailto:sara@ironpeak.com)
+Phone: 0781234567
+Role: RECEPTIONIST
+Status: Active
+
+Then Sara logs in and only sees Reception-related pages later.
+
+Another example:
+
+Name: Lina
+Email: [lina@ironpeak.com](mailto:lina@ironpeak.com)
+Phone: 0771234567
+Role: NUTRITIONIST
+Status: Active
+
+Then Lina logs in and later will manage nutrition targets, food logs, and meal suggestions.
+
+For now, if the Nutritionist dashboard is not built yet, show a placeholder:
+
+"Nutrition dashboard coming soon"
+
+---
+
+# WHY NUTRITIONIST ROLE IS NEEDED
+
+Some gyms are small.
+
+In small gyms:
+
+* Coach creates workout plans
+* Coach also handles nutrition
+
+But some sports centers have a dedicated nutrition department.
+
+In those gyms:
+
+* Coach creates workout plans only
+* Nutritionist handles nutrition plans, targets, and food tracking
+
+So Qawi must support both models.
+
+Do not hardcode nutrition as coach-only forever.
+
+Prepare the system with a NUTRITIONIST role now.
+
+The full nutrition permissions will be implemented later in the AI Nutrition module.
+
+---
+
+# KEEP COACHES PAGE
+
+Do not delete the Coaches page.
+
+Coaches are special because they have:
+
+* assigned members
+* workout plan access
+* coach/member relationships
+* possibly nutrition access depending on gym workflow later
+
+So keep the existing Coaches page.
+
+But add Employees page as the general place for managing all staff accounts.
+
+Important behavior:
+
+If an employee has role COACH, they should also appear in the Coaches page.
+
+If a coach is created from the Coaches page, they should also appear in Employees.
+
+There should not be duplicate user accounts.
+
+One staff member = one User record.
+
+---
+
+# ADD / CONFIRM ROLES
+
+Update UserRole enum safely.
+
+Required roles after this task:
+
+* SUPER_ADMIN
+* GYM_ADMIN
+* COACH
+* MEMBER
+* SALES
+* RECEPTIONIST
+* NUTRITIONIST
+
+If SALES already exists, do not duplicate it.
+
+If RECEPTIONIST already exists, do not duplicate it.
+
+If NUTRITIONIST already exists, do not duplicate it.
+
+Do not add ACCOUNTANT yet.
+
+Do not add HR yet.
+
+---
+
+# ROLE MEANING
+
+## GYM_ADMIN
+
+Can manage staff inside their own gym.
+
+Can create:
+
+* COACH
+* SALES
+* RECEPTIONIST
+* NUTRITIONIST
+
+Cannot create:
+
+* SUPER_ADMIN
+* GYM_ADMIN
+* MEMBER from Employees page
+* ACCOUNTANT or HR yet
+
+Members should still be created from the Members page or Sales convert flow.
+
+---
+
+## COACH
+
+Existing role.
+
+Can access coach features only.
+
+Should not access Employees page.
+
+Coach may manage nutrition later only if the gym nutrition workflow allows it.
+
+Do not change existing coach functionality in this task.
+
+---
+
+## SALES
+
+Gym-scoped staff role.
+
+Can access Sales CRM only.
+
+Should not access Employees page.
+
+Should not access Super Admin pages.
+
+Should not access other gyms.
+
+---
+
+## RECEPTIONIST
+
+Gym-scoped staff role.
+
+For now, create the role and allow login.
+
+Reception dashboard may not exist yet.
+
+If Reception dashboard does not exist yet, receptionist can show a simple placeholder page:
+
+"Reception dashboard coming soon"
+
+Do not build full Reception dashboard in this task.
+
+Receptionist should not access:
+
+* Employees page
+* Super Admin pages
+* Revenue page
+* Analytics page unless already allowed later
+
+---
+
+## NUTRITIONIST
+
+Gym-scoped staff role.
+
+For now, create the role and allow login.
+
+Nutrition dashboard may not exist yet.
+
+If Nutrition dashboard does not exist yet, nutritionist can show a simple placeholder page:
+
+"Nutrition dashboard coming soon"
+
+Do not build full Nutrition dashboard in this task.
+
+Nutritionist will later be responsible for:
+
+* setting member nutrition targets
+* reviewing member food logs
+* creating meal suggestions
+* managing nutrition progress
+* working with the AI Nutrition system
+
+Nutritionist should not access:
+
+* Employees page
+* Super Admin pages
+* Sales page
+* Revenue page
+* HR page
+* Gym settings
+* Workout plan editing unless later allowed
+
+---
+
+# OPTIONAL GYM NUTRITION WORKFLOW SETTING
+
+Prepare for future nutrition permissions.
+
+If this can be added safely without building a full settings UI, add a field to Gym:
+
+nutritionWorkflow enum:
+
+* COACH_ONLY
+* NUTRITIONIST_ONLY
+* COACH_AND_NUTRITIONIST
+
+Default:
+
+COACH_ONLY
+
+Meaning:
+
+## COACH_ONLY
+
+Coach can manage workouts and nutrition.
+
+This fits small gyms where coach handles everything.
+
+## NUTRITIONIST_ONLY
+
+Coach manages workouts only.
+
+Nutritionist manages nutrition.
+
+This fits sports centers with a dedicated nutrition department.
+
+## COACH_AND_NUTRITIONIST
+
+Both coach and nutritionist can view nutrition.
+
+Nutritionist has primary edit access.
+
+Coach can view and optionally suggest.
+
+Important:
+
+Do not build full nutrition workflow UI now.
+
+If adding this setting is too much for this task, at minimum add the NUTRITIONIST role now and leave nutritionWorkflow for the later AI Nutrition prompt.
+
+---
+
+# DATABASE RULES
+
+Use the existing User entity.
+
+Do not create a full StaffProfile entity yet.
+
+Add missing fields to User only if needed:
+
+phoneNumber String nullable for old users
+
+isActive Boolean, if not already present
+
+createdAt LocalDateTime, if not already present
+
+updatedAt LocalDateTime, if not already present
+
+Role and gymId already exist in User.
+
+Staff users are simply User records with:
+
+role in:
+
+* COACH
+* SALES
+* RECEPTIONIST
+* NUTRITIONIST
+
+and gymId = authenticated Gym Admin’s gymId.
+
+---
+
+# BACKEND ENDPOINTS
+
+Add new gym admin staff endpoints.
+
+Base path:
+
+/api/v1/admin/employees
+
+Only GYM_ADMIN can access these endpoints.
+
+All results must be gym-scoped.
+
+Never trust gymId from frontend.
+
+Always use gymId from authenticated user.
+
+---
+
+## GET /api/v1/admin/employees
+
+Returns all staff users in the gym.
+
+Include users where role is:
+
+* COACH
+* SALES
+* RECEPTIONIST
+* NUTRITIONIST
+
+Do not include:
+
+* MEMBER
+* GYM_ADMIN
+* SUPER_ADMIN
+
+Response item:
+
+id
+
+name
+
+email
+
+phoneNumber
+
+role
+
+isActive
+
+createdAt
+
+lastLoginAt if available, otherwise null
+
+memberCount if role = COACH and data is available, otherwise 0
+
+---
+
+## POST /api/v1/admin/employees
+
+Create new staff user.
+
+Request:
+
+name
+
+email
+
+phoneNumber
+
+role
+
+password optional
+
+autoGeneratePassword boolean optional
+
+Allowed roles:
+
+* COACH
+* SALES
+* RECEPTIONIST
+* NUTRITIONIST
+
+Validation:
+
+name required
+
+email required
+
+phoneNumber required
+
+role required
+
+email must be unique
+
+role must be allowed
+
+If password is missing and autoGeneratePassword = true:
+
+generate a secure temporary password.
+
+If password is provided:
+
+hash with BCrypt like existing users.
+
+Created user:
+
+gymId = authenticated Gym Admin gymId
+
+role = selected role
+
+isActive = true
+
+Return:
+
+id
+
+name
+
+email
+
+phoneNumber
+
+role
+
+temporaryPassword only if auto-generated
+
+Important:
+
+Only return temporaryPassword once in the response.
+
+Do not store plain text password.
+
+---
+
+## PUT /api/v1/admin/employees/{id}
+
+Update staff user.
+
+Allowed fields:
+
+name
+
+phoneNumber
+
+role
+
+isActive
+
+Do not allow changing email for now unless existing user edit pattern supports it.
+
+Do not allow editing password here unless there is already password reset logic.
+
+Security:
+
+Employee must belong to same gym as authenticated Gym Admin.
+
+Gym Admin cannot edit staff from another gym.
+
+Gym Admin cannot edit SUPER_ADMIN.
+
+Gym Admin cannot edit another GYM_ADMIN.
+
+Allowed role changes:
+
+COACH ↔ SALES ↔ RECEPTIONIST ↔ NUTRITIONIST
+
+But if changing away from COACH and the coach has assigned members:
+
+block the change with a clear error:
+
+"Cannot change this coach's role while members are assigned. Reassign members first."
+
+If this check is difficult, then disable role changing for COACH users for now and show:
+
+"Coach role cannot be changed yet."
+
+---
+
+## DELETE /api/v1/admin/employees/{id}
+
+Do not hard delete by default.
+
+Use soft deactivate.
+
+Set:
+
+isActive = false
+
+Security:
+
+Only same gym.
+
+Cannot delete:
+
+* SUPER_ADMIN
+* GYM_ADMIN
+* MEMBER
+
+If role = COACH and coach has assigned members:
+
+block deletion with:
+
+"Cannot deactivate coach while members are assigned. Reassign members first."
+
+If role = SALES, RECEPTIONIST, or NUTRITIONIST:
+
+allow deactivate.
+
+Return success.
+
+---
+
+## PUT /api/v1/admin/employees/{id}/activate
+
+Reactivate staff user.
+
+Set:
+
+isActive = true
+
+Only same gym.
+
+---
+
+# OPTIONAL PASSWORD RESET ENDPOINT
+
+Only add if simple.
+
+POST /api/v1/admin/employees/{id}/reset-password
+
+Request:
+
+autoGeneratePassword boolean
+
+password optional
+
+If autoGeneratePassword = true:
+
+generate temporary password and return it once.
+
+If password provided:
+
+hash and save.
+
+Only GYM_ADMIN.
+
+Only same gym.
+
+---
+
+# FRONTEND CHANGES
+
+Add new sidebar item for GYM_ADMIN:
+
+Employees
+
+Icon suggestion:
+
+Users / Briefcase / ID Badge
+
+Do not remove Coaches from sidebar.
+
+Final GYM_ADMIN sidebar should include:
+
+* Dashboard
+* Members
+* Coaches
+* Employees
+* Subscriptions
+* Analytics
+* Revenue
+* Member Reports
+* Library
+* Classes
+* Pricing
+* Sales
+
+Keep current ordering reasonable.
+
+---
+
+# EMPLOYEES PAGE UI
+
+Route suggestion:
+
+/dashboard/employees
+
+or follow existing route pattern.
+
+Page title:
+
+Employees
+
+Subtitle:
+
+Manage gym staff accounts and access roles
+
+Top right button:
+
+Add Employee
+
+---
+
+# STATS CARDS
+
+Add small stat cards at top:
+
+Total Staff
+
+Coaches
+
+Sales
+
+Receptionists
+
+Nutritionists
+
+Inactive Staff
+
+Use Qawi dark theme.
+
+---
+
+# EMPLOYEES TABLE
+
+Columns:
+
+Name
+
+Email
+
+Phone
+
+Role
+
+Status
+
+Created
+
+Actions
+
+Role badges:
+
+COACH = green
+
+SALES = blue
+
+RECEPTIONIST = orange
+
+NUTRITIONIST = purple
+
+Status badges:
+
+Active = green
+
+Inactive = gray/red
+
+Actions:
+
+Edit
+
+Deactivate / Activate
+
+Reset Password, if endpoint exists
+
+---
+
+# ADD EMPLOYEE MODAL
+
+Fields:
+
+Full Name required
+
+Email required
+
+Phone Number required
+
+Role required
+
+Password option:
+
+* Auto-generate password checkbox enabled by default
+* Or manual password input
+
+Role dropdown options:
+
+* Coach
+* Sales
+* Receptionist
+* Nutritionist
+
+Do not show:
+
+* Super Admin
+* Gym Admin
+* Member
+* Accountant
+* HR
+
+On save:
+
+Call POST /api/v1/admin/employees
+
+Show success toast.
+
+If password was auto-generated, show a success modal:
+
+Employee created successfully.
+
+Email: [employee@email.com](mailto:employee@email.com)
+Temporary password: xxxxxxxx
+
+Show a copy button.
+
+Important:
+
+Tell the user this password is shown only once.
+
+---
+
+# EDIT EMPLOYEE MODAL
+
+Fields:
+
+Name
+
+Phone
+
+Role
+
+Status
+
+Do not edit email unless existing system supports it safely.
+
+If role cannot be changed because of assigned members, show backend error clearly.
+
+---
+
+# DEACTIVATE BEHAVIOR
+
+Deactivate means:
+
+* user cannot login
+* user disappears from active staff filters
+* user still exists historically
+
+Do not hard delete users.
+
+Button text:
+
+Deactivate
+
+If already inactive:
+
+Activate
+
+---
+
+# FILTERS AND SEARCH
+
+Add search bar:
+
+Search by name, email, phone
+
+Add filters:
+
+All
+
+Coaches
+
+Sales
+
+Receptionists
+
+Nutritionists
+
+Inactive
+
+---
+
+# ROLE-BASED FRONTEND ROUTING
+
+Update frontend role access.
+
+GYM_ADMIN:
+
+Can access Employees page.
+
+SALES:
+
+Can access Sales page.
+
+Cannot access Employees page.
+
+RECEPTIONIST:
+
+Can access Reception page if it exists.
+
+If Reception page does not exist yet:
+
+Route to /dashboard/reception-placeholder
+
+or show simple dashboard card:
+
+Reception dashboard coming soon.
+
+NUTRITIONIST:
+
+Can access Nutrition page if it exists.
+
+If Nutrition page does not exist yet:
+
+Route to /dashboard/nutrition-placeholder
+
+or show simple dashboard card:
+
+Nutrition dashboard coming soon.
+
+COACH:
+
+Cannot access Employees page.
+
+MEMBER:
+
+Cannot access Employees page.
+
+SUPER_ADMIN:
+
+Do not show gym Employees page unless already intended.
+
+---
+
+# AUTH / LOGIN BEHAVIOR
+
+If user is inactive:
+
+Login should fail with clear message:
+
+"Your account is inactive. Please contact your gym admin."
+
+If role = SALES:
+
+After login redirect to Sales page.
+
+If role = RECEPTIONIST:
+
+After login redirect to Reception page or placeholder.
+
+If role = NUTRITIONIST:
+
+After login redirect to Nutrition page or placeholder.
+
+If role = COACH:
+
+Keep existing coach redirect behavior.
+
+If role = GYM_ADMIN:
+
+Keep existing admin dashboard behavior.
+
+---
+
+# COACHES PAGE CONNECTION
+
+Existing Coaches page should continue working.
+
+If creating a COACH from Employees page:
+
+That user should appear in Coaches page.
+
+If creating a coach from Coaches page:
+
+That user should appear in Employees page.
+
+Do not create duplicate accounts.
+
+If Coaches page has its own POST /api/v1/admin/coaches endpoint:
+
+Update it to save phoneNumber if provided.
+
+Make sure it uses the same User entity.
+
+---
+
+# NUTRITIONIST PAGE CONNECTION
+
+Do not build full nutrition dashboard now.
+
+But prepare routing.
+
+If NUTRITIONIST logs in and nutrition page is not ready:
+
+Show placeholder:
+
+Nutrition dashboard coming soon
+
+Later, the AI Nutrition module will replace this placeholder.
+
+Do not give NUTRITIONIST access to coach workout plan editing.
+
+Do not give NUTRITIONIST access to Sales.
+
+Do not give NUTRITIONIST access to Employees.
+
+---
+
+# SECURITY RULES
+
+Every employee endpoint must check:
+
+authenticated user role = GYM_ADMIN
+
+target user gymId = authenticated user gymId
+
+Never trust gymId from frontend.
+
+Gym Admin cannot create users in another gym.
+
+Gym Admin cannot create SUPER_ADMIN.
+
+Gym Admin cannot create another GYM_ADMIN from this page.
+
+Gym Admin cannot view staff from another gym.
+
+SALES cannot call employee endpoints.
+
+RECEPTIONIST cannot call employee endpoints.
+
+NUTRITIONIST cannot call employee endpoints.
+
+COACH cannot call employee endpoints.
+
+MEMBER cannot call employee endpoints.
+
+---
+
+# MIGRATION SAFETY
+
+Do not drop existing user data.
+
+Do not delete coaches.
+
+Do not delete members.
+
+Do not break current login.
+
+If phoneNumber already exists, reuse it.
+
+If isActive already exists, reuse it.
+
+If old users have null phoneNumber, keep them working.
+
+New staff users must require phoneNumber.
+
+If adding nutritionWorkflow to Gym:
+
+Default all existing gyms to:
+
+COACH_ONLY
+
+Do not break existing coach nutrition features yet.
+
+---
+
+# DESIGN
+
+Use Qawi design system:
+
+Background:
+#0A0F1E
+
+Surface:
+#111827
+
+Card:
+#1E293B
+
+Accent:
+#22C55E
+
+Danger:
+#EF4444
+
+Warning:
+#F59E0B
+
+Text Primary:
+#F8FAFC
+
+Text Secondary:
+#94A3B8
+
+Border radius:
+16px cards
+
+Arabic font:
+Cairo
+
+English font:
+Inter
+
+Keep dark theme.
+
+Use the same button styles and cards already used in the dashboard.
+
+---
+
+# IMPLEMENTATION ORDER
+
+1. Inspect current User entity and UserRole enum.
+2. Add missing roles SALES, RECEPTIONIST, and NUTRITIONIST safely.
+3. Add phoneNumber to User if missing.
+4. Confirm isActive exists and is respected on login.
+5. Optionally add nutritionWorkflow to Gym with default COACH_ONLY if safe.
+6. Add backend employee DTOs.
+7. Add employee service.
+8. Add employee controller endpoints.
+9. Add security rules for GYM_ADMIN only.
+10. Add frontend Employees page.
+11. Add Employees sidebar item for GYM_ADMIN.
+12. Add Add Employee modal.
+13. Add Edit Employee modal.
+14. Add activate/deactivate behavior.
+15. Connect COACH employees with existing Coaches page.
+16. Add route redirects for SALES, RECEPTIONIST, and NUTRITIONIST.
+17. Add placeholder page for Receptionist if Reception page does not exist.
+18. Add placeholder page for Nutritionist if Nutrition page does not exist.
+19. Test with existing admin account.
+20. Test creating Coach, Sales, Receptionist, and Nutritionist users.
+
+---
+
+# TEST CASES
+
+## Test 1 — Gym Admin sees Employees
+
+Login as:
+
+[admin@ironpeak.com](mailto:admin@ironpeak.com)
+
+Open sidebar.
+
+Employees page should appear.
+
+---
+
+## Test 2 — Create Sales employee
+
+Create:
+
+Name: Sales Test
+Email: [sales.test@ironpeak.com](mailto:sales.test@ironpeak.com)
+Phone: 0791111111
+Role: SALES
+Auto-generate password enabled
+
+Expected:
+
+User is created.
+
+Temporary password is shown once.
+
+Sales employee can login.
+
+Sales employee sees Sales page.
+
+Sales employee does not see Employees page.
+
+Sales employee does not see Super Admin pages.
+
+---
+
+## Test 3 — Create Receptionist employee
+
+Create:
+
+Name: Reception Test
+Email: [reception.test@ironpeak.com](mailto:reception.test@ironpeak.com)
+Phone: 0792222222
+Role: RECEPTIONIST
+
+Expected:
+
+User is created.
+
+Receptionist can login.
+
+If Reception dashboard is not built yet, show placeholder.
+
+Receptionist does not see Employees page.
+
+---
+
+## Test 4 — Create Nutritionist employee
+
+Create:
+
+Name: Nutrition Test
+Email: [nutrition.test@ironpeak.com](mailto:nutrition.test@ironpeak.com)
+Phone: 0794444444
+Role: NUTRITIONIST
+
+Expected:
+
+User is created.
+
+Nutritionist can login.
+
+If Nutrition dashboard is not built yet, show placeholder.
+
+Nutritionist does not see Employees page.
+
+Nutritionist does not see Sales page.
+
+Nutritionist does not see Super Admin pages.
+
+---
+
+## Test 5 — Create Coach employee
+
+Create:
+
+Name: Coach Test
+Email: [coach.test@ironpeak.com](mailto:coach.test@ironpeak.com)
+Phone: 0793333333
+Role: COACH
+
+Expected:
+
+User is created.
+
+Coach appears in Employees page.
+
+Coach also appears in Coaches page.
+
+Coach can login with coach access.
+
+---
+
+## Test 6 — Gym isolation
+
+Create another gym admin or use existing other gym if available.
+
+They should not see Iron Peak employees.
+
+Iron Peak admin should not see other gym employees.
+
+---
+
+## Test 7 — Deactivate
+
+Deactivate a Sales employee.
+
+Expected:
+
+Status becomes inactive.
+
+User cannot login.
+
+Admin can reactivate them.
+
+---
+
+## Test 8 — Nutrition workflow default
+
+If nutritionWorkflow was added to Gym:
+
+Existing gyms should default to:
+
+COACH_ONLY
+
+Existing coach functionality should not break.
+
+---
+
+# FINAL RESULT EXPECTED
+
+Gym Admin now has a professional Employees page.
+
+Gym Admin can create staff accounts for:
+
+* Coach
+* Sales
+* Receptionist
+* Nutritionist
+
+Each staff user gets access based on their role.
+
+Coaches page still exists and still works.
+
+Sales role can be created properly.
+
+Receptionist role is ready before building the Reception dashboard.
+
+Nutritionist role is ready before building the AI Nutrition module.
+
+This is not full HR.
+
+This is not full Nutrition.
+
+This is only staff account management and role access.
