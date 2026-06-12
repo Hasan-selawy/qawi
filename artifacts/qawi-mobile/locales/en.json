@@ -19,7 +19,8 @@
     "language": "Language",
     "english": "English",
     "arabic": "Arabic",
-    "noData": "No data yet"
+    "noData": "No data yet",
+    "registerGym": "Register your gym"
   },
   "auth": {
     "title": "Welcome back",
