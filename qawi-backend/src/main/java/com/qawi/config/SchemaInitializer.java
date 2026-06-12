@@ -41,6 +41,9 @@ public class SchemaInitializer implements ApplicationRunner {
         // allow null phone_number so members without phones can be backfilled
         ddl("ALTER TABLE member_leads ALTER COLUMN phone_number DROP NOT NULL");
 
+        // drop old status check constraint — enum now has 8 values (ACTIVE, EXPIRING_SOON, EXPIRED added)
+        ddl("ALTER TABLE member_leads DROP CONSTRAINT IF EXISTS member_leads_status_check");
+
         // ── users: ensure subscription_start_date exists ──────────────────────
         ddl("ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_start_date DATE");
 
