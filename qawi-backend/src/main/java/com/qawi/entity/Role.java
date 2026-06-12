@@ -5,6 +5,7 @@ public enum Role {
     GYM_ADMIN,
     RECEPTIONIST,
     SALES,
+    NUTRITIONIST,
     COACH,
     MEMBER,
     ACCOUNTANT,

@@ -19,6 +19,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     long countByGymIdAndRole(UUID gymId, Role role);
     List<User> findByGymId(UUID gymId);
     List<User> findByGymIdAndRole(UUID gymId, Role role);
+    List<User> findByGymIdAndRoleIn(UUID gymId, java.util.Collection<Role> roles);
     Optional<User> findFirstByGymIdAndRole(UUID gymId, Role role);
 
     long countByGymIdAndRoleAndIsActive(UUID gymId, Role role, boolean isActive);

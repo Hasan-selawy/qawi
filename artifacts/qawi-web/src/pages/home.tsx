@@ -10,6 +10,8 @@ export function RoleHome() {
   if (user?.role === 'SUPER_ADMIN') return <Redirect to="/super/dashboard" />;
   if (user?.role === 'MEMBER') return <Redirect to="/member/dashboard" />;
   if (user?.role === 'RECEPTIONIST') return <Redirect to="/reception/dashboard" />;
+  if (user?.role === 'SALES') return <Redirect to="/admin/sales" />;
+  if (user?.role === 'NUTRITIONIST') return <Redirect to="/nutrition/dashboard" />;
   if (user?.role === 'ACCOUNTANT') return <Redirect to="/finance/dashboard" />;
   if (user?.role === 'HR') return <Redirect to="/hr/dashboard" />;
 

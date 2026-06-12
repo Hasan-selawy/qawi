@@ -9,6 +9,8 @@ const ROLE_HOME: Partial<Record<Role, string>> = {
   SUPER_ADMIN: "/super/dashboard",
   MEMBER: "/member/dashboard",
   RECEPTIONIST: "/reception/dashboard",
+  SALES: "/admin/sales",
+  NUTRITIONIST: "/nutrition/dashboard",
   ACCOUNTANT: "/finance/dashboard",
   HR: "/hr/dashboard",
 };
