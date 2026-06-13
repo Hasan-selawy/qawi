@@ -82,6 +82,7 @@ public class DataSeeder implements ApplicationRunner {
         User sam = userRepository.save(User.builder()
                 .name("Sam").email("sam@ironpeak.com").password(hashed)
                 .role(Role.MEMBER).gymId(gym.getId())
+                .selfTrainingEnabled(true)
                 .subscriptionStartDate(today.minusDays(30)).subscriptionEndDate(today.plusDays(30)).build());
 
         User casey = userRepository.save(User.builder()

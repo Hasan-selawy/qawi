@@ -1,0 +1,218 @@
+SELF-TRAIN MODE — Fix and Complete Implementation
+
+CONTEXT: Read CLAUDE.md for full project context.
+
+CURRENT STATE (already working):
+- Admin can toggle "selfTrainEnabled" for a specific member
+- When enabled, member has no coach assigned
+- This part works correctly
+
+THE PROBLEM:
+When selfTrainEnabled = true, the member becomes 
+their own coach — but right now they have NO ACCESS 
+to the tools a coach would normally use:
+- Cannot create their own workout plan
+- Cannot browse the exercise library to build a plan
+- Cannot set their own nutrition targets
+
+This needs to be fixed end to end: backend permissions, 
+web access (if applicable), and mobile UI.
+
+═══════════════════════════════
+BACKEND — PERMISSION CHANGES
+═══════════════════════════════
+
+The core fix: any endpoint currently restricted to 
+COACH role must also allow MEMBER role IF that 
+member has selfTrainEnabled = true AND the action 
+targets their OWN memberId.
+
+Update AccessGuard logic for these endpoints:
+
+1. EXERCISE LIBRARY (read access):
+GET /api/v1/exercises/categories
+GET /api/v1/exercises/library
+GET /api/v1/exercises/library/{categoryId}
+→ Allow: COACH, or (MEMBER AND selfTrainEnabled = true)
+→ Self-train members get READ-ONLY access to the 
+  full exercise library to build their own plans
+
+2. WORKOUT PLAN CREATION:
+POST /api/v1/workouts
+POST /api/v1/workouts/{planId}/days
+POST /api/v1/workouts/days/{dayId}/exercises
+PUT  /api/v1/workouts/days/{dayId}/complete
+→ Allow: COACH (for any assigned member), 
+  or (MEMBER AND selfTrainEnabled = true AND 
+  the memberId in the request body/path === 
+  the authenticated user's own ID)
+→ Self-train members can ONLY create/edit plans 
+  for themselves — never for other members
+
+3. NUTRITION TARGETS:
+POST /api/v1/nutrition/targets
+PUT  /api/v1/nutrition/targets/{memberId}
+→ Allow: COACH (for assigned members), 
+  or (MEMBER AND selfTrainEnabled = true AND 
+  memberId === authenticated user's own ID)
+→ Self-train members set their own calorie/macro targets
+
+4. WORKOUT TEMPLATES (optional, nice to have):
+GET /api/v1/workouts/templates
+→ Allow self-train members to view gym's 
+  workout templates as a starting point
+  (read-only, they can copy/adapt from there)
+
+VALIDATION RULES:
+- If selfTrainEnabled = false and member tries to 
+  access any of the above → 403 Forbidden with message:
+  "This feature requires self-train mode or a coach"
+  Arabic: "هذه الميزة تتطلب تفعيل التدريب الذاتي أو وجود مدرب"
+
+- A self-train member can NEVER:
+  - Create/edit plans for other members
+  - Access other members' nutrition targets
+  - See other members' data at all
+  - Add custom exercises to the shared library 
+    (unless they already had that permission)
+
+═══════════════════════════════
+WEB DASHBOARD CHANGES
+═══════════════════════════════
+
+In Admin → Members list:
+- Self-train members show a badge: 
+  "Self-Train" / "تدريب ذاتي" (purple badge)
+- When admin toggles selfTrainEnabled ON:
+  - If member currently has a coach assigned, 
+    show confirmation: "This will remove [Coach 
+    Name] from this member. Continue?"
+  - On confirm: set coachId = null, 
+    selfTrainEnabled = true
+
+In Admin → Members detail view:
+- Show "Self-Train Mode" toggle clearly
+- When ON, show: "This member manages their own 
+  workout plans and nutrition goals"
+
+═══════════════════════════════
+MOBILE APP — NEW SCREENS FOR SELF-TRAIN MEMBERS
+═══════════════════════════════
+
+WHEN selfTrainEnabled = true, the member's mobile 
+app gets ADDITIONAL functionality on top of the 
+normal member experience:
+
+1. NEW TAB: "My Plan" / "خطتي" 
+(only visible when selfTrainEnabled = true)
+
+This tab replaces the normal "view-only" workout 
+screen with a plan BUILDER:
+
+PLAN BUILDER SCREEN:
+- "Create New Plan" button if no active plan exists
+- If active plan exists: show current plan with 
+  "Edit Plan" button
+
+CREATE PLAN FLOW:
+Step 1 — Plan basics:
+  - Plan name (text input)
+  - Start date / End date (date pickers)
+  
+Step 2 — Build weekly schedule:
+  - 7 day cards (Sunday through Saturday, or 
+    based on gym's week start)
+  - Each day: toggle "Rest Day" OR "Training Day"
+  - For training days: "Add Exercises" button
+
+Step 3 — Add exercises to a day:
+  - Opens exercise library (same component coaches use)
+  - Category filter pills: All | Chest | Back | 
+    Legs | Shoulders | Arms | Core | Cardio
+  - Search bar
+  - Each exercise card: name (AR/EN), video thumbnail
+  - Tap "+" to add to the day
+  - After adding: set sets, reps, target weight 
+    for that exercise
+
+Step 4 — Review and save:
+  - Summary of full week
+  - "Save Plan" button
+  - On save: plan becomes active, member sees it 
+    on their Home screen like normal
+
+EDITING EXISTING PLAN:
+  - Tap any day → add/remove/edit exercises
+  - Same exercise library access as creation flow
+
+2. NUTRITION TARGETS SCREEN
+(only visible when selfTrainEnabled = true)
+
+In Nutrition tab, self-train members see an 
+additional section at top:
+  "Set Your Goals" / "حدد أهدافك" card
+
+Tap to open Goals form:
+  - Target Calories (number input)
+  - Target Protein (grams)
+  - Target Carbs (grams)  
+  - Target Fat (grams)
+  - Target Water (liters)
+  - Goal type: Weight Loss / Muscle Gain / 
+    Maintenance / Recomposition (pills)
+  - "Save Goals" green button
+
+After saving, the rest of the nutrition screen 
+works exactly like normal members — they log food, 
+AI calculates macros, progress bars show against 
+the targets they set for themselves.
+
+3. HOME SCREEN INDICATOR:
+For self-train members, show a small badge near 
+the greeting:
+  "Self-Train Mode" / "وضع التدريب الذاتي" 
+  (subtle purple pill, top right of home screen)
+
+═══════════════════════════════
+EDGE CASES TO HANDLE
+═══════════════════════════════
+
+1. Admin turns OFF self-train mode while member 
+   has an active self-made plan:
+   - Plan remains visible to member (read-only)
+   - "My Plan" tab disappears
+   - Admin should assign a coach who can then 
+     edit/replace the plan
+
+2. Admin turns ON self-train for a member who 
+   already has a coach-made plan:
+   - Existing plan stays active
+   - Member can now also EDIT it themselves
+   - Or create a new plan that replaces it
+
+3. Self-train member tries to call coach-only 
+   endpoints for OTHER members (security test):
+   - Must return 403 Forbidden
+   - Test this explicitly
+
+═══════════════════════════════
+TESTING CHECKLIST
+═══════════════════════════════
+
+1. Admin enables self-train for sam@ironpeak.com
+2. Login as sam@ironpeak.com on mobile
+3. Verify "My Plan" tab appears
+4. Create a new plan with at least 3 training days
+5. Add exercises from library to each day
+6. Save plan → verify it appears on Home screen
+7. Go to Nutrition tab → set personal targets
+8. Log a food entry → verify AI calculates and 
+   progress bar updates against self-set targets
+9. Try accessing another member's data via API 
+   directly → must get 403
+10. Admin disables self-train → "My Plan" tab 
+    disappears, but existing plan still visible 
+    (read-only)
+
+Fix the backend permissions first, then mobile UI.
+Test each step before moving to the next.
