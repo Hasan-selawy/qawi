@@ -35,6 +35,7 @@ import CoachNutrition from "@/pages/coach/nutrition";
 import MemberDashboard from "@/pages/member/dashboard";
 import MemberNutrition from "@/pages/member/nutrition";
 import MemberWorkout from "@/pages/member/workout";
+import MemberMyPlan from "@/pages/member/my-plan";
 import ReceptionDashboard from "@/pages/reception/dashboard";
 import FinanceDashboard from "@/pages/finance/dashboard";
 import HrDashboard from "@/pages/hr/dashboard";
@@ -101,6 +102,9 @@ function Router() {
       </Route>
       <Route path="/member/nutrition">
         <RoleRoute role="MEMBER"><AppShell><ErrorBoundary><MemberNutrition /></ErrorBoundary></AppShell></RoleRoute>
+      </Route>
+      <Route path="/member/my-plan">
+        <RoleRoute role="MEMBER"><AppShell><ErrorBoundary><MemberMyPlan /></ErrorBoundary></AppShell></RoleRoute>
       </Route>
 
       {/* Reception Routes */}

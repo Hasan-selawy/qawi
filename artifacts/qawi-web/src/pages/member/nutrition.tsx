@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   UtensilsCrossed, Plus, Trash2, Droplets, Search, Loader2, X,
-  ChevronDown, ChevronUp, Flame, Zap,
+  ChevronDown, ChevronUp, Flame, Zap, Target,
 } from 'lucide-react';
 import { apiFetch } from '@/services/api';
 import { useLanguage } from '@/hooks/use-language';
@@ -383,6 +383,10 @@ export default function MemberNutrition() {
   const [expandedMeals, setExpandedMeals] = useState<Record<string, boolean>>({
     BREAKFAST: true, LUNCH: true, DINNER: true,
   });
+  const [showGoalsDialog, setShowGoalsDialog] = useState(false);
+  const [goalsForm, setGoalsForm] = useState({
+    calories: 2000, protein: 150, carbs: 200, fat: 65, water: 2.5, goal: '',
+  });
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['nutrition', 'today', memberId],
@@ -398,6 +402,28 @@ export default function MemberNutrition() {
       toast.success(isAr ? 'تم الحذف' : 'Deleted');
       qc.invalidateQueries({ queryKey: ['nutrition', 'today', memberId] });
     },
+  });
+
+  const setGoals = useMutation({
+    mutationFn: () =>
+      apiFetch('/nutrition/targets', {
+        method: 'POST',
+        data: {
+          memberId,
+          targetCalories: goalsForm.calories,
+          targetProtein: goalsForm.protein,
+          targetCarbs: goalsForm.carbs,
+          targetFat: goalsForm.fat,
+          targetWater: goalsForm.water,
+          goal: goalsForm.goal || undefined,
+        },
+      }),
+    onSuccess: () => {
+      toast.success(isAr ? 'تم حفظ الأهداف!' : 'Goals saved!');
+      setShowGoalsDialog(false);
+      qc.invalidateQueries({ queryKey: ['nutrition', 'today', memberId] });
+    },
+    onError: (e: any) => toast.error(e?.body?.error || (isAr ? 'فشل الحفظ' : 'Failed to save')),
   });
 
   const totals = data?.totals;
@@ -419,9 +445,34 @@ export default function MemberNutrition() {
         title={isAr ? 'سجل التغذية' : 'Nutrition Log'}
         subtitle={isAr ? 'تتبع وجباتك اليومية' : 'Track your daily meals'}
         actions={
-          <Button size="sm" onClick={() => setLogMeal('SNACK')} className="gap-1">
-            <Plus size={14} /> {isAr ? 'إضافة طعام' : 'Log Food'}
-          </Button>
+          <div className="flex gap-2">
+            {user?.selfTrainingEnabled && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  if (target) {
+                    setGoalsForm({
+                      calories: target.targetCalories ?? 2000,
+                      protein: target.targetProtein ?? 150,
+                      carbs: target.targetCarbs ?? 200,
+                      fat: target.targetFat ?? 65,
+                      water: target.targetWater ?? 2.5,
+                      goal: target.goal ?? '',
+                    });
+                  }
+                  setShowGoalsDialog(true);
+                }}
+                className="gap-1 border-primary/40 text-primary hover:bg-primary/10"
+              >
+                <Target size={14} />
+                {isAr ? 'أهدافي' : 'My Goals'}
+              </Button>
+            )}
+            <Button size="sm" onClick={() => setLogMeal('SNACK')} className="gap-1">
+              <Plus size={14} /> {isAr ? 'إضافة طعام' : 'Log Food'}
+            </Button>
+          </div>
         }
       />
 
@@ -633,8 +684,31 @@ export default function MemberNutrition() {
           )}
 
           {!target && (
-            <div className="text-center py-4 text-sm text-muted-foreground">
-              {isAr ? 'لم يتم تعيين أهداف تغذية بعد' : 'No nutrition targets set yet — ask your coach or nutritionist'}
+            <div className="text-center py-5">
+              {user?.selfTrainingEnabled ? (
+                <div className="glass-card p-5 border-primary/15 max-w-xs mx-auto">
+                  <Target size={24} className="text-primary mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground mb-3">
+                    {isAr
+                      ? 'لم يتم تعيين أهداف تغذية بعد'
+                      : 'No nutrition targets set yet'}
+                  </p>
+                  <Button
+                    size="sm"
+                    onClick={() => setShowGoalsDialog(true)}
+                    className="gap-1"
+                  >
+                    <Target size={13} />
+                    {isAr ? 'تعيين أهدافي' : 'Set My Goals'}
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  {isAr
+                    ? 'لم يتم تعيين أهداف تغذية بعد — تواصل مع مدربك أو أخصائي التغذية'
+                    : 'No nutrition targets set yet — ask your coach or nutritionist'}
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -649,6 +723,85 @@ export default function MemberNutrition() {
             onClose={() => setLogMeal(null)}
           />
         )}
+      </Dialog>
+
+      <Dialog open={showGoalsDialog} onOpenChange={(v) => { if (!v) setShowGoalsDialog(false); }}>
+        <DialogContent className="bg-[#0d1225] border-white/10 max-w-sm">
+          <DialogTitle className="text-base font-semibold flex items-center gap-2">
+            <Target size={16} className="text-primary" />
+            {isAr ? 'تعيين أهداف التغذية' : 'Set Nutrition Goals'}
+          </DialogTitle>
+          <div className="space-y-3 mt-2">
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { key: 'calories', label: 'Calories', labelAr: 'سعرات', unit: 'kcal', min: 1000, max: 6000, step: 50 },
+                { key: 'protein', label: 'Protein', labelAr: 'بروتين', unit: 'g', min: 0, max: 400 },
+                { key: 'carbs', label: 'Carbs', labelAr: 'كربوهيدرات', unit: 'g', min: 0, max: 800 },
+                { key: 'fat', label: 'Fat', labelAr: 'دهون', unit: 'g', min: 0, max: 300 },
+              ].map(({ key, label, labelAr, unit, min, max, step = 1 }) => (
+                <div key={key}>
+                  <Label className="text-xs text-muted-foreground">
+                    {isAr ? labelAr : label} ({unit})
+                  </Label>
+                  <Input
+                    type="number"
+                    min={min}
+                    max={max}
+                    step={step}
+                    value={goalsForm[key as keyof typeof goalsForm] as number}
+                    onChange={(e) =>
+                      setGoalsForm((p) => ({ ...p, [key]: Number(e.target.value) }))
+                    }
+                    className="bg-black/20 mt-1 h-9 text-sm"
+                  />
+                </div>
+              ))}
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">
+                {isAr ? 'الماء (لتر/يوم)' : 'Water (L/day)'}
+              </Label>
+              <Input
+                type="number"
+                min={0}
+                max={10}
+                step={0.25}
+                value={goalsForm.water}
+                onChange={(e) =>
+                  setGoalsForm((p) => ({ ...p, water: Number(e.target.value) }))
+                }
+                className="bg-black/20 mt-1 h-9 text-sm"
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">
+                {isAr ? 'الهدف (اختياري)' : 'Goal (optional)'}
+              </Label>
+              <select
+                value={goalsForm.goal}
+                onChange={(e) => setGoalsForm((p) => ({ ...p, goal: e.target.value }))}
+                className="w-full mt-1 h-9 rounded-md bg-black/20 border border-white/10 text-sm px-3 text-foreground"
+              >
+                <option value="">{isAr ? '— اختر —' : '— Choose —'}</option>
+                <option value="WEIGHT_LOSS">{isAr ? 'فقدان الوزن' : 'Weight Loss'}</option>
+                <option value="MUSCLE_GAIN">{isAr ? 'بناء العضلات' : 'Muscle Gain'}</option>
+                <option value="MAINTENANCE">{isAr ? 'الحفاظ على الوزن' : 'Maintenance'}</option>
+                <option value="RECOMPOSITION">{isAr ? 'إعادة التركيب' : 'Recomposition'}</option>
+                <option value="PERFORMANCE">{isAr ? 'الأداء الرياضي' : 'Performance'}</option>
+              </select>
+            </div>
+            <Button
+              className="w-full"
+              onClick={() => setGoals.mutate()}
+              disabled={setGoals.isPending}
+            >
+              {setGoals.isPending
+                ? <Loader2 size={14} className="animate-spin mr-2" />
+                : <Target size={14} className="mr-2" />}
+              {isAr ? 'حفظ الأهداف' : 'Save Goals'}
+            </Button>
+          </div>
+        </DialogContent>
       </Dialog>
     </PageWrapper>
   );

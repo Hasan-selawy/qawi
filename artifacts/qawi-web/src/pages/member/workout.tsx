@@ -3,13 +3,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/services/api';
 import { useAuth } from '@/hooks/use-auth';
 import { useLanguage } from '@/hooks/use-language';
+import { Link } from 'wouter';
 import { PageWrapper } from '@/components/layout/PageWrapper';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import {
   Dumbbell, ChevronDown, ChevronUp, CheckCircle2,
-  Moon, Calendar, Plus, Loader2
+  Moon, Calendar, Plus, Loader2, ExternalLink
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -246,15 +247,27 @@ export default function MemberWorkout() {
             <p className="text-sm font-semibold text-foreground mb-1">
               {isAr ? (currentPlan?.nameAr ?? currentPlan?.name) : currentPlan?.name}
             </p>
-            <p className="text-sm text-muted-foreground">
-              {user?.selfTrainingEnabled
-                ? (isAr
-                    ? 'خطتك جاهزة! افتح تطبيق قوي على هاتفك لإضافة أيام التمرين والتمارين.'
-                    : 'Your plan is ready! Open the Qawi mobile app to add workout days and exercises.')
-                : (isAr
-                    ? 'لم يتم جدولة أيام تدريب بعد. تواصل مع مدربك.'
-                    : 'No workout days scheduled yet. Contact your coach.')}
-            </p>
+            {user?.selfTrainingEnabled ? (
+              <>
+                <p className="text-sm text-muted-foreground mb-4">
+                  {isAr
+                    ? 'خطتك جاهزة! أضف أيام التمرين والتمارين من هنا.'
+                    : 'Your plan is ready — add workout days and exercises below.'}
+                </p>
+                <Link href="/member/my-plan">
+                  <Button size="sm" className="gap-2">
+                    <ExternalLink size={14} />
+                    {isAr ? 'إدارة خطتي' : 'Build My Plan'}
+                  </Button>
+                </Link>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                {isAr
+                  ? 'لم يتم جدولة أيام تدريب بعد. تواصل مع مدربك.'
+                  : 'No workout days scheduled yet. Contact your coach.'}
+              </p>
+            )}
           </div>
 
           {upcomingDays.length > 0 && (

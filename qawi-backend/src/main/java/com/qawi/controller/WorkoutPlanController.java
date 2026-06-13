@@ -111,6 +111,15 @@ public class WorkoutPlanController {
                 .body(workoutPlanService.logWorkout(request, userDetails.getUsername()));
     }
 
+    @DeleteMapping("/days/{dayId}")
+    @PreAuthorize("hasAnyRole('COACH', 'MEMBER')")
+    public ResponseEntity<Void> deleteDay(
+            @PathVariable UUID dayId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        workoutPlanService.deleteDay(dayId, userDetails.getUsername());
+        return ResponseEntity.noContent().build();
+    }
+
     @DeleteMapping("/{planId}")
     @PreAuthorize("hasAnyRole('COACH', 'MEMBER')")
     public ResponseEntity<Void> deletePlan(

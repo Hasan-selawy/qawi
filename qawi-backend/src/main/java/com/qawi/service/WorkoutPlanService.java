@@ -254,6 +254,15 @@ public class WorkoutPlanService {
     }
 
     @Transactional
+    public void deleteDay(UUID dayId, String callerEmail) {
+        ScheduleDay day = scheduleDayRepository.findById(dayId)
+                .orElseThrow(() -> new AppException("Day not found", "اليوم غير موجود", HttpStatus.NOT_FOUND));
+        assertCallerCanWritePlan(day.getWorkoutPlanId(), callerEmail);
+        planExerciseRepository.deleteByScheduleDayId(dayId);
+        scheduleDayRepository.deleteById(dayId);
+    }
+
+    @Transactional
     public void deletePlan(UUID planId, String callerEmail) {
         assertCallerCanWritePlan(planId, callerEmail);
         List<ScheduleDay> days = scheduleDayRepository.findByWorkoutPlanIdOrderByDayDate(planId);
