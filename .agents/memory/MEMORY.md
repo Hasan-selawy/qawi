@@ -1,1 +1,2 @@
 - [Nutrition V2 seed gap](nutrition-v2-seed.md) — DataSeeder has guard `if count > 0`; new role users need their own `seedXIfMissing()` method called from run().
+- [Mobile API wakeup handling](mobile-api-wakeup.md) — Replit wakeup interstitial + Spring Boot startup can take >12s; apiFetch retries with sentinel error; login shows bilingual "warming up" message.

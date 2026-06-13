@@ -63,9 +63,10 @@ export async function apiFetch<T = any>(
   let { res, text } = await doFetch(path, options);
 
   // Replit dev domains return an HTML wakeup interstitial on the first request
-  // when the workspace is asleep. Retry with backoff up to ~12s total.
+  // when the workspace is asleep. Retry with backoff up to ~30s total to cover
+  // both Replit wakeup time AND Spring Boot startup time (~10s).
   if (text && isHtmlBody(text)) {
-    const delays = [1000, 1500, 2500, 3500, 4000];
+    const delays = [1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000, 5000];
     for (const delay of delays) {
       await new Promise((r) => setTimeout(r, delay));
       ({ res, text } = await doFetch(path, options));
@@ -94,10 +95,9 @@ export async function apiFetch<T = any>(
   if (!res.ok) throw new ApiError(res.status, body);
 
   if (text && !parsed) {
-    const snippet = String(text).slice(0, 200).replace(/\s+/g, " ");
-    console.warn(`[api] Non-JSON ${res.status} response from ${path}: ${snippet}`);
+    // Still getting HTML after all retries — server is warming up or proxy is starting.
     throw new ApiError(res.status, {
-      error: `Server returned non-JSON response. First 200 chars: ${snippet}`,
+      error: "__SERVER_WARMING_UP__",
     });
   }
 

@@ -22,6 +22,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useBranding } from "@/context/BrandingContext";
 import { useLanguage } from "@/context/LanguageContext";
+import { apiFetch } from "@/services/api";
 
 const DEFAULT_COLORS = {
   bg: "#0A0F1E",
@@ -99,12 +100,11 @@ function ContactSheet({ visible, onClose, lang }: { visible: boolean; onClose: (
   const submit = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/v1/public/contact', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fullName, phoneNumber, gymName, city }) });
-      if (!res.ok) throw new Error('Failed');
+      await apiFetch('/public/contact', { method: 'POST', data: { fullName, phoneNumber, gymName, city } });
       setSubmitted(true);
       setTimeout(() => { onClose(); setSubmitted(false); setFullName(''); setPhoneNumber(''); setGymName(''); setCity(''); }, 3000);
     } catch {
-      Alert.alert('Qawi', lang === 'ar' ? 'حدث خطأ' : 'Something went wrong');
+      Alert.alert('Qawi', lang === 'ar' ? 'حدث خطأ، يرجى المحاولة مجدداً' : 'Something went wrong, please try again');
     } finally { setLoading(false); }
   };
 
@@ -166,9 +166,19 @@ export default function LoginScreen() {
       if (u.role === "SUPER_ADMIN") Alert.alert("قوي", t("auth.superNotAllowed"));
     } catch (e: any) {
       let msg = t("auth.loginError");
-      if (e?.status === 401 || e?.status === 403) { msg = t("auth.loginError"); }
-      else if (typeof e?.status === "number") { msg = `Server error ${e.status}: ${e?.body?.error || e?.message || "Unknown"}`; }
-      else { msg = `Network error: ${e?.message || "Cannot reach server"}`; }
+      if (e?.status === 401 || e?.status === 403) {
+        msg = t("auth.loginError");
+      } else if (e?.body?.error === "__SERVER_WARMING_UP__" || e?.message === "__SERVER_WARMING_UP__") {
+        msg = lang === "ar"
+          ? "الخادم يبدأ تشغيله، يرجى الانتظار لحظة والمحاولة مجدداً."
+          : "Server is warming up. Please wait a moment and try again.";
+      } else if (typeof e?.status === "number") {
+        msg = t("auth.loginError");
+      } else {
+        msg = lang === "ar"
+          ? "لا يمكن الوصول إلى الخادم. تحقق من اتصالك بالإنترنت."
+          : "Cannot reach server. Check your internet connection.";
+      }
       Alert.alert("Qawi", msg);
     } finally { setSubmitting(false); }
   };
