@@ -15,6 +15,7 @@ import {
 
 import { RoleHeader } from "@/components/RoleHeader";
 import { Button, Card, EmptyState, Screen } from "@/components/ui";
+import { useAuth } from "@/context/AuthContext";
 import { useLanguage, pickName } from "@/context/LanguageContext";
 import { useColors } from "@/hooks/useColors";
 import { apiFetch } from "@/services/api";
@@ -40,6 +41,37 @@ export default function WorkoutScreen() {
   const { t, lang, isRTL } = useLanguage();
   const qc = useQueryClient();
   const router = useRouter();
+  const { user } = useAuth();
+
+  const [planName, setPlanName] = useState("");
+  const [showPlanForm, setShowPlanForm] = useState(false);
+
+  const createPlan = useMutation({
+    mutationFn: () => {
+      const start = new Date();
+      const end = new Date();
+      end.setDate(end.getDate() + 30);
+      return apiFetch("/workouts", {
+        method: "POST",
+        data: {
+          name: planName.trim() || (lang === "ar" ? "خطتي التدريبية" : "My Training Plan"),
+          memberId: user?.id,
+          startDate: start.toISOString().slice(0, 10),
+          endDate: end.toISOString().slice(0, 10),
+        },
+      });
+    },
+    onSuccess: () => {
+      setPlanName("");
+      setShowPlanForm(false);
+      qc.invalidateQueries({ queryKey: ["member"] });
+    },
+    onError: (e: any) =>
+      Alert.alert(
+        lang === "ar" ? "قوي" : "Qawi",
+        e?.message || (lang === "ar" ? "تعذر إنشاء الخطة" : "Could not create plan")
+      ),
+  });
 
   const today = useQuery({
     queryKey: ["member", "today"],
@@ -183,10 +215,61 @@ export default function WorkoutScreen() {
             </View>
           </Card>
         </View>
-      ) : !today.data || today.data.restDay || list.length === 0 ? (
+      ) : today.data?.restDay ? (
         <View style={{ flex: 1, padding: 20 }}>
           <Card>
-            <EmptyState icon="moon" text={today.data?.restDay ? t("member.restDay") : t("member.noPlan")} />
+            <EmptyState icon="moon" text={t("member.restDay")} />
+          </Card>
+        </View>
+      ) : !today.data && user?.selfTrainingEnabled ? (
+        <View style={{ flex: 1, padding: 20 }}>
+          <Card style={{ borderWidth: 1, borderColor: "#7C3AED44" }}>
+            <View style={{ alignItems: "center", paddingVertical: 8 }}>
+              <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: "#7C3AED22", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
+                <Feather name="edit-3" size={26} color="#7C3AED" />
+              </View>
+              <Text style={{ color: c.foreground, fontWeight: "800", fontSize: 17, textAlign: "center", marginBottom: 6 }}>
+                {lang === "ar" ? "أنت في وضع التدريب الذاتي" : "You're in Self-Training Mode"}
+              </Text>
+              <Text style={{ color: c.mutedForeground, fontSize: 13, textAlign: "center", marginBottom: 20, paddingHorizontal: 8 }}>
+                {lang === "ar" ? "أنشئ خطتك التدريبية الخاصة وابدأ التمرين" : "Create your own training plan and start working out"}
+              </Text>
+              {showPlanForm ? (
+                <View style={{ width: "100%", gap: 10 }}>
+                  <TextInput
+                    style={{ backgroundColor: c.muted, color: c.foreground, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15 }}
+                    placeholder={lang === "ar" ? "اسم الخطة (اختياري)" : "Plan name (optional)"}
+                    placeholderTextColor={c.mutedForeground}
+                    value={planName}
+                    onChangeText={setPlanName}
+                    textAlign={isRTL ? "right" : "left"}
+                  />
+                  <Button
+                    title={createPlan.isPending ? (lang === "ar" ? "جارٍ الإنشاء..." : "Creating…") : (lang === "ar" ? "إنشاء الخطة" : "Create Plan")}
+                    icon="check"
+                    onPress={() => createPlan.mutate()}
+                    disabled={createPlan.isPending}
+                  />
+                  <TouchableOpacity onPress={() => setShowPlanForm(false)}>
+                    <Text style={{ color: c.mutedForeground, textAlign: "center", fontSize: 13, marginTop: 4 }}>
+                      {lang === "ar" ? "إلغاء" : "Cancel"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <Button
+                  title={lang === "ar" ? "أنشئ خطتي" : "Build My Plan"}
+                  icon="plus"
+                  onPress={() => setShowPlanForm(true)}
+                />
+              )}
+            </View>
+          </Card>
+        </View>
+      ) : !today.data || list.length === 0 ? (
+        <View style={{ flex: 1, padding: 20 }}>
+          <Card>
+            <EmptyState icon="moon" text={t("member.noPlan")} />
           </Card>
         </View>
       ) : (

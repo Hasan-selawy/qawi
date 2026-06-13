@@ -67,6 +67,7 @@ public class GymAdminController {
     }
 
     @PatchMapping("/members/{memberId}/self-training")
+    @PreAuthorize("hasRole('GYM_ADMIN') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<Void> toggleSelfTraining(
             @PathVariable UUID memberId,
             @RequestBody java.util.Map<String, Boolean> body,

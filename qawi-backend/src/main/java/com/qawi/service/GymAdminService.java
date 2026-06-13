@@ -104,11 +104,19 @@ public class GymAdminService {
 
     @Transactional
     public void toggleSelfTraining(UUID memberId, boolean enabled, String adminEmail) {
-        UUID gymId = getAdmin(adminEmail).getGymId();
+        User caller = userRepository.findByEmail(adminEmail)
+                .orElseThrow(() -> new AppException("User not found", "المستخدم غير موجود", HttpStatus.NOT_FOUND));
+        if (caller.getRole() != Role.GYM_ADMIN && caller.getRole() != Role.SUPER_ADMIN) {
+            throw new AppException("Access denied", "غير مصرح لك", HttpStatus.FORBIDDEN);
+        }
         User member = userRepository.findById(memberId)
                 .orElseThrow(() -> new AppException("Member not found", "العضو غير موجود", HttpStatus.NOT_FOUND));
-        if (member.getRole() != Role.MEMBER || !gymId.equals(member.getGymId())) {
+        // GYM_ADMIN must own the member's gym; SUPER_ADMIN can toggle any member
+        if (caller.getRole() == Role.GYM_ADMIN && !caller.getGymId().equals(member.getGymId())) {
             throw new AppException("Member not found in your gym", "العضو غير موجود في صالتك", HttpStatus.NOT_FOUND);
+        }
+        if (member.getRole() != Role.MEMBER) {
+            throw new AppException("Member not found", "العضو غير موجود", HttpStatus.NOT_FOUND);
         }
         member.setSelfTrainingEnabled(enabled);
         if (enabled) {
