@@ -166,17 +166,29 @@ export default function MemberWorkout() {
     onSuccess: () => {
       toast.success(isAr ? '✅ تم إنشاء الخطة!' : '✅ Plan created!');
       setPlanName('');
-      qc.invalidateQueries({ queryKey: ['member'] });
+      qc.invalidateQueries({ queryKey: ['member', 'workout-plan', user?.id] });
     },
     onError: (e: any) => {
       toast.error(e?.body?.error ?? (isAr ? 'فشل في إنشاء الخطة' : 'Failed to create plan'));
     },
   });
 
-  if (plan.isLoading) return <WorkoutSkeleton />;
+  // plan.data is List<WorkoutPlan> — extract the first/active plan
+  const planList: any[] = Array.isArray(plan.data) ? plan.data : [];
+  const currentPlan: any | null = planList[0] ?? null;
 
-  const currentPlan = plan.data;
-  const scheduleDays: any[] = currentPlan?.scheduleDays ?? [];
+  // Fetch full plan detail (includes scheduleDays) once we know which plan is active
+  const planDetail = useQuery<any>({
+    queryKey: ['member', 'workout-detail', currentPlan?.id],
+    queryFn: () => currentPlan?.id
+      ? apiFetch(`/workouts/${currentPlan.id}`).catch(() => null)
+      : null,
+    enabled: !!currentPlan?.id,
+  });
+
+  if (plan.isLoading || (!!currentPlan?.id && planDetail.isLoading)) return <WorkoutSkeleton />;
+
+  const scheduleDays: any[] = planDetail.data?.scheduleDays ?? planDetail.data?.days ?? [];
   const upcomingDays: any[] = upcoming.data ?? [];
 
   return (
@@ -231,10 +243,17 @@ export default function MemberWorkout() {
         <div className="space-y-6">
           <div className="glass-card p-6 text-center">
             <Calendar size={32} className="text-muted-foreground mx-auto mb-3" />
+            <p className="text-sm font-semibold text-foreground mb-1">
+              {isAr ? (currentPlan?.nameAr ?? currentPlan?.name) : currentPlan?.name}
+            </p>
             <p className="text-sm text-muted-foreground">
-              {isAr
-                ? 'لم يتم جدولة أيام تدريب بعد. تواصل مع مدربك.'
-                : 'No workout days scheduled yet. Contact your coach.'}
+              {user?.selfTrainingEnabled
+                ? (isAr
+                    ? 'خطتك جاهزة! افتح تطبيق قوي على هاتفك لإضافة أيام التمرين والتمارين.'
+                    : 'Your plan is ready! Open the Qawi mobile app to add workout days and exercises.')
+                : (isAr
+                    ? 'لم يتم جدولة أيام تدريب بعد. تواصل مع مدربك.'
+                    : 'No workout days scheduled yet. Contact your coach.')}
             </p>
           </div>
 
@@ -244,12 +263,12 @@ export default function MemberWorkout() {
                 {isAr ? 'التدريبات القادمة' : 'Upcoming Training'}
               </h2>
               <div className="flex flex-col gap-2">
-                {upcomingDays.map((day: any) => (
+                {upcomingDays.map((day: any, idx: number) => (
                   <WorkoutDayCard
-                    key={day.id}
+                    key={day.id ?? `upcoming-${idx}`}
                     day={day}
                     lang={lang}
-                    onComplete={!day.completed ? () => completeDay.mutate(day.id) : undefined}
+                    onComplete={!day.completed && day.id ? () => completeDay.mutate(day.id) : undefined}
                   />
                 ))}
               </div>
