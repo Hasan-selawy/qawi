@@ -173,7 +173,7 @@ export default function ProfileScreen() {
                 </Text>
               </View>
               <TouchableOpacity
-                onPress={() => router.push("/(member)/renewal")}
+                onPress={() => router.push("/renewal" as never)}
                 style={{
                   backgroundColor: c.primary,
                   borderRadius: 20,

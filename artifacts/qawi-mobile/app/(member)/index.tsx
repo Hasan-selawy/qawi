@@ -528,7 +528,7 @@ export default function MemberHome() {
               </Text>
               <Badge tone="primary">{(today.data.exercises?.length ?? 0)} ex</Badge>
             </View>
-            <Button title={t("member.startWorkout")} icon="play" onPress={() => router.push("/(member)/workout")} />
+            <Button title={t("member.startWorkout")} icon="play" onPress={() => router.push("/workout" as never)} />
           </Card>
         )}
 
