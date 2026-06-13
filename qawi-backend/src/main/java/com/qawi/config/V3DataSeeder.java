@@ -53,6 +53,7 @@ public class V3DataSeeder implements ApplicationRunner {
         seedStaffAttendance(gym);
         seedNutritionData(gym);
         seedAttendanceHistory(gym);
+        seedNutritionist(gym, hashed);
 
         log.info("V3 data seeding complete.");
     }
@@ -264,5 +265,18 @@ public class V3DataSeeder implements ApplicationRunner {
             }
         }
         log.info("Seeded {} attendance history records.", seeded);
+    }
+
+    private void seedNutritionist(Gym gym, String hashed) {
+        if (!userRepository.existsByEmail("nutritionist@ironpeak.com")) {
+            userRepository.save(User.builder()
+                    .name("Maya Al-Rashid")
+                    .email("nutritionist@ironpeak.com")
+                    .password(hashed)
+                    .role(Role.NUTRITIONIST)
+                    .gymId(gym.getId())
+                    .build());
+            log.info("Seeded NUTRITIONIST: nutritionist@ironpeak.com / password123");
+        }
     }
 }

@@ -27,7 +27,7 @@ public class NutritionV2Controller {
     // ── Targets ──────────────────────────────────────────────
 
     @PostMapping("/targets")
-    @PreAuthorize("hasAnyRole('COACH','NUTRITIONIST','GYM_ADMIN','SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('MEMBER','COACH','NUTRITIONIST','GYM_ADMIN','SUPER_ADMIN')")
     public ResponseEntity<Map<String, Object>> setTarget(
             @Valid @RequestBody NutritionTargetSetRequest req,
             @AuthenticationPrincipal UserDetails ud) {
@@ -42,7 +42,7 @@ public class NutritionV2Controller {
     }
 
     @PutMapping("/targets/{memberId}")
-    @PreAuthorize("hasAnyRole('COACH','NUTRITIONIST','GYM_ADMIN','SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('MEMBER','COACH','NUTRITIONIST','GYM_ADMIN','SUPER_ADMIN')")
     public ResponseEntity<Map<String, Object>> updateTarget(
             @PathVariable UUID memberId,
             @Valid @RequestBody NutritionTargetSetRequest req,

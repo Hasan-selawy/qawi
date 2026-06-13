@@ -30,9 +30,15 @@ export function NotificationBell() {
       <DropdownMenuContent align="end" className="w-80">
         <DropdownMenuLabel className="flex justify-between items-center">
           <span>{t('common.notifications') || 'Notifications'}</span>
-          <button className="text-xs text-primary hover:underline" onClick={() => setUnreadCount(0)}>
+          <span
+            role="button"
+            tabIndex={0}
+            className="text-xs text-primary hover:underline cursor-pointer"
+            onClick={() => setUnreadCount(0)}
+            onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && setUnreadCount(0)}
+          >
             {t('common.mark_all_read') || 'Mark all read'}
-          </button>
+          </span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <div className="max-h-80 overflow-y-auto">

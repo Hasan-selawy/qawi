@@ -507,6 +507,301 @@ function MealSection({
   );
 }
 
+// ─── Nutrition Goals ──────────────────────────────────────────────────────────
+
+const NUTRITION_GOALS = [
+  { key: "WEIGHT_LOSS", en: "Weight Loss", ar: "خسارة وزن", emoji: "🔥" },
+  { key: "MUSCLE_GAIN", en: "Muscle Gain", ar: "بناء عضلات", emoji: "💪" },
+  { key: "MAINTENANCE", en: "Maintenance", ar: "محافظة", emoji: "⚖️" },
+  { key: "RECOMPOSITION", en: "Recomposition", ar: "إعادة تشكيل", emoji: "🔄" },
+  { key: "PERFORMANCE", en: "Performance", ar: "الأداء", emoji: "⚡" },
+];
+
+function SetTargetsModal({
+  visible, onClose, memberId, lang, isRTL, currentTarget, onSaved,
+}: {
+  visible: boolean; onClose: () => void; memberId: string;
+  lang: string; isRTL: boolean; currentTarget: any; onSaved: () => void;
+}) {
+  const qc = useQueryClient();
+  const isAr = lang === "ar";
+  const isEdit = !!currentTarget;
+
+  const [goal, setGoal] = useState("MAINTENANCE");
+  const [calories, setCalories] = useState("");
+  const [protein, setProtein] = useState("");
+  const [carbs, setCarbs] = useState("");
+  const [fat, setFat] = useState("");
+  const [water, setWater] = useState("2.5");
+
+  React.useEffect(() => {
+    if (visible) {
+      setGoal(currentTarget?.goal ?? "MAINTENANCE");
+      setCalories(currentTarget?.targetCalories ? String(currentTarget.targetCalories) : "");
+      setProtein(currentTarget?.targetProtein ? String(currentTarget.targetProtein) : "");
+      setCarbs(currentTarget?.targetCarbs ? String(currentTarget.targetCarbs) : "");
+      setFat(currentTarget?.targetFat ? String(currentTarget.targetFat) : "");
+      setWater(currentTarget?.targetWater ? String(currentTarget.targetWater) : "2.5");
+    }
+  }, [visible]);
+
+  const save = useMutation({
+    mutationFn: () => {
+      const body = {
+        memberId,
+        goal,
+        targetCalories: parseInt(calories) || 2000,
+        targetProtein: parseInt(protein) || 0,
+        targetCarbs: parseInt(carbs) || 0,
+        targetFat: parseInt(fat) || 0,
+        targetWater: parseFloat(water) || 2.5,
+      };
+      return isEdit
+        ? apiFetch(`/nutrition/targets/${memberId}`, { method: "PUT", data: body })
+        : apiFetch("/nutrition/targets", { method: "POST", data: body });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["nutrition"] });
+      onSaved();
+      onClose();
+    },
+    onError: (e: any) => {
+      Alert.alert(isAr ? "خطأ" : "Error", e?.body?.error ?? (isAr ? "فشل الحفظ" : "Save failed"));
+    },
+  });
+
+  const numInput = (label: string, labelAr: string, val: string, set: (v: string) => void, color: string) => (
+    <View style={{ flex: 1, minWidth: "45%" }}>
+      <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, marginBottom: 4, textAlign: isRTL ? "right" : "left" }}>
+        {isAr ? labelAr : label}
+      </Text>
+      <TextInput
+        value={val}
+        onChangeText={set}
+        keyboardType="number-pad"
+        placeholder="0"
+        placeholderTextColor="rgba(255,255,255,0.25)"
+        style={{
+          backgroundColor: "rgba(255,255,255,0.07)", color: "white",
+          borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10,
+          fontSize: 15, fontWeight: "700", borderWidth: 1, borderColor: color + "44",
+          textAlign: "center",
+        }}
+      />
+    </View>
+  );
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.7)", justifyContent: "flex-end" }}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined}>
+          <View style={{ backgroundColor: "#0F1629", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 40 }}>
+            {/* Header */}
+            <View style={{ flexDirection: isRTL ? "row-reverse" : "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <Text style={{ color: "white", fontSize: 18, fontWeight: "800" }}>
+                {isAr ? (isEdit ? "تعديل الأهداف الغذائية" : "ضع أهدافك الغذائية") : (isEdit ? "Edit Nutrition Goals" : "Set Nutrition Goals")}
+              </Text>
+              <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Feather name="x" size={22} color="rgba(255,255,255,0.5)" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 16 }}>
+              {/* Goal Picker */}
+              <View>
+                <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, fontWeight: "600", marginBottom: 8, textAlign: isRTL ? "right" : "left" }}>
+                  {isAr ? "الهدف" : "Goal"}
+                </Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                  {NUTRITION_GOALS.map((g) => (
+                    <TouchableOpacity
+                      key={g.key}
+                      onPress={() => setGoal(g.key)}
+                      style={{
+                        paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
+                        backgroundColor: goal === g.key ? N_COLORS.protein : "rgba(255,255,255,0.07)",
+                        borderWidth: 1,
+                        borderColor: goal === g.key ? N_COLORS.protein : "rgba(255,255,255,0.12)",
+                        flexDirection: "row", alignItems: "center", gap: 6,
+                      }}
+                    >
+                      <Text style={{ fontSize: 14 }}>{g.emoji}</Text>
+                      <Text style={{ color: goal === g.key ? "#0A0F1E" : "white", fontSize: 13, fontWeight: "600" }}>
+                        {isAr ? g.ar : g.en}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+
+              {/* Calorie target (full row) */}
+              <View>
+                <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, marginBottom: 4, textAlign: isRTL ? "right" : "left" }}>
+                  {isAr ? "السعرات الحرارية (kcal)" : "Calories (kcal)"}
+                </Text>
+                <TextInput
+                  value={calories}
+                  onChangeText={setCalories}
+                  keyboardType="number-pad"
+                  placeholder={isAr ? "مثال: 2000" : "e.g. 2000"}
+                  placeholderTextColor="rgba(255,255,255,0.25)"
+                  style={{
+                    backgroundColor: "rgba(255,255,255,0.07)", color: "white",
+                    borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12,
+                    fontSize: 16, fontWeight: "700", borderWidth: 1, borderColor: N_COLORS.calories + "55",
+                    textAlign: "center",
+                  }}
+                />
+              </View>
+
+              {/* Macros row */}
+              <View style={{ flexDirection: isRTL ? "row-reverse" : "row", flexWrap: "wrap", gap: 10 }}>
+                {numInput("Protein (g)", "بروتين (غ)", protein, setProtein, N_COLORS.protein)}
+                {numInput("Carbs (g)", "كربوهيدرات (غ)", carbs, setCarbs, N_COLORS.carbs)}
+                {numInput("Fat (g)", "دهون (غ)", fat, setFat, N_COLORS.fat)}
+                {numInput("Water (L)", "ماء (لتر)", water, setWater, N_COLORS.water)}
+              </View>
+            </ScrollView>
+
+            <TouchableOpacity
+              onPress={() => save.mutate()}
+              disabled={save.isPending || !calories}
+              style={{
+                marginTop: 20, backgroundColor: N_COLORS.protein,
+                borderRadius: 14, paddingVertical: 14, alignItems: "center",
+                opacity: save.isPending || !calories ? 0.6 : 1,
+              }}
+            >
+              <Text style={{ color: "#0A0F1E", fontWeight: "800", fontSize: 16 }}>
+                {save.isPending ? (isAr ? "جارٍ الحفظ..." : "Saving...") : (isAr ? "حفظ الأهداف" : "Save Goals")}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </View>
+    </Modal>
+  );
+}
+
+// ─── Nutrition History ─────────────────────────────────────────────────────────
+
+function NutritionHistoryModal({
+  visible, onClose, memberId, lang, isRTL,
+}: {
+  visible: boolean; onClose: () => void; memberId: string; lang: string; isRTL: boolean;
+}) {
+  const isAr = lang === "ar";
+
+  const historyQuery = useQuery({
+    queryKey: ["nutrition", "history", memberId],
+    queryFn: () => apiFetch<any[]>(`/nutrition/log/history/${memberId}?days=7`).catch(() => []),
+    enabled: visible && !!memberId,
+    staleTime: 0,
+  });
+
+  const days: any[] = historyQuery.data ?? [];
+  const maxCal = Math.max(1, ...days.map((d) => Math.max(d.totalCalories ?? 0, d.targetCalories ?? 0)));
+
+  const fmt = (iso: string) => {
+    const d = new Date(iso);
+    return isAr
+      ? d.toLocaleDateString("ar-SA", { weekday: "short", month: "short", day: "numeric" })
+      : d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.7)", justifyContent: "flex-end" }}>
+        <View style={{ backgroundColor: "#0F1629", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 40, maxHeight: "85%" }}>
+          <View style={{ flexDirection: isRTL ? "row-reverse" : "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <Text style={{ color: "white", fontSize: 18, fontWeight: "800" }}>
+              {isAr ? "سجل الأسبوع الماضي" : "Last 7 Days"}
+            </Text>
+            <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Feather name="x" size={22} color="rgba(255,255,255,0.5)" />
+            </TouchableOpacity>
+          </View>
+
+          {historyQuery.isLoading ? (
+            <View style={{ gap: 10 }}>
+              {[...Array(7)].map((_, i) => (
+                <View key={i} style={{ height: 64, backgroundColor: "rgba(255,255,255,0.05)", borderRadius: 12 }} />
+              ))}
+            </View>
+          ) : days.length === 0 ? (
+            <View style={{ alignItems: "center", paddingVertical: 32 }}>
+              <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 14 }}>
+                {isAr ? "لا توجد بيانات بعد" : "No data yet"}
+              </Text>
+            </View>
+          ) : (
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+              {days.map((day) => {
+                const cal = day.totalCalories ?? 0;
+                const targetCal = day.targetCalories ?? 0;
+                const barWidth = maxCal > 0 ? (cal / maxCal) * 100 : 0;
+                const targetLinePos = maxCal > 0 ? (targetCal / maxCal) * 100 : 0;
+                const pct = targetCal > 0 ? Math.round((cal / targetCal) * 100) : null;
+
+                return (
+                  <View key={day.date} style={{
+                    backgroundColor: "rgba(255,255,255,0.05)", borderRadius: 14,
+                    padding: 12, borderWidth: 1,
+                    borderColor: day.goalMet ? "rgba(34,197,94,0.25)" : "rgba(255,255,255,0.07)",
+                  }}>
+                    <View style={{ flexDirection: isRTL ? "row-reverse" : "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                      <Text style={{ color: "white", fontSize: 13, fontWeight: "700" }}>{fmt(day.date)}</Text>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                        {day.goalMet && (
+                          <View style={{ backgroundColor: "rgba(34,197,94,0.2)", borderRadius: 10, paddingHorizontal: 6, paddingVertical: 2 }}>
+                            <Text style={{ color: N_COLORS.protein, fontSize: 10, fontWeight: "700" }}>
+                              {isAr ? "✓ هدف" : "✓ Goal"}
+                            </Text>
+                          </View>
+                        )}
+                        <Text style={{ color: N_COLORS.calories, fontWeight: "800", fontSize: 13 }}>
+                          {cal} {pct !== null ? `(${pct}%)` : ""}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Calorie bar */}
+                    <View style={{ height: 8, backgroundColor: "rgba(255,255,255,0.08)", borderRadius: 4, overflow: "hidden", marginBottom: 6 }}>
+                      <View style={{ height: 8, width: `${Math.min(100, barWidth)}%`, backgroundColor: day.goalMet ? N_COLORS.protein : N_COLORS.calories, borderRadius: 4 }} />
+                      {targetCal > 0 && (
+                        <View style={{ position: "absolute", left: `${Math.min(98, targetLinePos)}%`, top: 0, bottom: 0, width: 2, backgroundColor: "rgba(255,255,255,0.4)" }} />
+                      )}
+                    </View>
+
+                    <View style={{ flexDirection: isRTL ? "row-reverse" : "row", gap: 10 }}>
+                      {[
+                        { l: isAr ? "بروتين" : "P", v: `${day.totalProtein ?? 0}g`, c: N_COLORS.protein },
+                        { l: isAr ? "كربوهيدرات" : "C", v: `${day.totalCarbs ?? 0}g`, c: N_COLORS.carbs },
+                        { l: isAr ? "دهون" : "F", v: `${day.totalFat ?? 0}g`, c: N_COLORS.fat },
+                        { l: isAr ? "ماء" : "W", v: `${day.waterTotal ?? 0}L`, c: N_COLORS.water },
+                      ].map(({ l, v, c }) => (
+                        <View key={l} style={{ flexDirection: "row", gap: 3, alignItems: "center" }}>
+                          <Text style={{ color: "rgba(255,255,255,0.35)", fontSize: 10 }}>{l}</Text>
+                          <Text style={{ color: c, fontSize: 11, fontWeight: "700" }}>{v}</Text>
+                        </View>
+                      ))}
+                      {day.entriesCount > 0 && (
+                        <Text style={{ color: "rgba(255,255,255,0.25)", fontSize: 10, marginLeft: "auto" }}>
+                          {day.entriesCount} {isAr ? "سجل" : "entries"}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                );
+              })}
+            </ScrollView>
+          )}
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 type AddFoodPhase = "input" | "loading" | "result";
 
 function AddFoodModal({
@@ -1514,7 +1809,10 @@ export default function NutritionScreen() {
 
   const [addFoodVisible, setAddFoodVisible] = useState(false);
   const [activeMealType, setActiveMealType] = useState("BREAKFAST");
+  const [targetsModalVisible, setTargetsModalVisible] = useState(false);
+  const [historyModalVisible, setHistoryModalVisible] = useState(false);
 
+  const selfTrain = user?.selfTrainingEnabled ?? false;
   const memberId = user?.id ?? "";
 
   const todayQuery = useQuery({
@@ -1632,6 +1930,40 @@ export default function NutritionScreen() {
         }
       />
 
+      {/* Quick actions bar */}
+      <View style={{ flexDirection: isRTL ? "row-reverse" : "row", paddingHorizontal: 16, paddingVertical: 6, gap: 8 }}>
+        <TouchableOpacity
+          onPress={() => setHistoryModalVisible(true)}
+          style={{
+            flexDirection: isRTL ? "row-reverse" : "row", alignItems: "center", gap: 5,
+            backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6,
+            borderWidth: 1, borderColor: "rgba(255,255,255,0.1)",
+          }}
+        >
+          <Feather name="calendar" size={13} color="rgba(255,255,255,0.6)" />
+          <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, fontWeight: "600" }}>
+            {lang === "ar" ? "السجل" : "History"}
+          </Text>
+        </TouchableOpacity>
+
+        {selfTrain && (
+          <TouchableOpacity
+            onPress={() => setTargetsModalVisible(true)}
+            style={{
+              flexDirection: isRTL ? "row-reverse" : "row", alignItems: "center", gap: 5,
+              backgroundColor: hasTarget ? "rgba(34,197,94,0.1)" : "rgba(245,158,11,0.15)",
+              borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6,
+              borderWidth: 1, borderColor: hasTarget ? "rgba(34,197,94,0.3)" : "rgba(245,158,11,0.4)",
+            }}
+          >
+            <Feather name="target" size={13} color={hasTarget ? N_COLORS.protein : N_COLORS.calories} />
+            <Text style={{ color: hasTarget ? N_COLORS.protein : N_COLORS.calories, fontSize: 12, fontWeight: "600" }}>
+              {lang === "ar" ? (hasTarget ? "تعديل الأهداف" : "ضع أهدافك") : (hasTarget ? "Edit Goals" : "Set Goals")}
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
       <ScrollView
         contentContainerStyle={{ padding: 16, paddingBottom: 120, gap: 12 }}
         refreshControl={
@@ -1704,18 +2036,30 @@ export default function NutritionScreen() {
               </View>
 
               {!hasTarget ? (
-                <Text
-                  style={{
-                    color: "rgba(255,255,255,0.35)",
-                    fontSize: 12,
-                    textAlign: "center",
-                    marginTop: 12,
-                  }}
-                >
-                  {lang === "ar"
-                    ? "لم يتم تعيين أهداف غذائية بعد — تواصل مع كوتشك"
-                    : "No nutrition targets set yet — contact your coach"}
-                </Text>
+                selfTrain ? (
+                  <TouchableOpacity
+                    onPress={() => setTargetsModalVisible(true)}
+                    style={{
+                      marginTop: 14, backgroundColor: "rgba(245,158,11,0.15)",
+                      borderRadius: 12, paddingVertical: 10, paddingHorizontal: 18,
+                      borderWidth: 1, borderColor: "rgba(245,158,11,0.4)",
+                      flexDirection: "row", alignItems: "center", gap: 8,
+                    }}
+                  >
+                    <Feather name="target" size={15} color={N_COLORS.calories} />
+                    <Text style={{ color: N_COLORS.calories, fontWeight: "700", fontSize: 13 }}>
+                      {lang === "ar" ? "ضع أهدافك الغذائية الآن" : "Set Your Nutrition Goals"}
+                    </Text>
+                  </TouchableOpacity>
+                ) : (
+                  <Text
+                    style={{ color: "rgba(255,255,255,0.35)", fontSize: 12, textAlign: "center", marginTop: 12 }}
+                  >
+                    {lang === "ar"
+                      ? "لم يتم تعيين أهداف غذائية بعد — تواصل مع كوتشك"
+                      : "No nutrition targets set yet — contact your coach"}
+                  </Text>
+                )
               ) : null}
             </View>
 
@@ -1879,6 +2223,24 @@ export default function NutritionScreen() {
         onLogged={() => {
           qc.invalidateQueries({ queryKey: ["nutrition", "today"] });
         }}
+      />
+
+      <SetTargetsModal
+        visible={targetsModalVisible}
+        onClose={() => setTargetsModalVisible(false)}
+        memberId={memberId}
+        lang={lang}
+        isRTL={isRTL}
+        currentTarget={hasTarget ? target : null}
+        onSaved={() => qc.invalidateQueries({ queryKey: ["nutrition"] })}
+      />
+
+      <NutritionHistoryModal
+        visible={historyModalVisible}
+        onClose={() => setHistoryModalVisible(false)}
+        memberId={memberId}
+        lang={lang}
+        isRTL={isRTL}
       />
     </Screen>
   );

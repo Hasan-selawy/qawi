@@ -60,7 +60,7 @@ CORS: `allowCredentials=false`, wildcard origin (Bearer-token auth, no cookies).
 Per-gym via `gym_features` table. Flags: `nutritionEnabled`, `pushNotificationsEnabled`, `customBrandingEnabled`, `classBookingEnabled`, `analyticsAdvancedEnabled`. Limits: `maxMembers` (null = unlimited). Both web and mobile consume this endpoint on login.
 
 ### Roles
-`MEMBER`, `COACH`, `GYM_ADMIN`, `SUPER_ADMIN`
+`MEMBER`, `COACH`, `GYM_ADMIN`, `SUPER_ADMIN`, `NUTRITIONIST`
 
 ### Error Format
 ```json
@@ -72,8 +72,9 @@ Per-gym via `gym_features` table. Flags: `nutritionEnabled`, `pushNotificationsE
 - Gym: Iron Peak Gym
 - 1 GYM_ADMIN: `admin@ironpeak.com` / `password123`
 - 2 COACHes: `coach.jordan@ironpeak.com`, `coach.morgan@ironpeak.com` / `password123`
-- 4 MEMBERs: sam (30d), casey (5d → expiry alert), riley (30d), drew (expired → blocked)
+- 4 MEMBERs: sam (30d, selfTrainingEnabled=true), casey (5d → expiry alert), riley (30d), drew (expired → blocked)
 - SUPER_ADMIN: `super@qawi.com` / `qawi_super_2024`
+- NUTRITIONIST: `nutritionist@ironpeak.com` / `password123` (Maya Al-Rashid, Iron Peak Gym)
 
 ---
 
@@ -84,7 +85,7 @@ Per-gym via `gym_features` table. Flags: `nutritionEnabled`, `pushNotificationsE
 - **Theme**: Dark glass-morphism (bg `#0A0F1E`, accent green `#22C55E`)
 - **Auth**: JWT in `localStorage`, `useAuth` hook, role-based routing in `App.tsx`
 - **Feature flags**: `hooks/use-gym-config.ts` fetches `/me/gym-config`; Nutrition sidebar link shown only when `nutritionEnabled=true`
-- **Roles**: MEMBER dashboard, COACH dashboard (members, plans, nutrition, library, templates, notes), GYM_ADMIN dashboard (analytics, members, coaches, subscriptions), SUPER_ADMIN dashboard
+- **Roles**: MEMBER dashboard, COACH dashboard (members, plans, nutrition, library, templates, notes), GYM_ADMIN dashboard (analytics, members, coaches, subscriptions), SUPER_ADMIN dashboard, NUTRITIONIST dashboard (`/nutrition/dashboard`)
 
 ### Key pages
 - `/coach/nutrition` — nutrition plan management page (feature-flagged)

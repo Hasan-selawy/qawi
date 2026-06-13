@@ -28,8 +28,11 @@ function WorkoutDayCard({ day, lang, onComplete }: { day: any; lang: string; onC
       'rounded-xl overflow-hidden border transition-colors',
       isDone ? 'border-primary/30 bg-primary/5' : 'border-white/5 bg-white/2'
     )}>
-      <button
+      <div
+        role={canExpand ? 'button' : undefined}
+        tabIndex={canExpand ? 0 : undefined}
         onClick={() => canExpand && setOpen(o => !o)}
+        onKeyDown={e => canExpand && (e.key === 'Enter' || e.key === ' ') && setOpen(o => !o)}
         className={cn(
           'w-full flex items-center justify-between px-4 py-3 text-left rtl:text-right',
           canExpand ? 'hover:bg-white/5 cursor-pointer' : 'cursor-default'
@@ -76,7 +79,7 @@ function WorkoutDayCard({ day, lang, onComplete }: { day: any; lang: string; onC
             ? <ChevronUp size={16} className="text-muted-foreground" />
             : <ChevronDown size={16} className="text-muted-foreground" />)}
         </div>
-      </button>
+      </div>
 
       {open && canExpand && (
         <div className="border-t border-white/5 px-4 py-3 flex flex-col gap-2">

@@ -940,6 +940,13 @@ public class NutritionV2Service {
 
     private void assertCanManageTarget(User caller, User member) {
         if (caller.getRole() == Role.GYM_ADMIN || caller.getRole() == Role.SUPER_ADMIN) return;
+        if (caller.getRole() == Role.MEMBER) {
+            if (!caller.getId().equals(member.getId()))
+                throw new AppException("Access denied", "غير مصرح لك", HttpStatus.FORBIDDEN);
+            if (!caller.isSelfTrainingEnabled())
+                throw new AppException("Self-training not enabled", "وضع التدريب الذاتي غير مفعّل", HttpStatus.FORBIDDEN);
+            return;
+        }
         if (caller.getRole() != Role.COACH && caller.getRole() != Role.NUTRITIONIST)
             throw new AppException("Access denied", "غير مصرح لك", HttpStatus.FORBIDDEN);
         assertWorkflowAllowsWrite(caller);

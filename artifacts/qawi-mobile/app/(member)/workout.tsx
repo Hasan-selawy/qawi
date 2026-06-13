@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -73,6 +73,18 @@ export default function WorkoutScreen() {
         e?.message || (lang === "ar" ? "تعذر إنشاء الخطة" : "Could not create plan")
       ),
   });
+
+  const plans = useQuery({
+    queryKey: ["member", "plans"],
+    queryFn: () => apiFetch<any[]>(`/workouts/member/${user?.id}`).catch(() => []),
+    enabled: !!user?.id,
+  });
+
+  const activePlan = useMemo(() => {
+    const list = plans.data ?? [];
+    if (!list.length) return null;
+    return list.sort((a, b) => (b.startDate ?? "").localeCompare(a.startDate ?? ""))[0];
+  }, [plans.data]);
 
   const today = useQuery({
     queryKey: ["member", "today"],
@@ -222,7 +234,7 @@ export default function WorkoutScreen() {
             <EmptyState icon="moon" text={t("member.restDay")} />
           </Card>
         </View>
-      ) : !today.data && user?.selfTrainingEnabled ? (
+      ) : !activePlan && user?.selfTrainingEnabled ? (
         <View style={{ flex: 1, padding: 20 }}>
           <Card style={{ borderWidth: 1, borderColor: "#7C3AED44" }}>
             <View style={{ alignItems: "center", paddingVertical: 8 }}>
