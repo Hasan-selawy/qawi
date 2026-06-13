@@ -103,6 +103,21 @@ public class GymAdminService {
     }
 
     @Transactional
+    public void toggleSelfTraining(UUID memberId, boolean enabled, String adminEmail) {
+        UUID gymId = getAdmin(adminEmail).getGymId();
+        User member = userRepository.findById(memberId)
+                .orElseThrow(() -> new AppException("Member not found", "العضو غير موجود", HttpStatus.NOT_FOUND));
+        if (member.getRole() != Role.MEMBER || !gymId.equals(member.getGymId())) {
+            throw new AppException("Member not found in your gym", "العضو غير موجود في صالتك", HttpStatus.NOT_FOUND);
+        }
+        member.setSelfTrainingEnabled(enabled);
+        if (enabled) {
+            coachMemberRepository.deleteByMemberId(memberId);
+        }
+        userRepository.save(member);
+    }
+
+    @Transactional
     public CoachMember assignCoach(UUID memberId, AssignCoachRequest req, String adminEmail) {
         User admin = getAdmin(adminEmail);
         User member = userRepository.findById(memberId)

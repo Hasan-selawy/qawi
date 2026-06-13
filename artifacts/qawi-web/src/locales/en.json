@@ -72,7 +72,14 @@
     "delete_failed": "Failed to delete",
     "assigned_members": "Assigned Members",
     "no_assigned_members": "No members assigned to this coach yet.",
-    "view_members": "View Assigned Members"
+    "view_members": "View Assigned Members",
+    "self_training": "Self-Training",
+    "self_training_mode": "Self-Training Mode",
+    "self_training_desc": "Member trains independently without a coach",
+    "self_training_enabled": "Self-training enabled",
+    "self_training_disabled": "Self-training disabled",
+    "self_training_confirm": "Enable self-training for {name}? They will be unassigned from their coach.",
+    "this_member_trains_independently": "This member is in self-training mode — they can build their own plans and log food."
   },
   "coach": {
     "welcome": "Welcome",

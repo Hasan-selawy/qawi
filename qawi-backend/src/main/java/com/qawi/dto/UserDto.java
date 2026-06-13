@@ -18,6 +18,7 @@ public class UserDto {
     private Role role;
     private UUID gymId;
     private boolean isActive;
+    private boolean selfTrainingEnabled;
     private LocalDate subscriptionStartDate;
     private LocalDate subscriptionEndDate;
     private LocalDateTime createdAt;
@@ -30,6 +31,7 @@ public class UserDto {
                 .role(user.getRole())
                 .gymId(user.getGymId())
                 .isActive(user.isActive())
+                .selfTrainingEnabled(user.isSelfTrainingEnabled())
                 .subscriptionStartDate(user.getSubscriptionStartDate())
                 .subscriptionEndDate(user.getSubscriptionEndDate())
                 .createdAt(user.getCreatedAt())

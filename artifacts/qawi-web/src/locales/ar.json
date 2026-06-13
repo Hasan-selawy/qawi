@@ -72,7 +72,14 @@
     "delete_failed": "تعذر الحذف",
     "assigned_members": "الأعضاء المعينون",
     "no_assigned_members": "لا يوجد أعضاء معينون لهذا المدرب بعد.",
-    "view_members": "عرض الأعضاء المعينين"
+    "view_members": "عرض الأعضاء المعينين",
+    "self_training": "تدريب ذاتي",
+    "self_training_mode": "وضع التدريب الذاتي",
+    "self_training_desc": "يتدرب هذا العضو باستقلالية دون مدرب",
+    "self_training_enabled": "تم تفعيل التدريب الذاتي",
+    "self_training_disabled": "تم إيقاف التدريب الذاتي",
+    "self_training_confirm": "هل تريد تفعيل التدريب الذاتي لـ {name}؟ سيتم إلغاء تعيين مدربه.",
+    "this_member_trains_independently": "هذا العضو في وضع التدريب الذاتي — يمكنه إنشاء خططه وتسجيل طعامه بنفسه."
   },
   "coach": {
     "welcome": "مرحباً",

@@ -5,7 +5,7 @@ import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import NetInfo from "@react-native-community/netinfo";
 import React, { useCallback, useEffect, useState } from "react";
-import { Alert, Image, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
+import { Alert, Image, Pressable, RefreshControl, ScrollView, Text, TextInput, View } from "react-native";
 
 import { RoleHeader } from "@/components/RoleHeader";
 import { Badge, Button, Card, EmptyState, Screen, SectionTitle } from "@/components/ui";
@@ -71,6 +71,134 @@ function LogoBanner() {
 }
 
 const PENDING_CHECKINS_KEY = "pendingCheckins";
+
+function SelfTrainingPlanCard() {
+  const c = useColors();
+  const { t, lang, isRTL } = useLanguage();
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const [creating, setCreating] = useState(false);
+  const [planName, setPlanName] = useState("");
+
+  const createPlan = useMutation({
+    mutationFn: () => {
+      const today = new Date();
+      const end = new Date(today);
+      end.setDate(end.getDate() + 30);
+      return apiFetch("/workouts", {
+        method: "POST",
+        data: {
+          name: planName.trim() || (lang === "ar" ? "خطتي" : "My Plan"),
+          memberId: user?.id,
+          startDate: today.toISOString().slice(0, 10),
+          endDate: end.toISOString().slice(0, 10),
+        },
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["member"] });
+      setCreating(false);
+      setPlanName("");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    },
+    onError: (err: any) => {
+      Alert.alert(
+        lang === "ar" ? "خطأ" : "Error",
+        err?.body?.messageAr || err?.body?.error || (lang === "ar" ? "فشل إنشاء الخطة" : "Failed to create plan")
+      );
+    },
+  });
+
+  return (
+    <Card style={{ borderColor: "#7c3aed44", borderWidth: 1 }}>
+      <View style={{ flexDirection: isRTL ? "row-reverse" : "row", alignItems: "center", gap: 10, marginBottom: 12 }}>
+        <View style={{
+          width: 36, height: 36, borderRadius: 18,
+          backgroundColor: "#7c3aed22", alignItems: "center", justifyContent: "center",
+        }}>
+          <Feather name="activity" size={18} color="#a78bfa" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: "#a78bfa", fontWeight: "800", fontSize: 14, textAlign: isRTL ? "right" : "left" }}>
+            {t("member.selfTraining")}
+          </Text>
+          <Text style={{ color: c.mutedForeground, fontSize: 12, marginTop: 2, textAlign: isRTL ? "right" : "left" }}>
+            {t("member.noPlanSelfTraining")}
+          </Text>
+        </View>
+      </View>
+
+      {creating ? (
+        <View style={{ gap: 10 }}>
+          <TextInput
+            value={planName}
+            onChangeText={setPlanName}
+            placeholder={t("member.planNamePlaceholder")}
+            placeholderTextColor={c.mutedForeground}
+            style={{
+              backgroundColor: c.muted,
+              color: c.foreground,
+              borderRadius: 10,
+              paddingHorizontal: 14,
+              paddingVertical: 10,
+              fontSize: 14,
+              borderWidth: 1,
+              borderColor: "#7c3aed44",
+              textAlign: isRTL ? "right" : "left",
+            }}
+            autoFocus
+          />
+          <View style={{ flexDirection: isRTL ? "row-reverse" : "row", gap: 8 }}>
+            <Pressable
+              onPress={() => createPlan.mutate()}
+              disabled={createPlan.isPending}
+              style={{
+                flex: 1, backgroundColor: "#7c3aed", borderRadius: 10,
+                paddingVertical: 11, alignItems: "center",
+                opacity: createPlan.isPending ? 0.6 : 1,
+              }}
+            >
+              <Text style={{ color: "#fff", fontWeight: "700", fontSize: 14 }}>
+                {createPlan.isPending
+                  ? (lang === "ar" ? "جارٍ الإنشاء..." : "Creating...")
+                  : t("member.createMyPlan")}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => { setCreating(false); setPlanName(""); }}
+              style={{
+                paddingHorizontal: 18, backgroundColor: c.muted, borderRadius: 10,
+                paddingVertical: 11, alignItems: "center",
+              }}
+            >
+              <Text style={{ color: c.mutedForeground, fontWeight: "600", fontSize: 14 }}>
+                {t("common.cancel")}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : (
+        <Pressable
+          onPress={() => setCreating(true)}
+          style={{
+            backgroundColor: "#7c3aed",
+            borderRadius: 10,
+            paddingVertical: 12,
+            alignItems: "center",
+            flexDirection: isRTL ? "row-reverse" : "row",
+            justifyContent: "center",
+            gap: 8,
+          }}
+        >
+          <Feather name="plus" size={16} color="#fff" />
+          <Text style={{ color: "#fff", fontWeight: "700", fontSize: 14 }}>
+            {t("member.buildMyPlan")}
+          </Text>
+        </Pressable>
+      )}
+    </Card>
+  );
+}
 
 type PendingCheckin = {
   id: string;
@@ -366,9 +494,13 @@ export default function MemberHome() {
             </View>
           </Card>
         ) : !today.data ? (
-          <Card>
-            <EmptyState icon="calendar" text={t("member.noPlan")} />
-          </Card>
+          user?.selfTrainingEnabled ? (
+            <SelfTrainingPlanCard />
+          ) : (
+            <Card>
+              <EmptyState icon="calendar" text={t("member.noPlan")} />
+            </Card>
+          )
         ) : today.data.restDay ? (
           <Card style={{ alignItems: "center", paddingVertical: 28 }}>
             <Feather name="moon" size={28} color={c.primary} />

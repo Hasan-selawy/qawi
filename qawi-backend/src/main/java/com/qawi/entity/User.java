@@ -56,6 +56,10 @@ public class User implements UserDetails {
     @Column(name = "subscription_end_date")
     private LocalDate subscriptionEndDate;
 
+    @Column(name = "self_training_enabled", nullable = false)
+    @Builder.Default
+    private boolean selfTrainingEnabled = false;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();

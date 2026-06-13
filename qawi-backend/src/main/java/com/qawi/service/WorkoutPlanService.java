@@ -2,6 +2,7 @@ package com.qawi.service;
 
 import com.qawi.dto.*;
 import com.qawi.entity.*;
+import com.qawi.entity.Role;
 import com.qawi.exception.AppException;
 import com.qawi.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -30,12 +31,27 @@ public class WorkoutPlanService {
     private final AccessGuard accessGuard;
 
     @Transactional
-    public WorkoutPlan createPlan(CreateWorkoutPlanRequest req, String coachEmail) {
-        User coach = accessGuard.loadUserByEmail(coachEmail);
-        accessGuard.assertCoachManagesMember(coachEmail, req.getMemberId());
+    public WorkoutPlan createPlan(CreateWorkoutPlanRequest req, String callerEmail) {
+        User caller = accessGuard.loadUserByEmail(callerEmail);
+        if (caller.getRole() == Role.MEMBER) {
+            if (!caller.isSelfTrainingEnabled()) {
+                throw new AppException(
+                        "Self-training is not enabled for your account",
+                        "لم يتم تفعيل التدريب الذاتي لحسابك",
+                        HttpStatus.FORBIDDEN);
+            }
+            return planRepository.save(WorkoutPlan.builder()
+                    .name(req.getName())
+                    .coachId(null)
+                    .memberId(caller.getId())
+                    .startDate(req.getStartDate())
+                    .endDate(req.getEndDate())
+                    .build());
+        }
+        accessGuard.assertCoachManagesMember(callerEmail, req.getMemberId());
         return planRepository.save(WorkoutPlan.builder()
                 .name(req.getName())
-                .coachId(coach.getId())
+                .coachId(caller.getId())
                 .memberId(req.getMemberId())
                 .startDate(req.getStartDate())
                 .endDate(req.getEndDate())
@@ -110,8 +126,8 @@ public class WorkoutPlanService {
     }
 
     @Transactional
-    public ScheduleDay addDay(UUID planId, AddScheduleDayRequest req, String coachEmail) {
-        assertCoachOwnsPlan(planId, coachEmail);
+    public ScheduleDay addDay(UUID planId, AddScheduleDayRequest req, String callerEmail) {
+        assertCallerCanWritePlan(planId, callerEmail);
         return scheduleDayRepository.save(ScheduleDay.builder()
                 .workoutPlanId(planId)
                 .dayDate(req.getDayDate())
@@ -122,10 +138,10 @@ public class WorkoutPlanService {
     }
 
     @Transactional
-    public PlanExercise addExerciseToDay(UUID dayId, AddPlanExerciseRequest req, String coachEmail) {
+    public PlanExercise addExerciseToDay(UUID dayId, AddPlanExerciseRequest req, String callerEmail) {
         ScheduleDay day = scheduleDayRepository.findById(dayId)
                 .orElseThrow(() -> new AppException("Day not found", "اليوم غير موجود", HttpStatus.NOT_FOUND));
-        assertCoachOwnsPlan(day.getWorkoutPlanId(), coachEmail);
+        assertCallerCanWritePlan(day.getWorkoutPlanId(), callerEmail);
 
         int idx = req.getOrderIndex();
         if (idx == 0) {
@@ -146,10 +162,10 @@ public class WorkoutPlanService {
     }
 
     @Transactional
-    public void removeExerciseFromDay(UUID dayId, UUID planExerciseId, String coachEmail) {
+    public void removeExerciseFromDay(UUID dayId, UUID planExerciseId, String callerEmail) {
         ScheduleDay day = scheduleDayRepository.findById(dayId)
                 .orElseThrow(() -> new AppException("Day not found", "اليوم غير موجود", HttpStatus.NOT_FOUND));
-        assertCoachOwnsPlan(day.getWorkoutPlanId(), coachEmail);
+        assertCallerCanWritePlan(day.getWorkoutPlanId(), callerEmail);
         PlanExercise ex = planExerciseRepository.findById(planExerciseId)
                 .orElseThrow(() -> new AppException("Exercise not found", "التمرين غير موجود", HttpStatus.NOT_FOUND));
         if (!ex.getScheduleDayId().equals(dayId)) {
@@ -238,8 +254,8 @@ public class WorkoutPlanService {
     }
 
     @Transactional
-    public void deletePlan(UUID planId, String coachEmail) {
-        assertCoachOwnsPlan(planId, coachEmail);
+    public void deletePlan(UUID planId, String callerEmail) {
+        assertCallerCanWritePlan(planId, callerEmail);
         List<ScheduleDay> days = scheduleDayRepository.findByWorkoutPlanIdOrderByDayDate(planId);
         for (ScheduleDay d : days) {
             planExerciseRepository.deleteByScheduleDayId(d.getId());
@@ -387,7 +403,7 @@ public class WorkoutPlanService {
     public void uncompleteDay(UUID dayId, String coachEmail) {
         ScheduleDay day = scheduleDayRepository.findById(dayId)
                 .orElseThrow(() -> new AppException("Day not found", "اليوم غير موجود", HttpStatus.NOT_FOUND));
-        assertCoachOwnsPlan(day.getWorkoutPlanId(), coachEmail);
+        assertCallerCanWritePlan(day.getWorkoutPlanId(), coachEmail);
 
         List<UUID> planExerciseIds = planExerciseRepository.findByScheduleDayIdOrderByOrderIndex(dayId)
                 .stream().map(PlanExercise::getId).toList();
@@ -400,12 +416,18 @@ public class WorkoutPlanService {
         scheduleDayRepository.save(day);
     }
 
-    private WorkoutPlan assertCoachOwnsPlan(UUID planId, String coachEmail) {
-        User coach = accessGuard.loadUserByEmail(coachEmail);
+    private WorkoutPlan assertCallerCanWritePlan(UUID planId, String callerEmail) {
+        User caller = accessGuard.loadUserByEmail(callerEmail);
         WorkoutPlan plan = planRepository.findById(planId)
                 .orElseThrow(() -> new AppException("Plan not found", "الخطة غير موجودة", HttpStatus.NOT_FOUND));
-        if (!plan.getCoachId().equals(coach.getId())) {
-            throw new AppException("Access denied", "غير مصرح لك", HttpStatus.FORBIDDEN);
+        if (caller.getRole() == Role.MEMBER) {
+            if (!caller.isSelfTrainingEnabled() || !plan.getMemberId().equals(caller.getId())) {
+                throw new AppException("Access denied", "غير مصرح لك", HttpStatus.FORBIDDEN);
+            }
+        } else {
+            if (plan.getCoachId() == null || !plan.getCoachId().equals(caller.getId())) {
+                throw new AppException("Access denied", "غير مصرح لك", HttpStatus.FORBIDDEN);
+            }
         }
         return plan;
     }

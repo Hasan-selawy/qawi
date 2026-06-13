@@ -17,7 +17,8 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RenewSubscriptionForm } from '@/components/RenewSubscriptionForm';
-import { Plus, Search, Trash2, Users, KeyRound } from 'lucide-react';
+import { Plus, Search, Trash2, Users, KeyRound, Dumbbell } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { getSubStatus } from '@/lib/sub-status';
@@ -263,9 +264,16 @@ export default function AdminMembers() {
                     const status = getSubStatus(member.subscriptionEndDate);
                     return (
                       <TableRow key={member.id} className="border-white/10 hover:bg-primary/5 transition-colors">
-                        <TableCell className="flex items-center gap-3">
-                          <GradientAvatar name={member.name} size="sm" />
-                          <span className="font-medium">{member.name}</span>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <GradientAvatar name={member.name} size="sm" />
+                            <span className="font-medium">{member.name}</span>
+                            {member.selfTrainingEnabled && (
+                              <span className="inline-flex items-center gap-1 text-xs bg-violet-500/15 text-violet-400 border border-violet-500/30 rounded-full px-2 py-0.5 font-medium">
+                                <Dumbbell size={10} /> Self-Training
+                              </span>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell className="text-muted-foreground text-sm">{member.phone || <span className="text-white/30">—</span>}</TableCell>
                         <TableCell>{member.subscriptionEndDate ? format(new Date(member.subscriptionEndDate), 'PP') : '-'}</TableCell>
@@ -324,6 +332,7 @@ export default function AdminMembers() {
 
 function MemberDetailsSheet({ member, coaches }: { member: any; coaches: any[] }) {
   const queryClient = useQueryClient();
+  const { lang } = useLanguage();
   const status = getSubStatus(member.subscriptionEndDate);
 
   const updateSub = useMutation({
@@ -340,9 +349,21 @@ function MemberDetailsSheet({ member, coaches }: { member: any; coaches: any[] }
     mutationFn: (coachId: string) => apiFetch(`/admin/members/${member.id}/assign`, { method: 'PUT', data: { coachId } }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'members'] });
-      toast.success('Coach assigned');
+      toast.success(lang === 'ar' ? 'تم تعيين المدرب' : 'Coach assigned');
     },
     onError: (err: any) => toast.error(err.error || 'Failed'),
+  });
+
+  const toggleSelfTraining = useMutation({
+    mutationFn: (enabled: boolean) =>
+      apiFetch(`/admin/members/${member.id}/self-training`, { method: 'PATCH', data: { enabled } }),
+    onSuccess: (_: any, enabled: boolean) => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'members'] });
+      toast.success(enabled
+        ? (lang === 'ar' ? '✅ تم تفعيل التدريب الذاتي' : '✅ Self-training enabled')
+        : (lang === 'ar' ? 'تم إيقاف التدريب الذاتي' : 'Self-training disabled'));
+    },
+    onError: (err: any) => toast.error((lang === 'ar' ? err.messageAr : err.error) || 'Failed'),
   });
 
   return (
@@ -353,59 +374,104 @@ function MemberDetailsSheet({ member, coaches }: { member: any; coaches: any[] }
           <div>
             <h2 className="text-xl font-bold">{member.name}</h2>
             <p className="text-sm text-muted-foreground">{member.email}</p>
-            <div className="mt-2"><StatusBadge status={status as BadgeStatus} label={status} /></div>
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
+              <StatusBadge status={status as BadgeStatus} label={status} />
+              {member.selfTrainingEnabled && (
+                <span className="inline-flex items-center gap-1 text-xs bg-violet-500/15 text-violet-400 border border-violet-500/30 rounded-full px-2 py-0.5 font-medium">
+                  <Dumbbell size={10} /> {lang === 'ar' ? 'تدريب ذاتي' : 'Self-Training'}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>
       <div className="flex-1 overflow-y-auto p-6">
         <Tabs defaultValue="info">
           <TabsList className="w-full bg-black/20 mb-6">
-            <TabsTrigger value="info" className="flex-1">Info</TabsTrigger>
-            <TabsTrigger value="subscription" className="flex-1">Subscription</TabsTrigger>
-            <TabsTrigger value="coach" className="flex-1">Coach</TabsTrigger>
+            <TabsTrigger value="info" className="flex-1">{lang === 'ar' ? 'معلومات' : 'Info'}</TabsTrigger>
+            <TabsTrigger value="subscription" className="flex-1">{lang === 'ar' ? 'الاشتراك' : 'Subscription'}</TabsTrigger>
+            <TabsTrigger value="coach" className="flex-1">{lang === 'ar' ? 'المدرب' : 'Coach'}</TabsTrigger>
           </TabsList>
           <TabsContent value="info" className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="glass-card p-4">
-                <p className="text-xs text-muted-foreground">Joined</p>
+                <p className="text-xs text-muted-foreground">{lang === 'ar' ? 'تاريخ الانضمام' : 'Joined'}</p>
                 <p className="font-medium mt-1">{member.createdAt ? format(new Date(member.createdAt), 'PP') : '-'}</p>
               </div>
               <div className="glass-card p-4">
-                <p className="text-xs text-muted-foreground">Subscription End</p>
+                <p className="text-xs text-muted-foreground">{lang === 'ar' ? 'نهاية الاشتراك' : 'Subscription End'}</p>
                 <p className="font-medium mt-1">{member.subscriptionEndDate ? format(new Date(member.subscriptionEndDate), 'PP') : '-'}</p>
               </div>
             </div>
             <div className="glass-card p-4">
-              <p className="text-xs text-muted-foreground mb-1">Phone</p>
+              <p className="text-xs text-muted-foreground mb-1">{lang === 'ar' ? 'الهاتف' : 'Phone'}</p>
               {member.phone ? (
                 <a href={`tel:${member.phone}`} className="font-medium text-green-400 hover:underline">{member.phone}</a>
               ) : (
-                <p className="text-muted-foreground text-sm">No phone on record</p>
+                <p className="text-muted-foreground text-sm">{lang === 'ar' ? 'لا يوجد رقم هاتف' : 'No phone on record'}</p>
               )}
             </div>
             <div className="glass-card p-4">
-              <p className="text-xs text-muted-foreground mb-1">Email</p>
+              <p className="text-xs text-muted-foreground mb-1">{lang === 'ar' ? 'البريد الإلكتروني' : 'Email'}</p>
               <p className="font-medium text-sm break-all">{member.email}</p>
             </div>
           </TabsContent>
           <TabsContent value="subscription" className="space-y-4">
             <div className="glass-card p-4 space-y-4">
-              <h3 className="font-medium">Renew Subscription</h3>
+              <h3 className="font-medium">{lang === 'ar' ? 'تجديد الاشتراك' : 'Renew Subscription'}</h3>
               <RenewSubscriptionForm isPending={updateSub.isPending} onSubmit={(data) => updateSub.mutate(data)} />
             </div>
           </TabsContent>
           <TabsContent value="coach" className="space-y-4">
-            <div className="glass-card p-4 space-y-4">
-              <h3 className="font-medium">Assign Coach</h3>
-              <Select onValueChange={(val) => assignCoach.mutate(val)}>
-                <SelectTrigger className="bg-black/20"><SelectValue placeholder="Select a coach" /></SelectTrigger>
-                <SelectContent>
-                  {coaches?.map((c: any) => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="glass-card p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-medium flex items-center gap-2">
+                    <Dumbbell size={15} className="text-violet-400" />
+                    {lang === 'ar' ? 'وضع التدريب الذاتي' : 'Self-Training Mode'}
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {lang === 'ar'
+                      ? 'يتدرب هذا العضو باستقلالية دون مدرب'
+                      : 'Member trains independently without a coach'}
+                  </p>
+                </div>
+                <Switch
+                  checked={!!member.selfTrainingEnabled}
+                  disabled={toggleSelfTraining.isPending}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      const msg = lang === 'ar'
+                        ? `هل تريد تفعيل التدريب الذاتي لـ ${member.name}؟ سيتم إلغاء تعيين مدربه.`
+                        : `Enable self-training for ${member.name}? They will be unassigned from their coach.`;
+                      if (confirm(msg)) toggleSelfTraining.mutate(true);
+                    } else {
+                      toggleSelfTraining.mutate(false);
+                    }
+                  }}
+                />
+              </div>
+              {member.selfTrainingEnabled && (
+                <div className="rounded-lg bg-violet-500/10 border border-violet-500/20 p-3 text-xs text-violet-300">
+                  {lang === 'ar'
+                    ? '🏋️ هذا العضو في وضع التدريب الذاتي — يمكنه إنشاء خططه وتسجيل طعامه بنفسه.'
+                    : '🏋️ This member is in self-training mode — they can build their own plans and log food.'}
+                </div>
+              )}
             </div>
+            {!member.selfTrainingEnabled && (
+              <div className="glass-card p-4 space-y-4">
+                <h3 className="font-medium">{lang === 'ar' ? 'تعيين مدرب' : 'Assign Coach'}</h3>
+                <Select onValueChange={(val) => assignCoach.mutate(val)}>
+                  <SelectTrigger className="bg-black/20"><SelectValue placeholder={lang === 'ar' ? 'اختر مدرباً' : 'Select a coach'} /></SelectTrigger>
+                  <SelectContent>
+                    {coaches?.map((c: any) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>

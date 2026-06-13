@@ -24,7 +24,7 @@ public class WorkoutPlanController {
     private final WorkoutPlanService workoutPlanService;
 
     @PostMapping
-    @PreAuthorize("hasRole('COACH')")
+    @PreAuthorize("hasAnyRole('COACH', 'MEMBER')")
     public ResponseEntity<WorkoutPlan> createPlan(
             @Valid @RequestBody CreateWorkoutPlanRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
@@ -56,7 +56,7 @@ public class WorkoutPlanController {
     }
 
     @PostMapping("/{planId}/days")
-    @PreAuthorize("hasRole('COACH')")
+    @PreAuthorize("hasAnyRole('COACH', 'MEMBER')")
     public ResponseEntity<ScheduleDay> addDay(
             @PathVariable UUID planId,
             @Valid @RequestBody AddScheduleDayRequest request,
@@ -66,7 +66,7 @@ public class WorkoutPlanController {
     }
 
     @PostMapping("/days/{dayId}/exercises")
-    @PreAuthorize("hasRole('COACH')")
+    @PreAuthorize("hasAnyRole('COACH', 'MEMBER')")
     public ResponseEntity<PlanExercise> addExerciseToDay(
             @PathVariable UUID dayId,
             @Valid @RequestBody AddPlanExerciseRequest request,
@@ -76,7 +76,7 @@ public class WorkoutPlanController {
     }
 
     @DeleteMapping("/days/{dayId}/exercises/{exerciseId}")
-    @PreAuthorize("hasRole('COACH')")
+    @PreAuthorize("hasAnyRole('COACH', 'MEMBER')")
     public ResponseEntity<Void> removeExerciseFromDay(
             @PathVariable UUID dayId,
             @PathVariable UUID exerciseId,
@@ -112,7 +112,7 @@ public class WorkoutPlanController {
     }
 
     @DeleteMapping("/{planId}")
-    @PreAuthorize("hasRole('COACH')")
+    @PreAuthorize("hasAnyRole('COACH', 'MEMBER')")
     public ResponseEntity<Void> deletePlan(
             @PathVariable UUID planId,
             @AuthenticationPrincipal UserDetails userDetails) {

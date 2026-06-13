@@ -66,6 +66,16 @@ public class GymAdminController {
         return ResponseEntity.ok(gymAdminService.getMembers(userDetails.getUsername()));
     }
 
+    @PatchMapping("/members/{memberId}/self-training")
+    public ResponseEntity<Void> toggleSelfTraining(
+            @PathVariable UUID memberId,
+            @RequestBody java.util.Map<String, Boolean> body,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        boolean enabled = Boolean.TRUE.equals(body.get("enabled"));
+        gymAdminService.toggleSelfTraining(memberId, enabled, userDetails.getUsername());
+        return ResponseEntity.noContent().build();
+    }
+
     @PutMapping("/members/{memberId}/assign")
     public ResponseEntity<CoachMember> assignCoach(
             @PathVariable UUID memberId,
