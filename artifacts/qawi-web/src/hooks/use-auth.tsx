@@ -13,6 +13,7 @@ export interface User {
   subscriptionStartDate?: string | null;
   subscriptionEndDate?: string | null;
   active?: boolean;
+  selfTrainingEnabled?: boolean;
 }
 
 interface AuthContextType {

@@ -51,6 +51,9 @@ public class SchemaInitializer implements ApplicationRunner {
         //           ddl-auto=update cannot safely add it to a non-empty table) ──
         ddl("ALTER TABLE users ADD COLUMN IF NOT EXISTS self_training_enabled BOOLEAN NOT NULL DEFAULT false");
 
+        // ── workout_plans: allow coach_id to be NULL for self-training members ──
+        ddl("ALTER TABLE workout_plans ALTER COLUMN coach_id DROP NOT NULL");
+
         log.info("SchemaInitializer: migration complete");
     }
 

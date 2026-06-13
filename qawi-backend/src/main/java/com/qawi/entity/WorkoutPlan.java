@@ -23,7 +23,7 @@ public class WorkoutPlan {
     @Column(nullable = false)
     private String name;
 
-    @Column(name = "coach_id", nullable = false)
+    @Column(name = "coach_id", nullable = true)
     private UUID coachId;
 
     @Column(name = "member_id", nullable = false)

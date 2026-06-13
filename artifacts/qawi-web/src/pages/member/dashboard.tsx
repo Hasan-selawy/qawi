@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import {
   Zap, Calendar, Award, CheckCircle2, LogIn, LogOut, Moon,
   Play, ChevronDown, ChevronUp, Dumbbell, UtensilsCrossed,
-  TrendingUp, Bell, Clock
+  TrendingUp, Bell, Clock, Plus, Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -108,6 +108,7 @@ export default function MemberDashboard() {
   const { features } = useGymConfig();
   const qc = useQueryClient();
   const isAr = lang === 'ar';
+  const [planName, setPlanName] = useState('');
 
   const stats = useQuery<any>({
     queryKey: ['member', 'stats'],
@@ -127,6 +128,42 @@ export default function MemberDashboard() {
       ? apiFetch(`/nutrition/v3/log/today/${user?.id}`).catch(() => null)
       : Promise.resolve(null),
     enabled: features.nutritionEnabled && !!user?.id,
+  });
+
+  const completeDay = useMutation({
+    mutationFn: (dayId: string) =>
+      apiFetch(`/workouts/days/${dayId}/complete`, { method: 'PUT' }),
+    onSuccess: () => {
+      toast.success(isAr ? '💪 أحسنت! تم حفظ التمرين.' : '💪 Workout marked complete!');
+      qc.invalidateQueries({ queryKey: ['member'] });
+    },
+    onError: (e: any) => {
+      toast.error(e?.body?.error ?? (isAr ? 'حدث خطأ' : 'Something went wrong'));
+    },
+  });
+
+  const createPlan = useMutation({
+    mutationFn: () => {
+      const start = new Date().toISOString().slice(0, 10);
+      const end = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      return apiFetch('/workouts', {
+        method: 'POST',
+        data: {
+          name: planName.trim() || (isAr ? 'خطتي التدريبية' : 'My Training Plan'),
+          memberId: user?.id,
+          startDate: start,
+          endDate: end,
+        },
+      });
+    },
+    onSuccess: () => {
+      toast.success(isAr ? '✅ تم إنشاء الخطة بنجاح!' : '✅ Plan created!');
+      setPlanName('');
+      qc.invalidateQueries({ queryKey: ['member'] });
+    },
+    onError: (e: any) => {
+      toast.error(e?.body?.error ?? (isAr ? 'فشل في إنشاء الخطة' : 'Failed to create plan'));
+    },
   });
 
   const checkinMut = useMutation({
@@ -288,10 +325,34 @@ export default function MemberDashboard() {
             {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-10" />)}
           </div>
         ) : !today.data ? (
-          <div className="text-center py-8 text-muted-foreground">
+          <div className="text-center py-6 text-muted-foreground">
             <Moon size={36} className="mx-auto mb-3 opacity-40" />
             <p className="font-medium">{isAr ? 'لا يوجد برنامج تدريبي' : 'No workout plan assigned'}</p>
-            <p className="text-xs mt-1">{isAr ? 'تواصل مع مدربك لإنشاء برنامج' : 'Contact your coach to set up a plan'}</p>
+            {user?.selfTrainingEnabled ? (
+              <div className="mt-4 flex flex-col items-center gap-3 max-w-xs mx-auto">
+                <p className="text-xs">{isAr ? 'أنت في وضع التدريب الذاتي — أنشئ خطتك الآن' : 'You\'re in self-training mode — create your plan'}</p>
+                <input
+                  value={planName}
+                  onChange={e => setPlanName(e.target.value)}
+                  placeholder={isAr ? 'اسم الخطة (اختياري)' : 'Plan name (optional)'}
+                  className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/40"
+                  onKeyDown={e => e.key === 'Enter' && !createPlan.isPending && createPlan.mutate()}
+                />
+                <Button
+                  size="sm"
+                  className="w-full"
+                  onClick={() => createPlan.mutate()}
+                  disabled={createPlan.isPending}
+                >
+                  {createPlan.isPending
+                    ? <Loader2 size={14} className="animate-spin mr-2" />
+                    : <Plus size={14} className="mr-2 rtl:ml-2 rtl:mr-0" />}
+                  {isAr ? 'إنشاء خطة تدريبية' : 'Create Training Plan'}
+                </Button>
+              </div>
+            ) : (
+              <p className="text-xs mt-1">{isAr ? 'تواصل مع مدربك لإنشاء برنامج' : 'Contact your coach to set up a plan'}</p>
+            )}
           </div>
         ) : today.data.restDay ? (
           <div className="text-center py-8">
@@ -348,10 +409,15 @@ export default function MemberDashboard() {
               )}
             </div>
             <div className="h-px bg-white/5 mb-4" />
-            <Button className="w-full" disabled>
-              <Play size={16} className="mr-2 rtl:ml-2 rtl:mr-0" />
-              {isAr ? 'ابدأ التمرين' : 'Start Workout'}
-              <span className="ml-2 text-xs opacity-60">{isAr ? '(قريباً)' : '(coming soon)'}</span>
+            <Button
+              className="w-full"
+              onClick={() => today.data?.dayId && completeDay.mutate(today.data.dayId)}
+              disabled={completeDay.isPending || !today.data?.dayId}
+            >
+              {completeDay.isPending
+                ? <Loader2 size={16} className="mr-2 animate-spin rtl:ml-2 rtl:mr-0" />
+                : <Play size={16} className="mr-2 rtl:ml-2 rtl:mr-0" />}
+              {isAr ? 'إنهاء التمرين ✓' : 'Finish Workout ✓'}
             </Button>
           </div>
         )}

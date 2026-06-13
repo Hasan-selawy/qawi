@@ -555,6 +555,12 @@ function AddFoodModal({
   const [favoriteFoods, setFavoriteFoods] = useState<FavoriteFood[]>([]);
   const searchTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const [manualMode, setManualMode] = useState(false);
+  const [manualCalories, setManualCalories] = useState("");
+  const [manualProtein, setManualProtein] = useState("");
+  const [manualCarbs, setManualCarbs] = useState("");
+  const [manualFat, setManualFat] = useState("");
+
   const loadFavorites = async () => {
     try {
       const raw = await AsyncStorage.getItem(FAVORITES_KEY);
@@ -633,6 +639,11 @@ function AddFoodModal({
     setMealType(initialMealType || "BREAKFAST");
     setAiResult(null);
     setSearchResults([]);
+    setManualMode(false);
+    setManualCalories("");
+    setManualProtein("");
+    setManualCarbs("");
+    setManualFat("");
     if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
   };
 
@@ -693,6 +704,45 @@ function AddFoodModal({
       Alert.alert(
         lang === "ar" ? "خطأ" : "Error",
         lang === "ar" ? "فشل في حفظ السجل." : "Failed to save food entry."
+      );
+    }
+  };
+
+  const logManual = async () => {
+    if (!foodInput.trim()) return;
+    const cal = parseFloat(manualCalories);
+    if (isNaN(cal) || cal < 0) {
+      Alert.alert(
+        lang === "ar" ? "خطأ" : "Error",
+        lang === "ar" ? "أدخل قيمة سعرات صحيحة." : "Please enter a valid calorie amount."
+      );
+      return;
+    }
+    try {
+      await apiFetch("/nutrition/log/manual", {
+        method: "POST",
+        data: {
+          memberId,
+          foodName: foodInput.trim(),
+          foodNameAr: "",
+          mealType,
+          quantity: parseFloat(quantity) || 100,
+          unit,
+          calories: cal,
+          protein: parseFloat(manualProtein) || 0,
+          carbs: parseFloat(manualCarbs) || 0,
+          fat: parseFloat(manualFat) || 0,
+          fiber: null,
+          sugar: null,
+        },
+      });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      onLogged();
+      handleClose();
+    } catch {
+      Alert.alert(
+        lang === "ar" ? "خطأ" : "Error",
+        lang === "ar" ? "فشل في تسجيل الطعام. حاول مرة أخرى." : "Failed to log food. Please try again."
       );
     }
   };
@@ -926,6 +976,54 @@ function AddFoodModal({
             </>
           ) : (
             <>
+              {/* Mode toggle: AI Search vs Manual entry */}
+              <View
+                style={{
+                  flexDirection: isRTL ? "row-reverse" : "row",
+                  backgroundColor: "rgba(255,255,255,0.06)",
+                  borderRadius: 12,
+                  padding: 3,
+                  gap: 3,
+                  marginBottom: 16,
+                }}
+              >
+                {[
+                  { key: false, en: "✨ AI Search", ar: "✨ بحث ذكي" },
+                  { key: true, en: "✏️ Manual", ar: "✏️ إدخال يدوي" },
+                ].map((tab) => (
+                  <TouchableOpacity
+                    key={String(tab.key)}
+                    onPress={() => setManualMode(tab.key as boolean)}
+                    style={{
+                      flex: 1,
+                      paddingVertical: 9,
+                      borderRadius: 10,
+                      alignItems: "center",
+                      backgroundColor:
+                        manualMode === tab.key
+                          ? tab.key
+                            ? "rgba(99,102,241,0.5)"
+                            : "rgba(245,158,11,0.4)"
+                          : "transparent",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color:
+                          manualMode === tab.key
+                            ? "white"
+                            : "rgba(255,255,255,0.45)",
+                        fontWeight: manualMode === tab.key ? "700" : "400",
+                        fontSize: 13,
+                      }}
+                    >
+                      {lang === "ar" ? tab.ar : tab.en}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {!manualMode && (
               <View>
                 <Text
                   style={{
@@ -1171,6 +1269,60 @@ function AddFoodModal({
                   </View>
                 )}
               </View>
+              )}
+
+              {manualMode && (
+              <View style={{ gap: 12 }}>
+                <View>
+                  <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, fontWeight: "600", marginBottom: 8, textAlign: isRTL ? "right" : "left" }}>
+                    {lang === "ar" ? "اسم الطعام" : "Food name"}
+                  </Text>
+                  <TextInput
+                    value={foodInput}
+                    onChangeText={setFoodInput}
+                    placeholder={lang === "ar" ? "مثال: أرز بسمتي" : "e.g. Basmati rice"}
+                    placeholderTextColor="rgba(255,255,255,0.25)"
+                    style={{ backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 12, padding: 14, color: "white", fontSize: 15, borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", textAlign: isRTL ? "right" : "left" }}
+                  />
+                </View>
+                <View style={{ flexDirection: isRTL ? "row-reverse" : "row", gap: 10 }}>
+                  {[
+                    { key: "manualCalories", setter: setManualCalories, val: manualCalories, en: "Calories (kcal)", ar: "السعرات (كيلو)" },
+                    { key: "manualProtein", setter: setManualProtein, val: manualProtein, en: "Protein (g)", ar: "بروتين (غ)" },
+                  ].map((f) => (
+                    <View key={f.key} style={{ flex: 1 }}>
+                      <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: "600", marginBottom: 5 }}>{lang === "ar" ? f.ar : f.en}</Text>
+                      <TextInput
+                        value={f.val}
+                        onChangeText={f.setter}
+                        placeholder="0"
+                        placeholderTextColor="rgba(255,255,255,0.2)"
+                        keyboardType="decimal-pad"
+                        style={{ backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 10, padding: 12, color: "white", fontSize: 15, borderWidth: 1, borderColor: f.key === "manualCalories" ? "rgba(245,158,11,0.3)" : "rgba(34,197,94,0.3)", textAlign: "center" }}
+                      />
+                    </View>
+                  ))}
+                </View>
+                <View style={{ flexDirection: isRTL ? "row-reverse" : "row", gap: 10 }}>
+                  {[
+                    { key: "manualCarbs", setter: setManualCarbs, val: manualCarbs, en: "Carbs (g)", ar: "كربوهيدرات (غ)" },
+                    { key: "manualFat", setter: setManualFat, val: manualFat, en: "Fat (g)", ar: "دهون (غ)" },
+                  ].map((f) => (
+                    <View key={f.key} style={{ flex: 1 }}>
+                      <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: "600", marginBottom: 5 }}>{lang === "ar" ? f.ar : f.en}</Text>
+                      <TextInput
+                        value={f.val}
+                        onChangeText={f.setter}
+                        placeholder="0"
+                        placeholderTextColor="rgba(255,255,255,0.2)"
+                        keyboardType="decimal-pad"
+                        style={{ backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 10, padding: 12, color: "white", fontSize: 15, borderWidth: 1, borderColor: "rgba(99,102,241,0.3)", textAlign: "center" }}
+                      />
+                    </View>
+                  ))}
+                </View>
+              </View>
+              )}
 
               <View style={{ flexDirection: "row", gap: 10 }}>
                 <View style={{ flex: 1 }}>
@@ -1307,31 +1459,44 @@ function AddFoodModal({
                 </View>
               </View>
 
-              <TouchableOpacity
-                onPress={analyze}
-                disabled={!foodInput.trim()}
-                style={{
-                  backgroundColor: foodInput.trim()
-                    ? N_COLORS.calories
-                    : "rgba(245,158,11,0.3)",
-                  borderRadius: 14,
-                  padding: 16,
-                  alignItems: "center",
-                  marginTop: 4,
-                }}
-              >
-                <Text
+              {!manualMode ? (
+                <TouchableOpacity
+                  onPress={analyze}
+                  disabled={!foodInput.trim()}
                   style={{
-                    color: "white",
-                    fontWeight: "800",
-                    fontSize: 16,
+                    backgroundColor: foodInput.trim()
+                      ? N_COLORS.calories
+                      : "rgba(245,158,11,0.3)",
+                    borderRadius: 14,
+                    padding: 16,
+                    alignItems: "center",
+                    marginTop: 4,
                   }}
                 >
-                  {lang === "ar"
-                    ? "✨ احسب القيم الغذائية"
-                    : "✨ Calculate Nutrition"}
-                </Text>
-              </TouchableOpacity>
+                  <Text style={{ color: "white", fontWeight: "800", fontSize: 16 }}>
+                    {lang === "ar" ? "✨ احسب القيم الغذائية" : "✨ Calculate Nutrition"}
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  onPress={logManual}
+                  disabled={!foodInput.trim() || !manualCalories.trim()}
+                  style={{
+                    backgroundColor:
+                      foodInput.trim() && manualCalories.trim()
+                        ? "rgba(99,102,241,0.85)"
+                        : "rgba(99,102,241,0.3)",
+                    borderRadius: 14,
+                    padding: 16,
+                    alignItems: "center",
+                    marginTop: 4,
+                  }}
+                >
+                  <Text style={{ color: "white", fontWeight: "800", fontSize: 16 }}>
+                    {lang === "ar" ? "✓ أضف إلى السجل" : "✓ Add to Log"}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </>
           )}
         </ScrollView>
