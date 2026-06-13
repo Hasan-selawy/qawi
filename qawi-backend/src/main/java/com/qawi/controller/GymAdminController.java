@@ -66,6 +66,8 @@ public class GymAdminController {
         return ResponseEntity.ok(gymAdminService.getMembers(userDetails.getUsername()));
     }
 
+    // Spring Security 6: a method-level @PreAuthorize REPLACES the class-level one (does not stack).
+    // Therefore SUPER_ADMIN is allowed here even though the class has @PreAuthorize("hasRole('GYM_ADMIN')").
     @PatchMapping("/members/{memberId}/self-training")
     @PreAuthorize("hasRole('GYM_ADMIN') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<Void> toggleSelfTraining(
