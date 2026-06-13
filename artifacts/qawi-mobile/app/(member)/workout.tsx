@@ -65,6 +65,7 @@ export default function WorkoutScreen() {
       setPlanName("");
       setShowPlanForm(false);
       qc.invalidateQueries({ queryKey: ["member"] });
+      router.push("/member/my-plan" as never);
     },
     onError: (e: any) =>
       Alert.alert(
@@ -267,10 +268,22 @@ export default function WorkoutScreen() {
           </Card>
         </View>
       ) : !today.data || list.length === 0 ? (
-        <View style={{ flex: 1, padding: 20 }}>
+        <View style={{ flex: 1, padding: 20, gap: 12 }}>
           <Card>
-            <EmptyState icon="moon" text={t("member.noPlan")} />
+            <EmptyState icon="moon" text={today.data && list.length === 0 ? (lang === "ar" ? "لا يوجد تمارين اليوم" : "No exercises for today") : t("member.noPlan")} />
           </Card>
+          {user?.selfTrainingEnabled && (
+            <TouchableOpacity
+              onPress={() => router.push("/member/my-plan" as never)}
+              style={{ backgroundColor: "#7C3AED18", borderRadius: 12, borderWidth: 1, borderColor: "#7C3AED44", padding: 14, flexDirection: isRTL ? "row-reverse" : "row", alignItems: "center", gap: 10 }}
+            >
+              <Feather name="edit-3" size={18} color="#7C3AED" />
+              <Text style={{ color: "#7C3AED", fontWeight: "700", flex: 1, textAlign: isRTL ? "right" : "left" }}>
+                {lang === "ar" ? "إدارة خطتي التدريبية" : "Manage My Training Plan"}
+              </Text>
+              <Feather name={isRTL ? "chevron-left" : "chevron-right"} size={16} color="#7C3AED" />
+            </TouchableOpacity>
+          )}
         </View>
       ) : (
         <ScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 120 }}>

@@ -27,6 +27,7 @@ export type AuthUser = {
   gymId?: string | null;
   gymName?: string | null;
   subscriptionExpiresAt?: string | null;
+  selfTrainingEnabled?: boolean;
 };
 
 type AuthState = {
