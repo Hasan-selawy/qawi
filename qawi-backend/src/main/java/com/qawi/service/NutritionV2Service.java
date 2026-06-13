@@ -908,22 +908,12 @@ public class NutritionV2Service {
      *   <li>NUTRITIONIST_ONLY — COACH is blocked (403)</li>
      *   <li>COACH_AND_NUTRITIONIST — both are allowed</li>
      * </ul>
-     * MEMBER may write only when their {@code selfTrainingEnabled} flag is true; otherwise 403.
-     * GYM_ADMIN and SUPER_ADMIN are always exempt.
+     * MEMBER, GYM_ADMIN, and SUPER_ADMIN are always exempt.
      * Read operations should never call this method.
      */
     private void assertWorkflowAllowsWrite(User caller) {
         Role role = caller.getRole();
-        if (role == Role.GYM_ADMIN || role == Role.SUPER_ADMIN) return;
-        if (role == Role.MEMBER) {
-            if (!caller.isSelfTrainingEnabled()) {
-                throw new AppException(
-                        "Self-training mode must be enabled to log your own nutrition.",
-                        "يجب تفعيل وضع التدريب الذاتي لتسجيل تغذيتك بنفسك.",
-                        HttpStatus.FORBIDDEN);
-            }
-            return;
-        }
+        if (role == Role.MEMBER || role == Role.GYM_ADMIN || role == Role.SUPER_ADMIN) return;
         if (role != Role.COACH && role != Role.NUTRITIONIST) return;
         NutritionWorkflow wf = gymRepository.findById(caller.getGymId())
                 .map(Gym::getNutritionWorkflow)

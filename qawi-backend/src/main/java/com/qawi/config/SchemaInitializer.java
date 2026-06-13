@@ -47,6 +47,10 @@ public class SchemaInitializer implements ApplicationRunner {
         // ── users: ensure subscription_start_date exists ──────────────────────
         ddl("ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_start_date DATE");
 
+        // ── users: self-training mode flag (NOT NULL with default so Hibernate
+        //           ddl-auto=update cannot safely add it to a non-empty table) ──
+        ddl("ALTER TABLE users ADD COLUMN IF NOT EXISTS self_training_enabled BOOLEAN NOT NULL DEFAULT false");
+
         log.info("SchemaInitializer: migration complete");
     }
 
