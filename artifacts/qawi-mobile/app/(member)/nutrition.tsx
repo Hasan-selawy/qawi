@@ -1,4 +1,5 @@
 import { Feather } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Haptics from "expo-haptics";
 import React, { useState, useMemo } from "react";
@@ -531,6 +532,17 @@ function AddFoodModal({
     border: "rgba(255,255,255,0.10)",
   };
 
+  const FAVORITES_KEY = "nutrition_favorites";
+
+  type FavoriteFood = {
+    foodName: string;
+    foodNameAr?: string | null;
+    quantity?: string | null;
+    unit?: string | null;
+    calories?: number | null;
+    caloriesPer100g?: number | null;
+  };
+
   const [phase, setPhase] = useState<AddFoodPhase>("input");
   const [foodInput, setFoodInput] = useState("");
   const [quantity, setQuantity] = useState("1");
@@ -540,11 +552,40 @@ function AddFoodModal({
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [recentFoods, setRecentFoods] = useState<any[]>([]);
+  const [favoriteFoods, setFavoriteFoods] = useState<FavoriteFood[]>([]);
   const searchTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Fetch recent foods when the modal opens
+  const loadFavorites = async () => {
+    try {
+      const raw = await AsyncStorage.getItem(FAVORITES_KEY);
+      setFavoriteFoods(raw ? JSON.parse(raw) : []);
+    } catch {
+      setFavoriteFoods([]);
+    }
+  };
+
+  const isFavorite = (foodName: string) =>
+    favoriteFoods.some((f) => f.foodName.toLowerCase() === foodName.toLowerCase());
+
+  const toggleFavorite = async (item: FavoriteFood) => {
+    const key = item.foodName.toLowerCase();
+    let updated: FavoriteFood[];
+    if (isFavorite(item.foodName)) {
+      updated = favoriteFoods.filter((f) => f.foodName.toLowerCase() !== key);
+    } else {
+      updated = [item, ...favoriteFoods];
+    }
+    setFavoriteFoods(updated);
+    try {
+      await AsyncStorage.setItem(FAVORITES_KEY, JSON.stringify(updated));
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    } catch {}
+  };
+
+  // Fetch recent foods and favorites when the modal opens
   React.useEffect(() => {
     if (!visible) return;
+    loadFavorites();
     apiFetch<any[]>("/nutrition/recent-foods")
       .then((data) => {
         setRecentFoods(Array.isArray(data) ? data.slice(0, 6) : []);
@@ -940,6 +981,7 @@ function AddFoodModal({
                     {searchResults.map((item, idx) => {
                       const name = lang === "ar" && item.nameAr ? item.nameAr : item.name;
                       const altName = lang === "ar" ? item.name : item.nameAr;
+                      const fav = isFavorite(item.name);
                       return (
                         <TouchableOpacity
                           key={item.id ?? idx}
@@ -964,6 +1006,97 @@ function AddFoodModal({
                             </Text>
                             <Text style={{ color: "rgba(255,255,255,0.3)", fontSize: 10 }}>per 100g</Text>
                           </View>
+                          <TouchableOpacity
+                            onPress={(e) => {
+                              e.stopPropagation?.();
+                              toggleFavorite({
+                                foodName: item.name,
+                                foodNameAr: item.nameAr ?? null,
+                                caloriesPer100g: item.caloriesPer100g ?? null,
+                                quantity: item.servingSize ? String(item.servingSize) : null,
+                                unit: item.servingUnit ?? null,
+                              });
+                            }}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            style={{ marginLeft: 8 }}
+                          >
+                            <Feather
+                              name="star"
+                              size={16}
+                              color={fav ? "#F59E0B" : "rgba(255,255,255,0.25)"}
+                            />
+                          </TouchableOpacity>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                )}
+
+                {/* Favorites — shown before the user starts typing */}
+                {foodInput.trim().length < 2 && favoriteFoods.length > 0 && (
+                  <View style={{ marginTop: 10, borderRadius: 10, overflow: "hidden", borderWidth: 1, borderColor: "rgba(245,158,11,0.2)" }}>
+                    <View style={{ backgroundColor: "rgba(245,158,11,0.07)", paddingHorizontal: 10, paddingVertical: 6, flexDirection: "row", alignItems: "center", gap: 6 }}>
+                      <Feather name="star" size={11} color="#F59E0B" />
+                      <Text style={{ color: "#F59E0B", fontSize: 11, fontWeight: "700", letterSpacing: 0.5, flex: 1 }}>
+                        {lang === "ar" ? "المفضلة" : "FAVORITES"}
+                      </Text>
+                    </View>
+                    {favoriteFoods.map((item, idx) => {
+                      const name = lang === "ar" && item.foodNameAr ? item.foodNameAr : item.foodName;
+                      const altName = lang === "ar" ? item.foodName : item.foodNameAr;
+                      return (
+                        <TouchableOpacity
+                          key={item.foodName + idx}
+                          onPress={() => {
+                            setFoodInput(name);
+                            setSearchResults([]);
+                            if (item.quantity) setQuantity(item.quantity);
+                            if (item.unit) setUnit(item.unit);
+                          }}
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            padding: 10,
+                            backgroundColor: idx % 2 === 0 ? "rgba(245,158,11,0.04)" : "transparent",
+                            borderTopWidth: idx > 0 ? 1 : 0,
+                            borderTopColor: "rgba(255,255,255,0.05)",
+                          }}
+                        >
+                          <View style={{ flex: 1 }}>
+                            <Text style={{ color: "white", fontSize: 14, fontWeight: "600" }}>{name}</Text>
+                            {altName && altName !== name ? (
+                              <Text style={{ color: "rgba(255,255,255,0.35)", fontSize: 11 }}>{altName}</Text>
+                            ) : null}
+                          </View>
+                          <View style={{ alignItems: "flex-end", marginLeft: 8 }}>
+                            {item.calories != null ? (
+                              <Text style={{ color: N_COLORS.calories, fontSize: 12, fontWeight: "700" }}>
+                                {Math.round(item.calories)} kcal
+                              </Text>
+                            ) : item.caloriesPer100g != null ? (
+                              <Text style={{ color: N_COLORS.calories, fontSize: 12, fontWeight: "700" }}>
+                                {item.caloriesPer100g} kcal
+                              </Text>
+                            ) : null}
+                            {item.quantity || item.unit ? (
+                              <Text style={{ color: "rgba(255,255,255,0.3)", fontSize: 10 }}>
+                                {item.quantity ?? ""} {item.unit ?? ""}
+                              </Text>
+                            ) : item.caloriesPer100g != null ? (
+                              <Text style={{ color: "rgba(255,255,255,0.3)", fontSize: 10 }}>per 100g</Text>
+                            ) : null}
+                          </View>
+                          <TouchableOpacity
+                            onPress={(e) => {
+                              e.stopPropagation?.();
+                              toggleFavorite(item);
+                            }}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            style={{ marginLeft: 8 }}
+                          >
+                            <Feather name="star" size={16} color="#F59E0B" />
+                          </TouchableOpacity>
                         </TouchableOpacity>
                       );
                     })}
@@ -983,6 +1116,7 @@ function AddFoodModal({
                       const name = lang === "ar" && item.foodNameAr ? item.foodNameAr : item.foodName;
                       const altName = lang === "ar" ? item.foodName : item.foodNameAr;
                       const cal = item.calories != null ? Math.round(item.calories) : null;
+                      const fav = isFavorite(item.foodName);
                       return (
                         <TouchableOpacity
                           key={item.id ?? idx}
@@ -1011,6 +1145,26 @@ function AddFoodModal({
                               {item.quantity ?? ""} {item.unit ?? ""}
                             </Text>
                           </View>
+                          <TouchableOpacity
+                            onPress={(e) => {
+                              e.stopPropagation?.();
+                              toggleFavorite({
+                                foodName: item.foodName,
+                                foodNameAr: item.foodNameAr ?? null,
+                                quantity: item.quantity != null ? String(item.quantity) : null,
+                                unit: item.unit ?? null,
+                                calories: item.calories ?? null,
+                              });
+                            }}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                            style={{ marginLeft: 8 }}
+                          >
+                            <Feather
+                              name="star"
+                              size={16}
+                              color={fav ? "#F59E0B" : "rgba(255,255,255,0.25)"}
+                            />
+                          </TouchableOpacity>
                         </TouchableOpacity>
                       );
                     })}
