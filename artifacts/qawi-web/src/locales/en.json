@@ -48,7 +48,8 @@
     "startTrial": "Start Free Trial",
     "my_account": "My Account",
     "notifications": "Notifications",
-    "mark_all_read": "Mark all read"
+    "mark_all_read": "Mark all read",
+    "workout": "Workout"
   },
   "auth": {
     "login": "Login",

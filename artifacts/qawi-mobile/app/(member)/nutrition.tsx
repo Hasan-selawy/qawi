@@ -615,12 +615,12 @@ function AddFoodModal({
   };
 
   const pickCachedFood = (item: any) => {
-    const name = lang === "ar" && item.nameAr ? item.nameAr : item.name;
-    setFoodInput(name);
+    const name = lang === "ar" && item.foodNameAr ? item.foodNameAr : item.foodName;
+    setFoodInput(name ?? "");
     setSearchResults([]);
     // Auto-fill quantity from serving size hint
-    if (item.servingSize) setQuantity(String(item.servingSize));
-    if (item.servingUnit) setUnit(item.servingUnit);
+    if (item.defaultQuantity) setQuantity(String(item.defaultQuantity));
+    if (item.defaultUnit) setUnit(item.defaultUnit);
   };
 
   const pickRecentFood = (item: any) => {
@@ -1077,9 +1077,9 @@ function AddFoodModal({
                       </Text>
                     </View>
                     {searchResults.map((item, idx) => {
-                      const name = lang === "ar" && item.nameAr ? item.nameAr : item.name;
-                      const altName = lang === "ar" ? item.name : item.nameAr;
-                      const fav = isFavorite(item.name);
+                      const name = lang === "ar" && item.foodNameAr ? item.foodNameAr : item.foodName;
+                      const altName = lang === "ar" ? item.foodName : item.foodNameAr;
+                      const fav = isFavorite(item.foodName);
                       return (
                         <TouchableOpacity
                           key={item.id ?? idx}
@@ -1100,7 +1100,7 @@ function AddFoodModal({
                           </View>
                           <View style={{ alignItems: "flex-end", marginLeft: 8 }}>
                             <Text style={{ color: N_COLORS.calories, fontSize: 12, fontWeight: "700" }}>
-                              {item.caloriesPer100g ?? "—"} kcal
+                              {item.calories ?? "—"} kcal
                             </Text>
                             <Text style={{ color: "rgba(255,255,255,0.3)", fontSize: 10 }}>per 100g</Text>
                           </View>
@@ -1108,11 +1108,11 @@ function AddFoodModal({
                             onPress={(e) => {
                               e.stopPropagation?.();
                               toggleFavorite({
-                                foodName: item.name,
-                                foodNameAr: item.nameAr ?? null,
-                                caloriesPer100g: item.caloriesPer100g ?? null,
-                                quantity: item.servingSize ? String(item.servingSize) : null,
-                                unit: item.servingUnit ?? null,
+                                foodName: item.foodName,
+                                foodNameAr: item.foodNameAr ?? null,
+                                caloriesPer100g: item.calories ?? null,
+                                quantity: item.defaultQuantity ? String(item.defaultQuantity) : null,
+                                unit: item.defaultUnit ?? null,
                               });
                             }}
                             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}

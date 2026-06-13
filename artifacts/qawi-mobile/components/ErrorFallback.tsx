@@ -12,15 +12,23 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { useColors } from "@/hooks/useColors";
-
 export type ErrorFallbackProps = {
   error: Error;
   resetError: () => void;
 };
 
+const HARDCODED_COLORS = {
+  background: "#0A0F1E",
+  card: "rgba(255,255,255,0.06)",
+  foreground: "#FFFFFF",
+  mutedForeground: "rgba(255,255,255,0.5)",
+  primary: "#22C55E",
+  primaryForeground: "#0A0F1E",
+  border: "rgba(255,255,255,0.10)",
+};
+
 export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
-  const colors = useColors();
+  const colors = HARDCODED_COLORS;
   const insets = useSafeAreaInsets();
 
   const [isModalVisible, setIsModalVisible] = useState(false);

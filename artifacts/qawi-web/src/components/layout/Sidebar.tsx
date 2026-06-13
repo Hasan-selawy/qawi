@@ -135,7 +135,7 @@ export function Sidebar({ isOpen, setIsOpen, overlayMode }: SidebarProps) {
       case 'MEMBER': {
         const memberLinks: { href: string; icon: any; label: string }[] = [
           { href: '/member/dashboard', icon: Home, label: 'dashboard' },
-          { href: '/member/workout', icon: Dumbbell, label: 'templates' },
+          { href: '/member/workout', icon: Dumbbell, label: 'workout' },
         ];
         if (features.nutritionEnabled) {
           memberLinks.push({ href: '/member/nutrition', icon: UtensilsCrossed, label: 'nutrition' });
