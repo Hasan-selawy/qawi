@@ -28,9 +28,10 @@ public class GymSalesController {
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String type,
+            @RequestParam(required = false) String source,
             @AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(
-                memberLeadService.getLeads(userDetails.getUsername(), q, status, type));
+                memberLeadService.getLeads(userDetails.getUsername(), q, status, type, source));
     }
 
     @PostMapping

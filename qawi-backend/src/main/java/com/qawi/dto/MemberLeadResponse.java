@@ -1,6 +1,7 @@
 package com.qawi.dto;
 
 import com.qawi.entity.MemberLead;
+import com.qawi.entity.MemberLeadSource;
 import com.qawi.entity.MemberLeadStatus;
 import com.qawi.entity.MemberLeadType;
 import lombok.Data;
@@ -20,6 +21,7 @@ public class MemberLeadResponse {
     private String phoneNumber;
     private String email;
     private MemberLeadStatus status;
+    private MemberLeadSource source;
     private String notes;
     private UUID coachId;
     private String coachName;
@@ -46,6 +48,7 @@ public class MemberLeadResponse {
         r.phoneNumber         = l.getPhoneNumber();
         r.email               = l.getEmail();
         r.status              = l.getStatus();
+        r.source              = l.getSource();
         r.notes               = l.getNotes();
         r.coachId             = l.getCoachId();
         r.coachName           = coachName;

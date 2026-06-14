@@ -60,7 +60,8 @@ public class MemberLeadService {
     public List<MemberLeadResponse> getLeads(String callerEmail,
                                              String q,
                                              String statusStr,
-                                             String typeStr) {
+                                             String typeStr,
+                                             String sourceStr) {
         UUID gymId = getCallerUser(callerEmail).getGymId();
         List<MemberLead> all = memberLeadRepository.findByGymIdOrderByCreatedAtDesc(gymId);
         Map<UUID, String> coachNames = coachNamesForGym(gymId);
@@ -83,6 +84,11 @@ public class MemberLeadService {
                     try { return l.getType() == MemberLeadType.valueOf(typeStr); }
                     catch (Exception e) { return true; }
                 })
+                .filter(l -> {
+                    if (sourceStr == null || sourceStr.isBlank()) return true;
+                    try { return l.getSource() == com.qawi.entity.MemberLeadSource.valueOf(sourceStr); }
+                    catch (Exception e) { return true; }
+                })
                 .map(l -> MemberLeadResponse.from(l, coachNames.get(l.getCoachId())))
                 .toList();
     }
@@ -97,6 +103,7 @@ public class MemberLeadService {
                 .name(req.getName())
                 .phoneNumber(req.getPhoneNumber())
                 .notes(req.getNotes())
+                .source(req.getSource())
                 .type(MemberLeadType.PROSPECT)
                 .status(MemberLeadStatus.NEW)
                 .createdBy(caller.getId())
@@ -112,6 +119,7 @@ public class MemberLeadService {
         MemberLead lead = findLeadInGym(id, gymId);
 
         if (req.getStatus() != null) lead.setStatus(req.getStatus());
+        if (req.getSource() != null) lead.setSource(req.getSource());
         if (req.getNotes() != null) lead.setNotes(req.getNotes());
         if (req.getNextFollowUpAt() != null) lead.setNextFollowUpAt(req.getNextFollowUpAt());
         if (req.getLastContactedAt() != null) lead.setLastContactedAt(req.getLastContactedAt());

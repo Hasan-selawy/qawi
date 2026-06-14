@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import {
   Plus, Search, Trash2, Edit2, UserPlus, MessageCircle,
   RefreshCw, StickyNote, Users, TrendingDown, Clock, AlertTriangle,
+  Filter, X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -22,7 +23,7 @@ type CrmRecord = {
   type: 'PROSPECT' | 'MEMBER';
   memberId?: string;
   name: string; phoneNumber?: string; email?: string;
-  status: string; notes?: string;
+  status: string; notes?: string; source?: string;
   coachId?: string; coachName?: string;
   subscriptionStartDate?: string; subscriptionEndDate?: string;
   daysRemaining?: number;
@@ -42,6 +43,17 @@ const STATUS_CFG: Record<string, { en: string; ar: string; color: string; bg: st
   LOST:            { en: 'Lost',           ar: 'خسرناه',       color: '#6B7280', bg: '#6B728018' },
 };
 const PROSPECT_STATUSES = ['NEW', 'CONTACTED', 'VISIT_SCHEDULED', 'SIGNED_UP', 'LOST'];
+
+const SOURCE_CFG: Record<string, { en: string; ar: string }> = {
+  WEBSITE_FORM: { en: 'Website Form', ar: 'نموذج الموقع' },
+  WHATSAPP:     { en: 'WhatsApp',     ar: 'واتساب' },
+  MANUAL_VISIT: { en: 'Manual Visit', ar: 'زيارة يدوية' },
+  REFERRAL:     { en: 'Referral',     ar: 'إحالة' },
+  SOCIAL_MEDIA: { en: 'Social Media', ar: 'وسائل التواصل' },
+  PHONE_CALL:   { en: 'Phone Call',   ar: 'اتصال هاتفي' },
+  WALK_IN:      { en: 'Walk-in',      ar: 'زيارة مباشرة' },
+};
+const SOURCE_KEYS = Object.keys(SOURCE_CFG);
 
 const FILTER_TABS = [
   { id: 'all',                 en: 'All',          ar: 'الكل' },
@@ -91,6 +103,16 @@ function StatusBadge({ status, lang }: { status: string; lang: string }) {
   );
 }
 
+function SourceBadge({ source, lang }: { source?: string; lang: string }) {
+  const cfg = source ? SOURCE_CFG[source] : null;
+  if (!cfg) return <span className="text-xs text-muted-foreground">—</span>;
+  return (
+    <span className="text-xs font-medium px-2 py-1 rounded-full bg-white/5 text-muted-foreground whitespace-nowrap">
+      {lang === 'ar' ? cfg.ar : cfg.en}
+    </span>
+  );
+}
+
 function TypeBadge({ type, lang }: { type: string; lang: string }) {
   const isProspect = type === 'PROSPECT';
   return (
@@ -130,17 +152,18 @@ function AddLeadDialog({ open, onClose, lang }: { open: boolean; onClose: () => 
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [notes, setNotes] = useState('');
+  const [source, setSource] = useState('MANUAL_VISIT');
 
   const mut = useMutation({
     mutationFn: () => apiFetch('/gym/leads', {
       method: 'POST',
-      data: { name, phoneNumber: phone, email: email || null, notes: notes || null },
+      data: { name, phoneNumber: phone, email: email || null, notes: notes || null, source },
     }),
     onSuccess: () => {
       toast.success(isAr ? 'تمت الإضافة ✅' : 'Lead added ✅');
       qc.invalidateQueries({ queryKey: ['gym','leads'] });
       onClose();
-      setName(''); setPhone(''); setEmail(''); setNotes('');
+      setName(''); setPhone(''); setEmail(''); setNotes(''); setSource('MANUAL_VISIT');
     },
     onError: (e: any) => toast.error(e?.body?.error ?? 'Error'),
   });
@@ -158,6 +181,21 @@ function AddLeadDialog({ open, onClose, lang }: { open: boolean; onClose: () => 
             value={phone} onChange={e => setPhone(e.target.value)} className="bg-white/5 border-white/10 text-foreground" />
           <Input placeholder={isAr ? 'البريد الإلكتروني (اختياري)' : 'Email (optional)'}
             type="email" value={email} onChange={e => setEmail(e.target.value)} className="bg-white/5 border-white/10 text-foreground" />
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">{isAr ? 'مصدر العميل' : 'Source of Lead'}</label>
+            <Select value={source} onValueChange={setSource}>
+              <SelectTrigger className="bg-white/5 border-white/10 text-foreground">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-background border-white/10">
+                {SOURCE_KEYS.map(k => (
+                  <SelectItem key={k} value={k} className="text-foreground">
+                    {isAr ? SOURCE_CFG[k].ar : SOURCE_CFG[k].en}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <Textarea placeholder={isAr ? 'ملاحظات (اختياري)' : 'Notes (optional)'}
             value={notes} onChange={e => setNotes(e.target.value)} rows={3} className="bg-white/5 border-white/10 text-foreground" />
         </div>
@@ -177,13 +215,14 @@ function EditLeadDialog({ lead, onClose, lang }: { lead: CrmRecord | null; onClo
   const qc = useQueryClient();
   const isAr = lang === 'ar';
   const [status, setStatus] = useState(lead?.status ?? 'NEW');
+  const [source, setSource] = useState(lead?.source ?? 'MANUAL_VISIT');
   const [notes, setNotes]   = useState(lead?.notes ?? '');
   const [followUp, setFollowUp] = useState(lead?.nextFollowUpAt?.slice(0,10) ?? '');
 
   const mut = useMutation({
     mutationFn: () => apiFetch(`/gym/leads/${lead!.id}`, {
       method: 'PUT',
-      data: { status, notes: notes || null, nextFollowUpAt: followUp || null },
+      data: { status, source, notes: notes || null, nextFollowUpAt: followUp || null },
     }),
     onSuccess: () => {
       toast.success(isAr ? 'تم التحديث' : 'Updated');
@@ -201,16 +240,32 @@ function EditLeadDialog({ lead, onClose, lang }: { lead: CrmRecord | null; onClo
           <DialogTitle className="text-foreground">{isAr ? 'تعديل العميل' : 'Edit Lead'} — {lead.name}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
-          <Select value={status} onValueChange={setStatus}>
-            <SelectTrigger className="bg-white/5 border-white/10 text-foreground"><SelectValue /></SelectTrigger>
-            <SelectContent className="bg-background border-white/10">
-              {PROSPECT_STATUSES.map(s => (
-                <SelectItem key={s} value={s} className="text-foreground">
-                  {isAr ? STATUS_CFG[s]?.ar : STATUS_CFG[s]?.en}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">{isAr ? 'الحالة' : 'Status'}</label>
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger className="bg-white/5 border-white/10 text-foreground"><SelectValue /></SelectTrigger>
+              <SelectContent className="bg-background border-white/10">
+                {PROSPECT_STATUSES.map(s => (
+                  <SelectItem key={s} value={s} className="text-foreground">
+                    {isAr ? STATUS_CFG[s]?.ar : STATUS_CFG[s]?.en}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground mb-1 block">{isAr ? 'مصدر العميل' : 'Source of Lead'}</label>
+            <Select value={source} onValueChange={setSource}>
+              <SelectTrigger className="bg-white/5 border-white/10 text-foreground"><SelectValue /></SelectTrigger>
+              <SelectContent className="bg-background border-white/10">
+                {SOURCE_KEYS.map(k => (
+                  <SelectItem key={k} value={k} className="text-foreground">
+                    {isAr ? SOURCE_CFG[k].ar : SOURCE_CFG[k].en}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <Textarea placeholder={isAr ? 'ملاحظات' : 'Notes'}
             value={notes} onChange={e => setNotes(e.target.value)} rows={3} className="bg-white/5 border-white/10 text-foreground" />
           <div>
@@ -415,6 +470,8 @@ export default function AdminSalesPage() {
 
   const [search, setSearch]       = useState('');
   const [filter, setFilter]       = useState('all');
+  const [sourceFilter, setSourceFilter] = useState('');
+  const [showSourceFilter, setShowSourceFilter] = useState(false);
   const [addOpen, setAddOpen]     = useState(false);
   const [editLead, setEditLead]   = useState<CrmRecord | null>(null);
   const [convertLead, setConvert] = useState<CrmRecord | null>(null);
@@ -422,8 +479,14 @@ export default function AdminSalesPage() {
   const [renewLead, setRenewLead] = useState<CrmRecord | null>(null);
 
   const { data: leads = [], isLoading } = useQuery<CrmRecord[]>({
-    queryKey: ['gym', 'leads'],
-    queryFn: () => apiFetch('/gym/leads'),
+    queryKey: ['gym', 'leads', filter, sourceFilter],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (filter.startsWith('type:')) params.set('type', filter.slice(5));
+      if (filter.startsWith('status:')) params.set('status', filter.slice(7));
+      if (sourceFilter) params.set('source', sourceFilter);
+      return apiFetch(`/gym/leads?${params.toString()}`);
+    },
   });
   const { data: coaches = [] } = useQuery<Coach[]>({
     queryKey: ['gym', 'coaches'],
@@ -455,13 +518,9 @@ export default function AdminSalesPage() {
     return leads.filter(l => {
       const matchSearch = !q || l.name.toLowerCase().includes(q) ||
         (l.phoneNumber ?? '').includes(q) || (l.email ?? '').toLowerCase().includes(q);
-      if (!matchSearch) return false;
-      if (filter === 'all') return true;
-      if (filter.startsWith('type:')) return l.type === filter.slice(5);
-      if (filter.startsWith('status:')) return l.status === filter.slice(7);
-      return true;
+      return matchSearch;
     });
-  }, [leads, search, filter]);
+  }, [leads, search]);
 
   return (
     <PageWrapper>
@@ -485,12 +544,29 @@ export default function AdminSalesPage() {
       </div>
 
       {/* Filters + search */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-5">
-        <div className="relative flex-1">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder={isAr ? 'بحث بالاسم أو الهاتف...' : 'Search by name or phone...'}
-            value={search} onChange={e => setSearch(e.target.value)}
-            className="pl-9 bg-white/5 border-white/10 text-foreground" />
+      <div className="flex flex-col gap-3 mb-5">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input placeholder={isAr ? 'بحث بالاسم أو الهاتف...' : 'Search by name or phone...'}
+              value={search} onChange={e => setSearch(e.target.value)}
+              className="pl-9 bg-white/5 border-white/10 text-foreground" />
+          </div>
+          <button
+            onClick={() => setShowSourceFilter(v => !v)}
+            className={cn('flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors border',
+              showSourceFilter || sourceFilter
+                ? 'border-primary/60 bg-primary/15 text-primary'
+                : 'border-white/10 bg-white/5 text-muted-foreground hover:bg-white/10')}
+          >
+            <Filter size={14} />
+            {isAr ? 'المصدر' : 'Source'}
+            {sourceFilter && (
+              <span className="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full bg-primary text-black text-[10px] font-bold">
+                <X size={10} onClick={(e) => { e.stopPropagation(); setSourceFilter(''); }} />
+              </span>
+            )}
+          </button>
         </div>
         <div className="flex gap-1.5 flex-wrap">
           {FILTER_TABS.map(f => (
@@ -501,6 +577,24 @@ export default function AdminSalesPage() {
             </button>
           ))}
         </div>
+        {showSourceFilter && (
+          <div className="flex gap-1.5 flex-wrap animate-in fade-in slide-in-from-top-1 duration-200">
+            <button
+              onClick={() => setSourceFilter('')}
+              className={cn('px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors',
+                !sourceFilter ? 'bg-primary text-black' : 'bg-white/5 text-muted-foreground hover:bg-white/10')}
+            >
+              {isAr ? 'كل المصادر' : 'All Sources'}
+            </button>
+            {SOURCE_KEYS.map(k => (
+              <button key={k} onClick={() => setSourceFilter(k)}
+                className={cn('px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors',
+                  sourceFilter === k ? 'bg-primary text-black' : 'bg-white/5 text-muted-foreground hover:bg-white/10')}>
+                {isAr ? SOURCE_CFG[k].ar : SOURCE_CFG[k].en}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Table */}
@@ -510,7 +604,7 @@ export default function AdminSalesPage() {
         <div className="glass-card flex flex-col items-center py-16 gap-4">
           <UserPlus size={40} className="text-muted-foreground/30" />
           <p className="text-muted-foreground">{isAr ? 'لا توجد نتائج' : 'No records found'}</p>
-          <Button size="sm" onClick={() => { setFilter('all'); setSearch(''); setAddOpen(true); }}>
+          <Button size="sm" onClick={() => { setFilter('all'); setSearch(''); setSourceFilter(''); setShowSourceFilter(false); setAddOpen(true); }}>
             <Plus size={14} className="mr-1" />{isAr ? 'إضافة عميل محتمل' : 'Add Lead'}
           </Button>
         </div>
@@ -525,6 +619,7 @@ export default function AdminSalesPage() {
                     isAr ? 'الهاتف' : 'Phone',
                     isAr ? 'النوع' : 'Type',
                     isAr ? 'الحالة' : 'Status',
+                    isAr ? 'المصدر' : 'Source',
                     isAr ? 'انتهاء الاشتراك' : 'Sub. End',
                     isAr ? 'الأيام المتبقية' : 'Days Left',
                     isAr ? 'ملاحظات' : 'Notes',
@@ -541,6 +636,7 @@ export default function AdminSalesPage() {
                     <td className="px-4 py-3 text-muted-foreground text-xs whitespace-nowrap">{l.phoneNumber || '—'}</td>
                     <td className="px-4 py-3"><TypeBadge type={l.type} lang={lang} /></td>
                     <td className="px-4 py-3"><StatusBadge status={l.status} lang={lang} /></td>
+                    <td className="px-4 py-3"><SourceBadge source={l.source} lang={lang} /></td>
                     <td className="px-4 py-3 text-muted-foreground text-xs whitespace-nowrap">{fmtDate(l.subscriptionEndDate)}</td>
                     <td className="px-4 py-3"><DaysLeft days={l.daysRemaining} /></td>
                     <td className="px-4 py-3 text-muted-foreground text-xs max-w-[160px] truncate">{l.notes || '—'}</td>

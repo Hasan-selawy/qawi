@@ -38,6 +38,11 @@ public class MemberLead {
     @Builder.Default
     private MemberLeadStatus status = MemberLeadStatus.NEW;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private MemberLeadSource source = MemberLeadSource.MANUAL_VISIT;
+
     @Column(columnDefinition = "text")
     private String notes;
 

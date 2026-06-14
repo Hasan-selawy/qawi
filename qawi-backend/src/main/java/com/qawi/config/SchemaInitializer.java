@@ -63,6 +63,10 @@ public class SchemaInitializer implements ApplicationRunner {
         // ── gym_exercise_overrides: cover image for overridden exercises ──
         ddl("ALTER TABLE gym_exercise_overrides ADD COLUMN IF NOT EXISTS image_url VARCHAR(500)");
 
+        // ── member_leads: source of lead ──
+        ddl("ALTER TABLE member_leads ADD COLUMN IF NOT EXISTS source VARCHAR(50) DEFAULT 'MANUAL_VISIT'");
+        ddl("UPDATE member_leads SET source = 'MANUAL_VISIT' WHERE source IS NULL");
+
         log.info("SchemaInitializer: migration complete");
     }
 

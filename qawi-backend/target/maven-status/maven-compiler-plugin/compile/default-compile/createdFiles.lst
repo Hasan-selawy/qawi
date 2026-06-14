@@ -62,6 +62,7 @@ com/qawi/entity/ContactRequest$ContactRequestBuilder.class
 com/qawi/entity/StaffAttendance$StaffAttendanceBuilder.class
 com/qawi/controller/ReceptionController.class
 com/qawi/dto/CoachMemberSummary$CoachMemberSummaryBuilder.class
+com/qawi/entity/MemberLeadSource.class
 com/qawi/controller/NutritionController.class
 com/qawi/dto/RegisterGymResponse$RegisterGymResponseBuilder.class
 com/qawi/dto/StaffProfileRequest.class

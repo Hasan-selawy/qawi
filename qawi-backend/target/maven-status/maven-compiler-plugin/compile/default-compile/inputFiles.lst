@@ -220,6 +220,7 @@
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/repository/MealSuggestionRepository.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/AiNutritionLog.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/repository/GymExerciseOverrideRepository.java
+/home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/MemberLeadSource.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/CreateFromTemplateRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/service/MemberReportService.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/AddScheduleDayRequest.java
