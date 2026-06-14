@@ -47,7 +47,13 @@
         }
       ],
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Qawi to access your photos to upload exercise images."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

@@ -18,6 +18,7 @@ import {
 
 import { RoleHeader } from "@/components/RoleHeader";
 import { useToast } from "@/components/Toast";
+import { ImageUpload } from "@/components/ImageUpload";
 import { Button, Card, EmptyState, Input, Screen } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage, pickName } from "@/context/LanguageContext";
@@ -432,18 +433,13 @@ function AddCustomExerciseModal({
               </View>
             </View>
 
-            <View style={{ gap: 6 }}>
-              <Text style={{ color: c.mutedForeground, fontSize: 12 }}>{lang === "ar" ? "صورة التمرين (رابط)" : "Exercise Image URL"}</Text>
-              <TextInput
-                value={imageUrl}
-                onChangeText={setImageUrl}
-                placeholder="https://example.com/image.jpg"
-                placeholderTextColor={c.mutedForeground}
-                style={inputStyle(c)}
-                autoCapitalize="none"
-                keyboardType="url"
-              />
-            </View>
+            <ImageUpload
+              value={imageUrl || null}
+              onChange={(url) => setImageUrl(url || "")}
+              label="Exercise Image"
+              labelAr="صورة التمرين"
+              isAr={lang === "ar"}
+            />
             <View style={{ gap: 6 }}>
               <Text style={{ color: c.mutedForeground, fontSize: 12 }}>{lang === "ar" ? "رابط الفيديو" : "Video URL"}</Text>
               <TextInput
