@@ -44,6 +44,7 @@ function subInfo(status: string) {
   if (status === 'ACTIVE')       return { label: 'Active',   labelAr: 'نشط',         dotCls: 'bg-green-400',  badgeCls: 'bg-green-500/20 text-green-400 border-green-500/30' };
   if (status === 'EXPIRING_SOON') return { label: 'Expiring', labelAr: 'ينتهي قريباً', dotCls: 'bg-amber-400',  badgeCls: 'bg-amber-500/20 text-amber-400 border-amber-500/30' };
   if (status === 'EXPIRED')       return { label: 'Expired',  labelAr: 'منتهي',        dotCls: 'bg-red-400',    badgeCls: 'bg-red-500/20 text-red-400 border-red-500/30' };
+  if (status === 'NO_PLAN')       return { label: 'No Plan',  labelAr: 'بلا خطة',     dotCls: 'bg-white/30',   badgeCls: 'bg-white/10 text-muted-foreground border-white/10' };
   return                          { label: 'No Plan',  labelAr: 'بلا خطة',     dotCls: 'bg-white/30',   badgeCls: 'bg-white/10 text-muted-foreground border-white/10' };
 }
 
@@ -126,12 +127,6 @@ function OverviewTab({ gymName, isAr }: { gymName: string; isAr: boolean }) {
     queryFn: () => apiFetch('/reception/today').catch(() => ({})),
     refetchInterval: 30_000,
   });
-  const feed = useQuery<any[]>({
-    queryKey: ['reception', 'feed'],
-    queryFn: () => apiFetch<any[]>('/reception/live-feed').catch(() => []),
-    refetchInterval: 15_000,
-  });
-
   const s = stats.data ?? {};
   const kpis = [
     { label: isAr ? 'دخول اليوم'   : "Today's Check-ins", value: s.checkedInToday ?? 0,   color: '#22C55E', Icon: LogIn },
@@ -214,39 +209,52 @@ function OverviewTab({ gymName, isAr }: { gymName: string; isAr: boolean }) {
         </div>
       )}
 
-      {/* Live feed */}
+      {/* Today's Check-ins */}
       <div className="glass-card p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-            <h3 className="font-bold text-foreground">{isAr ? 'الحركة الحية' : 'Live Feed'}</h3>
+            <CheckCircle2 size={18} className="text-primary" />
+            <h3 className="font-bold text-foreground">{isAr ? 'تسجيلات الدخول اليوم' : "Today's Check-ins"}</h3>
           </div>
-          <Button variant="ghost" size="sm" onClick={() => feed.refetch()}>
+          <Button variant="ghost" size="sm" onClick={() => stats.refetch()}>
             <RefreshCw size={13} className="mr-1" />
             {isAr ? 'تحديث' : 'Refresh'}
           </Button>
         </div>
-        {(feed.data ?? []).length === 0 ? (
-          <p className="text-muted-foreground text-sm text-center py-8">{isAr ? 'لا توجد حركة بعد اليوم' : 'No activity yet today'}</p>
+        {(s.checkIns ?? []).length === 0 ? (
+          <p className="text-muted-foreground text-sm text-center py-8">{isAr ? 'لا توجد تسجيلات دخول اليوم' : 'No check-ins today yet'}</p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-72 overflow-y-auto">
-            {(feed.data ?? []).slice(0, 20).map((f: any, i: number) => (
-              <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-white/5">
-                <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center shrink-0 text-xs font-bold text-primary">
-                  {initials(f.memberName ?? '?')}
+          <div className="flex flex-col gap-2 max-h-72 overflow-y-auto">
+            {(s.checkIns as any[]).map((f: any) => {
+              const info = subInfo(f.subscriptionStatus);
+              return (
+                <div key={f.memberId} className="flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/[0.08] transition-colors">
+                  <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center shrink-0 text-xs font-bold text-primary">
+                    {initials(f.memberName ?? '?')}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-medium text-foreground truncate">{f.memberName}</p>
+                      <span className={cn('text-xs px-2 py-0.5 rounded-full border font-medium', info.badgeCls)}>
+                        {isAr ? info.labelAr : info.label}
+                      </span>
+                      {f.streak > 1 && (
+                        <span className="text-xs text-amber-400 font-medium">🔥 {f.streak} {isAr ? 'يوم متتالي' : 'day streak'}</span>
+                      )}
+                    </div>
+                    {f.subscriptionEndDate && (
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {isAr ? 'ينتهي' : 'Exp.'} {fmtDate(f.subscriptionEndDate)}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
+                    <Clock size={11} />
+                    {fmtTime(f.checkedInAt)}
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{f.memberName}</p>
-                  {f.streak > 0 && (
-                    <p className="text-xs text-amber-400">🔥 {f.streak} {isAr ? 'يوم متتالي' : 'day streak'}</p>
-                  )}
-                </div>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
-                  <Clock size={11} />
-                  {fmtTime(f.checkedInAt)}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

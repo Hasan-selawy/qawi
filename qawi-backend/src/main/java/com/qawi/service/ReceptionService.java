@@ -217,6 +217,32 @@ public class ReceptionService {
             return item;
         }).collect(Collectors.toList());
 
+        // ── Today's check-ins list ──
+        List<Map<String, Object>> checkInsList = new ArrayList<>();
+        for (Attendance att : todayAtt) {
+            userRepository.findById(att.getMemberId()).ifPresent(member -> {
+                String status = "ACTIVE";
+                if (member.getSubscriptionEndDate() == null) {
+                    status = "NO_PLAN";
+                } else if (member.getSubscriptionEndDate().isBefore(today)) {
+                    status = "EXPIRED";
+                } else if (member.getSubscriptionEndDate().isBefore(today.plusDays(8))) {
+                    status = "EXPIRING_SOON";
+                }
+                Map<String, Object> item = new LinkedHashMap<>();
+                item.put("memberId", member.getId());
+                item.put("memberName", member.getName());
+                item.put("phoneNumber", member.getPhone());
+                item.put("checkedInAt", att.getCheckedInAt());
+                item.put("subscriptionStatus", status);
+                item.put("subscriptionEndDate", member.getSubscriptionEndDate());
+                item.put("streak", calcStreak(member.getId()));
+                checkInsList.add(item);
+            });
+        }
+        checkInsList.sort((a, b) -> ((LocalDateTime) b.get("checkedInAt"))
+                .compareTo((LocalDateTime) a.get("checkedInAt")));
+
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("checkedInToday", checkedInToday);
         result.put("expectedToday", expectedToday);
@@ -225,6 +251,7 @@ public class ReceptionService {
         result.put("totalCheckins", (long) todayAtt.size());
         result.put("newMembersThisWeek", newMembersThisWeek);
         result.put("expiringMembers", expiringList);
+        result.put("checkIns", checkInsList);
         return result;
     }
 
