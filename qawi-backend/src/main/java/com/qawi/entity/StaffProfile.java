@@ -42,6 +42,9 @@ public class StaffProfile {
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
 
+    @Column(name = "profile_image_url")
+    private String profileImageUrl;
+
     @Column(name = "is_active", nullable = false)
     @Builder.Default
     private boolean active = true;

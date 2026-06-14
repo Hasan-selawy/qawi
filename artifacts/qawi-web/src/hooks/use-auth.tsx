@@ -14,6 +14,7 @@ export interface User {
   subscriptionEndDate?: string | null;
   active?: boolean;
   selfTrainingEnabled?: boolean;
+  profileImageUrl?: string | null;
 }
 
 interface AuthContextType {

@@ -50,6 +50,9 @@ public class User implements UserDetails {
     @Column(name = "phone")
     private String phone;
 
+    @Column(name = "profile_image_url")
+    private String profileImageUrl;
+
     @Column(name = "subscription_start_date")
     private LocalDate subscriptionStartDate;
 

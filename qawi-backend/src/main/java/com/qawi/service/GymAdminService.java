@@ -29,6 +29,7 @@ public class GymAdminService {
     private final GymRepository gymRepository;
     private final GymFeatureService gymFeatureService;
     private final MemberLeadRepository memberLeadRepository;
+    private final StaffProfileRepository staffProfileRepository;
 
     // ── COACH CRUD ──────────────────────────────────────────────────────────
 
@@ -44,8 +45,17 @@ public class GymAdminService {
 
     public List<User> getCoaches(String adminEmail) {
         UUID gymId = getAdmin(adminEmail).getGymId();
-        return userRepository.findByGymIdAndRole(gymId, Role.COACH).stream()
+        List<User> coaches = userRepository.findByGymIdAndRole(gymId, Role.COACH).stream()
                 .filter(User::isActive).toList();
+        // Enrich with profileImageUrl from StaffProfile
+        for (User coach : coaches) {
+            staffProfileRepository.findByUserId(coach.getId()).ifPresent(sp -> {
+                if (sp.getProfileImageUrl() != null && !sp.getProfileImageUrl().isBlank()) {
+                    coach.setProfileImageUrl(sp.getProfileImageUrl());
+                }
+            });
+        }
+        return coaches;
     }
 
     // ── MEMBER CRUD ──────────────────────────────────────────────────────────

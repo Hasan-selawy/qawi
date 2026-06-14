@@ -54,6 +54,9 @@ public class SchemaInitializer implements ApplicationRunner {
         // ── workout_plans: allow coach_id to be NULL for self-training members ──
         ddl("ALTER TABLE workout_plans ALTER COLUMN coach_id DROP NOT NULL");
 
+        // ── staff_profiles: avatar / profile image for coach library ──
+        ddl("ALTER TABLE staff_profiles ADD COLUMN IF NOT EXISTS profile_image_url VARCHAR(500)");
+
         log.info("SchemaInitializer: migration complete");
     }
 
