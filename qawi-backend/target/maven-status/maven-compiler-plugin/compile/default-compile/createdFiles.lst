@@ -257,8 +257,8 @@ com/qawi/entity/WaterLog$WaterLogBuilder.class
 com/qawi/repository/WorkoutTemplateRepository.class
 com/qawi/dto/AuthResponse$AuthResponseBuilder.class
 com/qawi/entity/PlatformTier$PlatformTierBuilder.class
-com/qawi/entity/ArabicFoodCache.class
 com/qawi/entity/EmploymentType.class
+com/qawi/entity/ArabicFoodCache.class
 com/qawi/repository/MemberReportRepository.class
 com/qawi/dto/MarkContactedResponse.class
 com/qawi/service/NutritionCalendarPlanService$1.class

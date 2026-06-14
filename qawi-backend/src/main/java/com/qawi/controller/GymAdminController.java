@@ -187,6 +187,7 @@ public class GymAdminController {
         if (body.containsKey("name") && body.get("name") != null) override.setName(body.get("name"));
         if (body.containsKey("nameAr") && body.get("nameAr") != null) override.setNameAr(body.get("nameAr"));
         if (body.containsKey("videoUrl")) override.setVideoUrl(body.get("videoUrl"));
+        if (body.containsKey("imageUrl")) override.setImageUrl(body.get("imageUrl"));
         override.setUpdatedAt(java.time.LocalDateTime.now());
         if (override.getName() == null) {
             exerciseTemplateRepository.findById(exerciseId).ifPresent(t -> {

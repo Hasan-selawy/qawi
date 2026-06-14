@@ -83,8 +83,9 @@ export default function Library() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
   const [overrideTarget, setOverrideTarget] = useState<any | null>(null);
-  const [overrideForm, setOverrideForm] = useState({ name: '', nameAr: '', videoUrl: '' });
+  const [overrideForm, setOverrideForm] = useState({ name: '', nameAr: '', videoUrl: '', imageUrl: '' });
   const [overrideVideoPreview, setOverrideVideoPreview] = useState('');
+  const [overrideImagePreview, setOverrideImagePreview] = useState('');
   const [assignTarget, setAssignTarget] = useState<any | null>(null);
   const [usageTarget, setUsageTarget] = useState<any | null>(null);
   const [selectedCoach, setSelectedCoach] = useState<any | null>(null);
@@ -188,8 +189,9 @@ export default function Library() {
 
   const openOverride = (ex: any) => {
     const existing = overrideMap[ex.id];
-    setOverrideForm({ name: existing?.name ?? ex.name ?? '', nameAr: existing?.nameAr ?? ex.nameAr ?? '', videoUrl: existing?.videoUrl ?? ex.videoUrl ?? '' });
+    setOverrideForm({ name: existing?.name ?? ex.name ?? '', nameAr: existing?.nameAr ?? ex.nameAr ?? '', videoUrl: existing?.videoUrl ?? ex.videoUrl ?? '', imageUrl: existing?.imageUrl ?? ex.imageUrl ?? '' });
     setOverrideVideoPreview(existing?.videoUrl ?? ex.videoUrl ?? '');
+    setOverrideImagePreview(existing?.imageUrl ?? ex.imageUrl ?? '');
     setOverrideTarget(ex);
   };
 
@@ -267,6 +269,13 @@ export default function Library() {
                   <Input value={overrideForm.videoUrl} onChange={(e) => { setOverrideForm((f) => ({ ...f, videoUrl: e.target.value })); setOverrideVideoPreview(e.target.value); }} className="bg-black/20" placeholder="https://youtube.com/..." />
                   <VideoPreview url={overrideVideoPreview} />
                 </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">{isAr ? 'صورة التمرين (رابط)' : 'Exercise Image URL'}</label>
+                  <Input value={overrideForm.imageUrl} onChange={(e) => { setOverrideForm((f) => ({ ...f, imageUrl: e.target.value })); setOverrideImagePreview(e.target.value); }} className="bg-black/20" placeholder="https://..." />
+                  {overrideImagePreview && (
+                    <img src={overrideImagePreview} alt="Preview" className="mt-3 rounded-lg h-32 w-full object-cover border border-white/10" />
+                  )}
+                </div>
                 <div className="flex gap-3 pt-2">
                   <Button className="flex-1" onClick={() => upsertOverride.mutate({ id: overrideTarget?.id, data: overrideForm })} disabled={upsertOverride.isPending}>
                     {upsertOverride.isPending ? 'Saving…' : (isAr ? 'حفظ التخصيص' : 'Save Customization')}
@@ -312,14 +321,24 @@ export default function Library() {
                 const override = overrideMap[ex.id];
                 const displayName = isAr ? (override?.nameAr ?? ex.nameAr) : (override?.name ?? ex.name);
                 const displayVideo = override?.videoUrl ?? ex.videoUrl;
+                const displayImage = override?.imageUrl ?? ex.imageUrl;
                 const ytId = getYouTubeId(displayVideo);
                 const isCustomized = !!override;
                 const coach = ex.createdByCoachId ? coachMap[ex.createdByCoachId] : null;
 
                 return (
                   <div key={ex.id} className="glass-card overflow-hidden group flex flex-col hover:border-primary/30 transition-colors border border-white/5">
-                    {/* Video thumbnail */}
-                    {ytId ? (
+                    {/* Image or Video thumbnail */}
+                    {displayImage ? (
+                      <div className="relative h-32 bg-black overflow-hidden">
+                        <img src={displayImage} alt={displayName} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                        {displayVideo && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-10 h-10 rounded-full bg-black/60 flex items-center justify-center"><Play className="h-5 w-5 text-white fill-white" /></div>
+                          </div>
+                        )}
+                      </div>
+                    ) : ytId ? (
                       <div className="relative h-32 bg-black overflow-hidden">
                         <img src={`https://img.youtube.com/vi/${ytId}/mqdefault.jpg`} alt={displayName} className="w-full h-full object-cover opacity-70 group-hover:opacity-90 transition-opacity" />
                         <div className="absolute inset-0 flex items-center justify-center">
@@ -545,8 +564,10 @@ export default function Library() {
 }
 
 function ExerciseForm({ initial, categories, lang, onSubmit, isPending }: any) {
-  const [form, setForm] = useState({ name: initial?.name || '', nameAr: initial?.nameAr || '', videoUrl: initial?.videoUrl || '', categoryId: initial?.categoryId || '', defaultSets: initial?.defaultSets || 3, defaultReps: initial?.defaultReps || 12, defaultWeight: initial?.defaultWeight || 0 });
+  const [form, setForm] = useState({ name: initial?.name || '', nameAr: initial?.nameAr || '', videoUrl: initial?.videoUrl || '', imageUrl: initial?.imageUrl || '', categoryId: initial?.categoryId || '', defaultSets: initial?.defaultSets || 3, defaultReps: initial?.defaultReps || 12, defaultWeight: initial?.defaultWeight || 0 });
   const [videoPreview, setVideoPreview] = useState(form.videoUrl);
+  const [imagePreview, setImagePreview] = useState(form.imageUrl);
+  const isAr = lang === 'ar';
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSubmit(form); }} className="space-y-4">
       <Input placeholder="Name (English)" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} className="bg-black/20" required />
@@ -556,6 +577,15 @@ function ExerciseForm({ initial, categories, lang, onSubmit, isPending }: any) {
         <SelectContent>{categories.map((cat: any) => <SelectItem key={cat.id} value={cat.id}>{lang === 'ar' ? cat.nameAr : cat.name}</SelectItem>)}</SelectContent>
       </Select>
       <div>
+        <label className="text-xs text-muted-foreground mb-1 block">{isAr ? 'صورة التمرين (رابط)' : 'Exercise Image URL'}</label>
+        <Input placeholder="https://example.com/image.jpg" value={form.imageUrl}
+          onChange={(e) => { setForm((f) => ({ ...f, imageUrl: e.target.value })); setImagePreview(e.target.value); }} className="bg-black/20" />
+        {imagePreview && (
+          <img src={imagePreview} alt="Preview" className="mt-3 rounded-lg h-32 w-full object-cover border border-white/10" />
+        )}
+      </div>
+      <div>
+        <label className="text-xs text-muted-foreground mb-1 block">{isAr ? 'رابط الفيديو' : 'Video URL'}</label>
         <Input placeholder="Video URL (YouTube or direct)" value={form.videoUrl}
           onChange={(e) => { setForm((f) => ({ ...f, videoUrl: e.target.value })); setVideoPreview(e.target.value); }} className="bg-black/20" />
         <VideoPreview url={videoPreview} />

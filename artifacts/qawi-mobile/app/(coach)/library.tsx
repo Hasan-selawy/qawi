@@ -5,6 +5,7 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Image,
   Linking,
   Modal,
   Pressable,
@@ -32,6 +33,7 @@ type ExerciseTemplate = {
   defaultReps?: number;
   defaultWeight?: number;
   videoUrl?: string | null;
+  imageUrl?: string | null;
   isCustom?: boolean;
   createdByCoachId?: string | null;
 };
@@ -167,6 +169,13 @@ export default function CoachLibrary() {
           ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
           renderItem={({ item }) => (
             <Card>
+              {item.imageUrl && (
+                <Image
+                  source={{ uri: item.imageUrl }}
+                  style={{ width: "100%", height: 140, borderRadius: 12, marginBottom: 10 }}
+                  resizeMode="cover"
+                />
+              )}
               {item.videoUrl && (
                 <TouchableOpacity
                   onPress={() => Linking.openURL(item.videoUrl!)}
@@ -259,6 +268,8 @@ function AddCustomExerciseModal({
   const [sets, setSets] = useState("3");
   const [reps, setReps] = useState("10");
   const [weight, setWeight] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
+  const [videoUrl, setVideoUrl] = useState("");
 
   useEffect(() => {
     if (visible) {
@@ -268,6 +279,8 @@ function AddCustomExerciseModal({
       setSets("3");
       setReps("10");
       setWeight("");
+      setImageUrl("");
+      setVideoUrl("");
     }
   }, [visible, categories]);
 
@@ -282,6 +295,8 @@ function AddCustomExerciseModal({
           defaultSets: parseInt(sets, 10) || 3,
           defaultReps: parseInt(reps, 10) || 10,
           defaultWeight: weight ? parseFloat(weight) : 0,
+          imageUrl: imageUrl.trim() || null,
+          videoUrl: videoUrl.trim() || null,
         },
       }),
     onSuccess: () => {
@@ -415,6 +430,31 @@ function AddCustomExerciseModal({
                   style={inputStyle(c)}
                 />
               </View>
+            </View>
+
+            <View style={{ gap: 6 }}>
+              <Text style={{ color: c.mutedForeground, fontSize: 12 }}>{lang === "ar" ? "صورة التمرين (رابط)" : "Exercise Image URL"}</Text>
+              <TextInput
+                value={imageUrl}
+                onChangeText={setImageUrl}
+                placeholder="https://example.com/image.jpg"
+                placeholderTextColor={c.mutedForeground}
+                style={inputStyle(c)}
+                autoCapitalize="none"
+                keyboardType="url"
+              />
+            </View>
+            <View style={{ gap: 6 }}>
+              <Text style={{ color: c.mutedForeground, fontSize: 12 }}>{lang === "ar" ? "رابط الفيديو" : "Video URL"}</Text>
+              <TextInput
+                value={videoUrl}
+                onChangeText={setVideoUrl}
+                placeholder="https://youtube.com/..."
+                placeholderTextColor={c.mutedForeground}
+                style={inputStyle(c)}
+                autoCapitalize="none"
+                keyboardType="url"
+              />
             </View>
 
             <Button

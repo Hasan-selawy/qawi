@@ -40,6 +40,9 @@ public class ExerciseTemplate {
     @Column(name = "video_url")
     private String videoUrl;
 
+    @Column(name = "image_url")
+    private String imageUrl;
+
     @Column(name = "is_custom", nullable = false)
     @Builder.Default
     @JsonProperty("isCustom")

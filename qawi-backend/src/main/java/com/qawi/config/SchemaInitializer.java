@@ -57,6 +57,12 @@ public class SchemaInitializer implements ApplicationRunner {
         // ── staff_profiles: avatar / profile image for coach library ──
         ddl("ALTER TABLE staff_profiles ADD COLUMN IF NOT EXISTS profile_image_url VARCHAR(500)");
 
+        // ── exercise_templates: cover image for library cards ──
+        ddl("ALTER TABLE exercise_templates ADD COLUMN IF NOT EXISTS image_url VARCHAR(500)");
+
+        // ── gym_exercise_overrides: cover image for overridden exercises ──
+        ddl("ALTER TABLE gym_exercise_overrides ADD COLUMN IF NOT EXISTS image_url VARCHAR(500)");
+
         log.info("SchemaInitializer: migration complete");
     }
 

@@ -24,8 +24,8 @@
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/controller/PublicGymController.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/repository/ExerciseTemplateRepository.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/GymLeadNote.java
-/home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/GymExerciseOverride.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/NutritionCalendarPlan.java
+/home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/GymExerciseOverride.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/GymClassStatus.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/repository/PlatformPricingPageRepository.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/ScheduleDay.java

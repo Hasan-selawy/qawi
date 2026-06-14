@@ -112,6 +112,7 @@ public class ExerciseService {
                 .defaultReps(req.getDefaultReps())
                 .defaultWeight(req.getDefaultWeight())
                 .videoUrl(req.getVideoUrl())
+                .imageUrl(req.getImageUrl())
                 .isCustom(isCustomFlag)
                 .createdByCoachId(createdByCoach)
                 .scope(scope)
@@ -138,6 +139,7 @@ public class ExerciseService {
         ex.setDefaultReps(req.getDefaultReps());
         ex.setDefaultWeight(req.getDefaultWeight());
         ex.setVideoUrl(req.getVideoUrl());
+        ex.setImageUrl(req.getImageUrl());
         return templateRepository.save(ex);
     }
 

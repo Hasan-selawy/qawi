@@ -31,6 +31,9 @@ public class GymExerciseOverride {
     @Column(name = "video_url")
     private String videoUrl;
 
+    @Column(name = "image_url")
+    private String imageUrl;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();

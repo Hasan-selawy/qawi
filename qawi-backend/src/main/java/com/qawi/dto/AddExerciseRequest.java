@@ -15,4 +15,5 @@ public class AddExerciseRequest {
     private int defaultReps = 10;
     private double defaultWeight = 0;
     private String videoUrl;
+    private String imageUrl;
 }
