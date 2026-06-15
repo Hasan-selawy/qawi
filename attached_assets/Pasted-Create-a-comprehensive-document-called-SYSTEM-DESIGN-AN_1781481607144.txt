@@ -1,0 +1,200 @@
+Create a comprehensive document called SYSTEM_DESIGN_AND_MIGRATION.md 
+in the project root.
+
+This document is for the founder (a software engineer) who is taking 
+this project from Replit to local development and production deployment 
+on his own infrastructure. He understands software engineering deeply 
+but does NOT know which parts of this codebase rely on Replit-specific 
+behavior vs. standard, portable patterns.
+
+The document has TWO PARTS.
+
+═══════════════════════════════════════════
+PART A — SYSTEM DESIGN RATIONALE
+═══════════════════════════════════════════
+
+For each major architectural decision below, explain:
+1. WHAT was chosen
+2. WHY it was chosen (the reasoning at the time)
+3. WHAT ALTERNATIVES were considered or could have been used
+4. WHAT TRADEOFFS this creates (what we gained, what we gave up)
+5. WHAT PROBLEMS/STRUGGLES came up during development related to 
+   this decision, and how they were resolved (if any occurred)
+
+Cover at minimum these decisions — search the codebase to find 
+the actual implementation details for each:
+
+1. Multi-tenancy approach
+   - No JPA @ManyToOne/@OneToMany relationships; gymId/memberId 
+     as plain UUID columns instead
+   - How isolation is enforced in the service layer
+   - What this means for query performance, joins, and data integrity 
+     at scale
+
+2. Authentication & session strategy
+   - JWT with 7-day expiry, no refresh token
+   - JWT stored in localStorage (web) vs AsyncStorage (mobile)
+   - BCrypt password hashing
+   - Why no refresh token rotation was implemented
+   - Security implications and what would change this for production
+
+3. Database schema management
+   - Hibernate ddl-auto=update with no migration tool (no Flyway/Liquibase)
+   - Why this was acceptable during rapid development
+   - What breaks or becomes risky in production with real customer data
+   - Soft-delete pattern (isActive=false) instead of hard deletes — why
+
+4. Feature flag implementation
+   - Features stored as JSON strings in PlatformTier.features/featuresAr, 
+     parsed via Jackson ObjectMapper in service layer
+   - Why not a separate FeatureFlag entity/table with relations
+   - How this scales as more features are added
+
+5. Mobile networking architecture
+   - Port-free API URLs (/api/v1 not :9000/api/v1) relying on 
+     Replit's shared reverse proxy
+   - EXPO_PUBLIC_DOMAIN environment variable approach
+   - useProtectedRoute using firstSegment string instead of nested object
+   - Why these choices were made in the Replit environment
+
+6. Monorepo structure & workflow execution
+   - pnpm workspaces with @workspace/ prefixes
+   - Per-artifact Replit workflows instead of a single root dev command
+   - No Vite proxy config — reliance on Replit's reverse proxy for 
+     cross-service routing
+   - Why this structure was chosen over alternatives 
+     (e.g., separate repos, Nx, Turborepo)
+
+7. Validation & error handling
+   - Bean Validation (@Valid) + GlobalExceptionHandler with 9 
+     exception types
+   - Bilingual error messages (EN + AR) built into AppException
+   - Why errors carry both languages instead of frontend-only translation
+
+8. Rate limiting & request logging
+   - Bucket4j for rate limiting, custom filters for request logging
+   - Why these specific approaches vs. alternatives 
+     (e.g., API gateway-level rate limiting)
+
+9. Offline support (mobile)
+   - Only check-in/check-out queued offline via AsyncStorage + NetInfo
+   - Why other mutations require connectivity
+   - What this means for gym environments with poor wifi
+
+10. Auto-shift workout logic
+    - MemberController.todaysWorkout() auto-slides uncompleted 
+      workout days forward
+    - Why this approach vs. strict calendar-based plans
+    - Edge cases this does/doesn't handle
+
+For each section, be honest — if something was a pragmatic shortcut 
+under time pressure rather than a "best practice" choice, say so 
+explicitly. The founder needs to know what is solid engineering 
+vs. what is technical debt to revisit.
+
+═══════════════════════════════════════════
+PART B — REPLIT TO LOCAL/PRODUCTION MIGRATION GUIDE
+═══════════════════════════════════════════
+
+Go through the ENTIRE codebase (backend, web, mobile, monorepo config) 
+and identify every dependency on Replit-specific behavior, 
+infrastructure, or environment. For each one, provide:
+
+1. WHERE it is (exact file path and line/section)
+2. WHAT Replit-specific thing it relies on
+3. WHAT WILL BREAK if run outside Replit unchanged
+4. WHAT TO CHANGE IT TO for local development
+5. WHAT TO CHANGE IT TO for production deployment 
+   (these may differ from local)
+
+Cover at minimum:
+
+1. Reverse proxy routing
+   - Currently: shared reverse proxy at localhost:80 routes 
+     /api/v1 → :9000, / → web dashboard, Expo domain → Expo server
+   - Local equivalent: how to replicate this (e.g., nginx config, 
+     docker-compose with nginx service, or running services on 
+     different ports and updating all client configs)
+   - Production equivalent: nginx/Caddy/cloud load balancer config
+
+2. Mobile API URL construction
+   - Currently: EXPO_PUBLIC_DOMAIN + port-free /api/v1 paths
+   - Local: what env var and URL format to use when backend 
+     runs on localhost:9000 and Expo runs separately
+   - Production: what URL format once backend has its own 
+     domain/subdomain
+
+3. Environment variables & secrets
+   - List every env var currently read from Replit Secrets 
+     (DATABASE_URL, PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD, 
+     JWT_SECRET, SESSION_SECRET, EXPO_PUBLIC_DOMAIN, and any others 
+     found in the code)
+   - Provide a complete .env.example for local development
+   - Note which secrets need different values in production 
+     vs local (especially JWT_SECRET, database credentials)
+
+4. Database
+   - Currently: Replit-managed PostgreSQL, ddl-auto=update
+   - Local: docker-compose PostgreSQL setup (provide the service config)
+   - Production: recommend adding Flyway/Liquibase migrations 
+     before going live with real data; explain the migration 
+     path from current ddl-auto=update state to a baseline migration
+
+5. Build & run commands
+   - Currently: Replit workflows (mvn spring-boot:run, 
+     pnpm --filter @workspace/X run dev, etc.)
+   - Local: equivalent docker-compose services or shell scripts 
+     to run all 3 services (backend, web, mobile) together
+   - Production: build commands for deployable artifacts 
+     (jar file, static web build, mobile EAS build)
+
+6. CORS configuration
+   - Find current CORS config in SecurityConfig.java
+   - What origins are currently allowed (likely wildcard or 
+     Replit domains)
+   - What to change for local (localhost:* ports)
+   - What to change for production (actual domain)
+
+7. Health checks & monitoring
+   - /actuator/health currently used as Replit deployment probe
+   - How to wire this into local docker-compose healthchecks 
+     and production load balancer health checks
+
+8. Mobile build configuration
+   - app.json / eas.json — any Replit-specific values 
+     (API URLs, bundle identifiers, etc.)
+   - What needs to change for EAS Build to produce 
+     production-ready iOS/Android binaries
+
+9. File storage / uploads (if any)
+   - Check if any feature stores files (custom branding logos, 
+     profile photos, etc.)
+   - If yes: currently where are they stored? What needs to 
+     change for production (S3, Cloudflare R2, etc.)
+
+10. Logging
+    - Where do RequestLoggingFilter logs currently go?
+    - What's needed for production log aggregation 
+      (e.g., writing to stdout for Docker, or a logging service)
+
+═══════════════════════════════════════════
+FORMAT REQUIREMENTS
+═══════════════════════════════════════════
+
+- Use clear markdown headers matching the structure above
+- Part A sections should be 150-300 words each — explain 
+  reasoning, don't just restate what the code does
+- Part B sections should include actual config file snippets 
+  where relevant (docker-compose.yml services, .env.example, 
+  nginx config, CORS config changes) — not just descriptions
+- Be honest about shortcuts and technical debt — this is an 
+  internal engineering document, not marketing material
+- At the end of Part B, include a "Migration Checklist" — 
+  ordered list of steps to go from current Replit state to 
+  running locally via docker-compose, then a separate 
+  ordered list for production deployment
+
+Search the actual codebase for accurate details — do not guess 
+at file paths or config values. Reference TECHNICAL_DOCS.md 
+for context but go deeper into the "why" and "how to migrate" 
+which that document does not currently cover.

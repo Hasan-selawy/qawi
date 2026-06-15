@@ -23,3 +23,9 @@ id = "YJp1fcoCfKKsOvTkU7__f"
 uri = "file://qawi-brand/color-palette.svg"
 type = "image"
 title = "Qawi Brand Color Palette"
+
+[[outputs]]
+id = "-GihfNiVUHLZYdUgwHP5K"
+uri = "file://SYSTEM_DESIGN_AND_MIGRATION.md"
+type = "text"
+title = "Qawi System Design & Migration Guide"
