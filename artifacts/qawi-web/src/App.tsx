@@ -3,8 +3,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
-import { LanguageProvider } from "@/hooks/use-language";
-import { AuthProvider } from "@/hooks/use-auth";
 import { RoleRoute } from "@/components/RoleRoute";
 import { AppShell } from "@/components/layout/AppShell";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -177,17 +175,13 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <LanguageProvider>
-        <AuthProvider>
-          <TooltipProvider>
-            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-              <OfflineBanner />
-              <Router />
-            </WouterRouter>
-            <Toaster position="top-right" richColors theme="dark" />
-          </TooltipProvider>
-        </AuthProvider>
-      </LanguageProvider>
+      <TooltipProvider>
+        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+          <OfflineBanner />
+          <Router />
+        </WouterRouter>
+        <Toaster position="top-right" richColors theme="dark" />
+      </TooltipProvider>
     </QueryClientProvider>
   );
 }

@@ -1,3 +1,5 @@
+import { useAuthStore } from "@/stores/authStore";
+
 const API_URL = (import.meta.env.VITE_API_URL || "") + "/api/v1";
 
 interface FetchOptions extends RequestInit {
@@ -6,9 +8,9 @@ interface FetchOptions extends RequestInit {
 
 export async function apiFetch<T = any>(endpoint: string, options: FetchOptions = {}): Promise<T> {
   const { data, headers, ...rest } = options;
-  
-  const token = localStorage.getItem("qawi_token");
-  
+
+  const token = useAuthStore.getState().token;
+
   const config: RequestInit = {
     ...rest,
     headers: {
@@ -25,7 +27,7 @@ export async function apiFetch<T = any>(endpoint: string, options: FetchOptions 
   const response = await fetch(`${API_URL}${endpoint}`, config);
 
   if (response.status === 401) {
-    localStorage.removeItem("qawi_token");
+    useAuthStore.getState().logout();
     const base = import.meta.env.BASE_URL || "/";
     window.location.href = `${base.replace(/\/$/, "")}/login`;
     throw new Error("Unauthorized");

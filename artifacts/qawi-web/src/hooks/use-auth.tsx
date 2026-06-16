@@ -1,81 +1,58 @@
-import { createContext, useContext, ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuthStore, type User, type Role } from "@/stores/authStore";
 import { apiFetch } from "../services/api";
 
-export type Role = 'MEMBER' | 'COACH' | 'GYM_ADMIN' | 'SUPER_ADMIN' | 'RECEPTIONIST' | 'SALES' | 'NUTRITIONIST' | 'ACCOUNTANT' | 'HR';
-
-export interface User {
-  id: string;
-  email: string;
-  name: string;
-  role: Role;
-  gymId?: string;
-  subscriptionStartDate?: string | null;
-  subscriptionEndDate?: string | null;
-  active?: boolean;
-  selfTrainingEnabled?: boolean;
-  profileImageUrl?: string | null;
-}
-
-interface AuthContextType {
-  user: User | null | undefined;
-  isLoading: boolean;
-  login: (data: any) => Promise<any>;
-  logout: () => void;
-  isAuthenticated: boolean;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export type { User, Role };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const queryClient = useQueryClient();
+  return <>{children}</>;
+}
 
-  const hasToken = typeof window !== "undefined" && !!localStorage.getItem("qawi_token");
-  const { data: user, isLoading } = useQuery<User | null>({
+export function useAuth() {
+  const queryClient = useQueryClient();
+  const token = useAuthStore((s) => s.token);
+  const user = useAuthStore((s) => s.user);
+  const setUser = useAuthStore((s) => s.setUser);
+  const login = useAuthStore((s) => s.login);
+  const logout = useAuthStore((s) => s.logout);
+
+  const { data: queryUser, isLoading } = useQuery<User | null>({
     queryKey: ["auth", "me"],
     queryFn: () => apiFetch("/auth/me"),
     retry: false,
     staleTime: Infinity,
-    enabled: hasToken,
+    enabled: !!token,
   });
 
+  useEffect(() => {
+    setUser(queryUser ?? null);
+  }, [queryUser, setUser]);
+
   const loginMutation = useMutation({
-    mutationFn: (credentials: any) => apiFetch("/auth/login", {
-      method: "POST",
-      data: { ...credentials, email: credentials.email?.toLowerCase().trim() },
-    }),
+    mutationFn: (credentials: any) =>
+      apiFetch("/auth/login", {
+        method: "POST",
+        data: { ...credentials, email: credentials.email?.toLowerCase().trim() },
+      }),
     onSuccess: (data) => {
-      localStorage.setItem("qawi_token", data.token);
+      login(data.token, data.user);
       queryClient.setQueryData(["auth", "me"], data.user);
     },
   });
 
-  const logout = () => {
-    localStorage.removeItem("qawi_token");
+  const handleLogout = () => {
+    logout();
     queryClient.setQueryData(["auth", "me"], null);
     const base = import.meta.env.BASE_URL || "/";
     window.location.href = `${base.replace(/\/$/, "")}/login`;
   };
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user: user ?? null,
-        isLoading: hasToken ? isLoading : false,
-        login: loginMutation.mutateAsync,
-        logout,
-        isAuthenticated: !!user,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
+  return {
+    user,
+    isLoading: !!token ? isLoading : false,
+    login: loginMutation.mutateAsync,
+    logout: handleLogout,
+    isAuthenticated: !!user,
+  };
 }
