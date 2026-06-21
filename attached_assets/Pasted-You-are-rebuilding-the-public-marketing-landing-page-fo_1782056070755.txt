@@ -1,0 +1,486 @@
+You are rebuilding the public marketing landing page for Qawi.app.
+
+IMPORTANT:
+This is ONLY for the public marketing website / landing page.
+Do NOT modify the logged-in dashboard, admin app, authentication flow, database, or product functionality — except where explicitly instructed below to connect the contact form to an existing backend endpoint.
+
+The goal is to create a premium SaaS landing page for an Arabic-first gym management platform.
+
+Design quality reference:
+Linear.app, Stripe.com, Arc browser marketing site.
+
+But do NOT copy them directly.
+Qawi should feel premium, Arabic-first, modern, fast, and trustworthy for gyms in Jordan and the MENA region.
+
+Core brand identity:
+- Background: #0A0F1E
+- Accent: #22C55E
+- Arabic font: Cairo
+- English font: Inter
+- Overall style: premium dark SaaS, confident typography, generous spacing, minimal effects
+
+Main positioning:
+Qawi is gym management software built for Arabic-speaking gyms, coaches, and members.
+
+The biggest differentiator:
+Arabic-first experience, not just "Arabic supported."
+
+Public pricing rule:
+DO NOT show actual prices on the website.
+Pricing should be private between Qawi and the buyer after they contact us.
+Replace any pricing table with a "Request a private quote" or "Talk to us" section.
+Do not say "cheap," "discount," or show fake prices.
+
+Work step by step.
+Do not skip steps.
+After each step, verify the result before continuing.
+
+────────────────────────────
+STEP 0 — TECHNICAL FOUNDATION
+────────────────────────────
+
+Before changing visuals, fix the marketing site foundation.
+
+The current marketing site must not ship the same heavy JavaScript bundle as the logged-in dashboard.
+
+Requirements:
+1. Make the landing page statically generated or server-rendered.
+2. The landing page must not import dashboard code, auth context, React Query, admin components, chart libraries, or private app logic.
+3. The initial page HTML must contain real indexable content, not only an empty root div.
+4. Remove anything blocking Google indexing:
+   - noindex meta tag
+   - X-Robots-Tag header
+   - robots.txt Disallow rules
+5. Add a valid robots.txt:
+
+User-agent: *
+Allow: /
+Sitemap: https://qawi.app/sitemap.xml
+
+6. Add a valid sitemap.xml.
+7. Target initial marketing page payload under 500KB.
+
+Do not continue until:
+- The marketing page is separated from dashboard code.
+- The page is indexable.
+- View source shows real landing-page content.
+- The initial payload is under 500KB or as close as realistically possible.
+
+────────────────────────────
+STEP 1 — DESIGN SYSTEM
+────────────────────────────
+
+Create a clean design system before building sections.
+
+Typography:
+- Hero heading: 56–64px desktop, 36px mobile, weight 700, line-height 1.05–1.1
+- Section headings: 36–40px, weight 700
+- Body text: 16–17px, line-height 1.6
+- Labels/eyebrows: 13px, weight 500, letter-spacing 0.05em
+
+Spacing:
+Use an 8px spacing system only:
+8, 16, 24, 32, 48, 64, 96, 128.
+
+Do not use random spacing values.
+
+Colors:
+- Page background: #0A0F1E
+- Accent green: #22C55E
+- Body text: muted gray, not pure white
+- Cards: use only 3 surface levels:
+  - Level 0: page background
+  - Level 1: slightly lighter card
+  - Level 2: elevated / hover / important card
+
+Icons:
+- Remove emoji icons.
+- Use one consistent icon set only, such as Lucide or Phosphor.
+- Use consistent stroke width.
+
+Visual rule:
+Use one main signature visual moment only:
+A premium phone mockup in the hero showing real Arabic UI text.
+
+Do not add many small decorative effects everywhere.
+
+────────────────────────────
+STEP 2 — COPY REWRITE
+────────────────────────────
+
+Rewrite all landing page copy to sound specific, confident, and useful.
+
+Avoid generic SaaS words:
+- AI-powered
+- revolutionary
+- seamless
+- all-in-one
+- next-generation
+- powerful platform
+
+Hero copy direction:
+
+Eyebrow:
+قوي — يعني "strong" بالعربية
+
+Hero headline options:
+Choose the strongest one or create a better close variant:
+
+Option A:
+Gym software your Arabic-speaking members can actually use.
+
+Option B:
+Every member. Every coach. One language they speak.
+
+Option C:
+Arabic-first gym management for teams that do not want to translate every workout.
+
+Subhead:
+Explain clearly what Qawi does:
+Qawi helps gym admins, coaches, and members manage training plans, roles, and communication in Arabic-first software built for the Jordanian market.
+
+Primary CTA:
+Get early access
+
+Secondary CTA:
+Request a private demo
+
+Do not include "Watch a 90-second demo" unless a real demo video exists.
+
+Feature copy rules:
+Each feature must explain what the user can DO, not what the system HAS.
+
+Bad:
+Powerful workout builder.
+
+Good:
+Build a complete workout plan in Arabic and send it to a member without translating anything.
+
+Proof statements to include:
+1. Coaches write plans in Arabic. Members read them in Arabic. No translation step.
+2. Built for Jordanian gyms, not a USD product with Arabic added later.
+3. 70+ exercises with Arabic names from day one.
+
+Accuracy rule:
+Only use specific claims, numbers, counts, or feature statements that are verifiably true in the current product.
+If a proof statement like "70+ exercises with Arabic names" cannot be confirmed against the actual database, codebase, or product data, replace it with either:
+- an equally specific verified claim, or
+- a true qualitative statement that does not invent a number.
+
+Do not add urgency or scarcity language anywhere on the page.
+Avoid phrases like:
+- limited spots
+- only X gyms accepted
+- offer ends soon
+- join before it closes
+- exclusive launch deal
+
+This is a B2B trust-building page, not a conversion-hack landing page.
+
+────────────────────────────
+STEP 3 — PAGE STRUCTURE
+────────────────────────────
+
+Build the landing page in this exact order.
+
+1. Navigation
+Requirements:
+- Sticky
+- Minimal
+- Logo
+- 3 nav links maximum
+- Language toggle
+- One CTA button
+
+Suggested nav links:
+- Features
+- Roles
+- Contact
+
+CTA:
+Get early access
+
+2. Hero section
+Requirements:
+- Strong headline
+- Clear subhead
+- Primary CTA
+- Secondary CTA
+- Hero phone mockup with real Arabic UI
+
+Phone mockup must show Arabic content, for example:
+- مرحباً أحمد
+- تمرين اليوم
+- خطة الصدر والكتف
+- سلسلة ٧ أيام
+- تمارينك جاهزة
+
+The phone mockup should prove the Arabic-first claim visually.
+
+Reserve width and height for the mockup to avoid layout shift.
+
+3. Proof / feature section
+Replace generic feature-marquee or feature-soup sections.
+
+Use a clean grid with 6 cards maximum.
+
+Include these ideas:
+- Arabic workout plans
+- Multi-role gym management
+- Member app experience
+- Coach workflow
+- Exercise library in Arabic
+- Admin control
+
+Each card should be specific and action-based.
+
+4. Roles section
+Title:
+One app. Every role.
+
+Show only 3 roles by default:
+- Gym Admin
+- Coach
+- Member
+
+Then add a subtle expandable area:
++ 2 more roles
+
+Expanded roles:
+- Nutritionist
+- Receptionist
+
+Do not show all roles as equal flat cards at first.
+The core three should feel most important.
+
+5. Private quote section
+Do NOT show public pricing.
+
+Replace the pricing section with a private quote section.
+
+Section title options:
+- Get a private quote for your gym
+- Pricing built around your gym
+- Talk to us about your gym
+
+Suggested copy:
+Every gym is different. Tell us your number of members, coaches, and locations, and we'll recommend the right setup privately.
+
+CTA:
+Request a private quote
+
+Optional form fields:
+- Name
+- Gym name
+- Phone number / WhatsApp
+- Email
+- Number of members
+- Number of coaches
+- Message
+
+Do not mention exact prices.
+Do not create pricing cards.
+Do not show JOD amounts.
+Do not say "starting from."
+
+Backend requirement:
+The private quote form must submit to the existing ContactRequest backend endpoint already used elsewhere in the product.
+Check the actual backend codebase for the correct endpoint, request method, field names, validation rules, and expected response before building the form.
+Likely endpoint: POST /api/v1/public/contact
+But do not assume this is correct without verifying the backend code.
+
+Do not invent:
+- a new contact endpoint
+- a parallel lead-storage system
+- fake form submission behavior
+- frontend-only success messages without a real backend request
+
+On submit:
+- Send the form data to the verified existing backend endpoint.
+- Show a clear success state confirming the request was received and someone will follow up.
+- Handle submission errors gracefully.
+- If the request fails because of network, validation, or server errors, show a helpful error message instead of a blank or broken state.
+- Keep the user's entered form data visible after an error so they do not have to retype everything.
+
+6. Final CTA
+Keep it short and direct.
+
+Suggested copy:
+Start with a private demo. See how Qawi fits your gym before you commit.
+
+CTA:
+Request early access
+
+7. Footer
+Keep it minimal.
+
+Include only real links.
+Remove placeholder links like:
+- Blog
+- Careers
+- Press
+
+Only include links that actually exist.
+
+Closing note for this step:
+Existing sections not explicitly covered above should be preserved and restyled to match the new design system rather than deleted.
+Examples:
+- App Store badge
+- Google Play badge
+- existing product preview sections
+- existing trust or app-related sections
+
+Only remove content if it references something that does not actually exist.
+For example: if Blog, Careers, Press, or similar footer links point to nonexistent or placeholder pages, remove those specific links until real pages exist.
+Do not delete useful existing sections just because they were not explicitly mentioned in this brief.
+
+────────────────────────────
+STEP 4 — MOTION
+────────────────────────────
+
+Use tasteful motion only.
+
+Allowed:
+1. Hero entrance animation:
+   - headline
+   - subhead
+   - CTA buttons
+   - phone mockup
+   - short stagger
+   - total under 800ms
+
+2. Section heading fade-in on scroll.
+
+3. Card hover:
+   - slight scale, max 1.02
+   - border color shift
+   - CSS only
+
+4. Optional gentle phone floating motion:
+   - transform only
+   - GPU-accelerated
+   - no layout-triggering or paint-heavy properties
+   - must respect prefers-reduced-motion
+   - pause entirely when prefers-reduced-motion is enabled
+   - this is the only allowed continuous or looping animation on the page
+
+Rules:
+- No scroll-jacking.
+- No parallax background.
+- No cursor-follow effect.
+- No infinite animations except the phone idle motion described above.
+- Respect prefers-reduced-motion everywhere, not only on the phone mockup.
+
+────────────────────────────
+STEP 5 — ACCESSIBILITY
+────────────────────────────
+
+Make the landing page accessible.
+
+Requirements:
+1. Exactly one h1.
+2. Logical heading order.
+3. All buttons and links keyboard accessible.
+4. Visible focus rings.
+5. Contrast ratio at least 4.5:1 for text.
+6. Add aria-labels for icon-only buttons.
+7. Language toggle must update:
+   - html lang
+   - dir="rtl" when Arabic is active
+8. No keyboard traps.
+9. Mobile layout must not create horizontal scrolling.
+
+────────────────────────────
+STEP 6 — SEO
+────────────────────────────
+
+Add proper SEO.
+
+Requirements:
+1. Meta title.
+2. Meta description.
+3. Canonical URL.
+4. Open Graph tags.
+5. Twitter Card tags.
+6. Real og:image.
+7. hreflang tags for English and Arabic.
+8. JSON-LD structured data for SoftwareApplication.
+
+Because prices are private, do NOT include public pricing numbers in structured data.
+Use a contact/request-demo style offer instead of fake prices.
+
+Confirm:
+- robots.txt is valid
+- sitemap.xml exists
+- indexing is not blocked
+
+────────────────────────────
+STEP 7 — PERFORMANCE
+────────────────────────────
+
+Optimize for Lighthouse.
+
+Requirements:
+1. Convert images to WebP or AVIF.
+2. Add explicit width and height to all images.
+3. Lazy-load below-the-fold images.
+4. Self-host fonts if possible.
+5. Use font-display: swap.
+6. Preload only critical fonts.
+7. Remove unused JavaScript.
+8. Do not include dashboard/admin libraries in the marketing bundle.
+9. Cache static assets with long cache headers.
+10. Keep animations lightweight.
+
+Targets:
+- Performance: 90+
+- Accessibility: 100
+- Best Practices: 100
+- SEO: 100
+- CLS: 0
+- Low TBT
+- Strong LCP
+
+────────────────────────────
+STEP 8 — FINAL VERIFICATION
+────────────────────────────
+
+After completing the rebuild, report the actual results.
+
+Do not estimate.
+
+Report:
+1. Lighthouse Mobile scores:
+   - Performance
+   - Accessibility
+   - Best Practices
+   - SEO
+
+2. Lighthouse Desktop scores:
+   - Performance
+   - Accessibility
+   - Best Practices
+   - SEO
+
+3. Total page payload from Network tab.
+
+4. Core metrics:
+   - LCP
+   - CLS
+   - TBT
+
+5. Confirm:
+   - View source shows real content.
+   - robots.txt allows indexing.
+   - sitemap.xml exists.
+   - The language toggle works.
+   - Keyboard navigation works.
+   - Mobile layout has no horizontal scroll.
+   - No public prices are shown anywhere.
+   - Pricing is handled only through private contact / quote request.
+   - The private quote form successfully submits to the verified existing backend endpoint.
+   - A real success state appears after a real successful submission.
+   - A helpful error state appears if submission fails, with entered data preserved.
+
+Final rule:
+Do not mark the task complete until all verification steps are done.
