@@ -411,7 +411,7 @@ function GetAccessModal({
                           <span className="text-white/40 text-sm">Qawi</span>
                         </div>
                         <h3 id="modal-title" className="text-2xl font-bold text-white">{t.title}</h3>
-                        <p id="modal-desc" className="text-white/45 text-sm mt-1">{t.sub}</p>
+                        <p id="modal-desc" className="text-white/62 text-sm mt-1">{t.sub}</p>
                       </div>
 
                       <form onSubmit={handleSubmit} aria-labelledby="modal-title" aria-describedby="modal-desc" className="space-y-3">
@@ -506,7 +506,7 @@ function Navbar({ t, isAr, toggle, onCTA }: {
             onClick={toggle}
             aria-label={isAr ? 'Switch to English' : 'Switch to Arabic'}
             className="text-xs px-3 py-1.5 rounded-lg font-medium transition-colors hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A0F1E] outline-none min-w-[44px] min-h-[44px]"
-            style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.6)' }}
+            style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.82)' }}
           >
             {isAr ? 'EN' : 'عربي'}
           </button>
@@ -628,7 +628,7 @@ function Hero({ t, isAr, onCTA, reduced }: {
             </a>
           </motion.div>
 
-          <motion.p variants={fadeUp(0.55)} initial="hidden" animate="visible" className="text-sm text-white/28">
+          <motion.p variants={fadeUp(0.55)} initial="hidden" animate="visible" className="text-sm text-white/50">
             {t.trusted}
           </motion.p>
         </div>
@@ -656,7 +656,7 @@ function Features({ t, isAr }: { t: typeof content.en.features; isAr: boolean })
       <div className="max-w-6xl mx-auto">
         <motion.div variants={fadeUp(0)} className={cn('mb-14 space-y-3', isAr ? 'text-right' : 'text-center')}>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-white">{t.heading}</h2>
-          <p className="text-white/48 text-lg max-w-2xl mx-auto">{t.sub}</p>
+          <p className="text-white/65 text-lg max-w-2xl mx-auto">{t.sub}</p>
         </motion.div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {t.cards.map((card, i) => (
@@ -676,7 +676,7 @@ function Features({ t, isAr }: { t: typeof content.en.features; isAr: boolean })
                   <span className="flex-shrink-0 text-xs px-2 py-0.5 rounded-full font-semibold" style={{ background: 'rgba(34,197,94,0.14)', color: GREEN }}>{card.tag}</span>
                 )}
               </div>
-              <p className={cn('text-sm text-white/48 leading-relaxed', isAr && 'text-right')}>{card.desc}</p>
+              <p className={cn('text-sm text-white/65 leading-relaxed', isAr && 'text-right')}>{card.desc}</p>
             </motion.article>
           ))}
         </div>
@@ -711,7 +711,7 @@ function AdminPhone({ isAr }: { isAr: boolean }) {
           { label: isAr ? 'الإيراد' : 'Revenue', val: '12k' },
         ].map(item => (
           <div key={item.label} className="flex justify-between items-center text-xs px-2 py-1.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)' }}>
-            <span className="text-white/45">{item.label}</span>
+            <span className="text-white/62">{item.label}</span>
             <span className="font-bold" style={{ color: GREEN }}>{item.val}</span>
           </div>
         ))}
@@ -745,7 +745,7 @@ function MemberPhone({ isAr }: { isAr: boolean }) {
           { icon: '🏃', label: isAr ? 'خطوات' : 'Steps', val: '6,240' },
         ].map(item => (
           <div key={item.label} className="flex justify-between items-center text-xs px-2 py-1.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)' }}>
-            <span className="text-white/45">{item.icon} {item.label}</span>
+            <span className="text-white/62">{item.icon} {item.label}</span>
             <span className="font-bold text-white/80">{item.val}</span>
           </div>
         ))}
@@ -769,7 +769,7 @@ function DualPhoneShowcase({
       <div className="max-w-6xl mx-auto" ref={sectionRef}>
         <motion.div variants={fadeUp(0)} className={cn('mb-14 space-y-3', isAr ? 'text-right' : 'text-center')}>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-white">{t.heading}</h2>
-          <p className="text-white/48 text-lg max-w-2xl mx-auto">{t.sub}</p>
+          <p className="text-white/65 text-lg max-w-2xl mx-auto">{t.sub}</p>
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 items-center">
@@ -785,7 +785,7 @@ function DualPhoneShowcase({
                 <span className={cn('text-xl flex-shrink-0', isAr && 'order-last')} role="img" aria-hidden>{role.icon}</span>
                 <div className={isAr ? 'text-right' : ''}>
                   <div className="font-semibold text-white text-sm">{role.label}</div>
-                  <div className="text-xs text-white/42 mt-0.5">{role.desc}</div>
+                  <div className="text-xs text-white/60 mt-0.5">{role.desc}</div>
                 </div>
               </motion.div>
             ))}
@@ -871,7 +871,7 @@ function Stats({ t, isAr, reduced }: { t: typeof content.en.stats; isAr: boolean
               style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
             >
               <AnimatedStat raw={item.value} reduced={reduced} />
-              <div className="text-sm text-white/45">{item.label}</div>
+              <div className="text-sm text-white/62">{item.label}</div>
             </motion.div>
           ))}
         </div>
@@ -927,7 +927,7 @@ function Testimonials({ t, isAr, reduced }: {
                     </div>
                     <div className={isAr ? 'text-right' : ''}>
                       <div className="text-white font-semibold text-sm">{isAr ? item.nameAr : item.name}</div>
-                      <div className="text-white/38 text-xs">{isAr ? item.roleAr : item.role}</div>
+                      <div className="text-white/55 text-xs">{isAr ? item.roleAr : item.role}</div>
                     </div>
                   </div>
                 </div>
@@ -1020,7 +1020,7 @@ function Footer({ t, isAr, onCTA, toggle }: {
               <div className="w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm" style={{ background: GREEN, color: BG }}>Q</div>
               <span className="font-bold text-white text-lg">Qawi</span>
             </div>
-            <p className="text-sm text-white/40 leading-relaxed max-w-[200px]">{t.tagline}</p>
+            <p className="text-sm text-white/60 leading-relaxed max-w-[200px]">{t.tagline}</p>
             <button
               onClick={toggle}
               aria-label={isAr ? 'Switch to English' : 'Switch to Arabic'}
@@ -1057,8 +1057,8 @@ function Footer({ t, isAr, onCTA, toggle }: {
           className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 border-t"
           style={{ borderColor: 'rgba(255,255,255,0.05)' }}
         >
-          <p className="text-xs text-white/22">{t.rights}</p>
-          <div className="flex items-center gap-5 text-xs text-white/28">
+          <p className="text-xs text-white/50">{t.rights}</p>
+          <div className="flex items-center gap-5 text-xs text-white/55">
             <button className="hover:text-white/50 transition-colors focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A0F1E] outline-none rounded px-1 py-0.5">{isAr ? 'سياسة الخصوصية' : 'Privacy Policy'}</button>
             <button className="hover:text-white/50 transition-colors focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A0F1E] outline-none rounded px-1 py-0.5">{isAr ? 'الشروط' : 'Terms'}</button>
           </div>

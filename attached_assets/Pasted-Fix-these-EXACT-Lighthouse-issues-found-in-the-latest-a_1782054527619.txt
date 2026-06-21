@@ -1,0 +1,175 @@
+Fix these EXACT Lighthouse issues found in the latest audit.
+Current scores: Performance 59, Accessibility 96, 
+Best Practices 96, SEO 58.
+
+═══════════════════════════════
+PRIORITY 1 — SEO: SITE IS BLOCKED FROM INDEXING
+═══════════════════════════════
+
+This is the most critical issue on the entire report.
+Google cannot index this site at all right now.
+
+1. Find what is blocking indexing. Check for:
+   - A <meta name="robots" content="noindex"> tag 
+     anywhere in the HTML head (likely left over from 
+     a staging/preview deployment config)
+   - X-Robots-Tag: noindex in HTTP response headers
+   - robots.txt disallowing all crawlers (Disallow: /)
+   Remove whichever is causing it.
+
+2. Fix robots.txt — it currently has 161 validation errors.
+   Replace it entirely with a minimal, valid version:
+   
+   User-agent: *
+   Allow: /
+   Sitemap: https://qawi.app/sitemap.xml
+   
+   Do not hand-write a complex robots.txt. Keep it minimal 
+   and valid. Validate it after creating using Google's 
+   robots.txt tester or Lighthouse re-run.
+
+3. Add a valid XML sitemap at /sitemap.xml listing the 
+   marketing site's pages.
+
+4. Add complete meta tags (currently missing or incomplete):
+   <title>Qawi - Smart Gym Management Platform | قوي</title>
+   <meta name="description" content="Qawi gives gym 
+   owners, coaches, and nutritionists one intelligent 
+   platform to manage members, workouts, nutrition, and 
+   analytics — in Arabic and English.">
+   <link rel="canonical" href="https://qawi.app">
+
+5. Verify fix: after deploying, run Lighthouse SEO audit 
+   again and confirm "Page is blocked from indexing" no 
+   longer appears, and robots.txt shows 0 errors.
+
+═══════════════════════════════
+PRIORITY 2 — PERFORMANCE: JS BUNDLE IS THE BOTTLENECK
+═══════════════════════════════
+
+Current numbers: LCP 4.8s, Speed Index 4.1s, FCP 3.1s.
+Total page payload: 3,447 KiB.
+Diagnostics show 1,280 KiB of unminified JS and 
+861 KiB of unused JS being shipped.
+
+This means the production build is either not minifying 
+correctly, or the landing page is bundled together with 
+the full app (dashboard, auth, etc.) instead of being 
+its own lightweight bundle.
+
+1. First, diagnose: run the production build and inspect 
+   the actual bundle output:
+   - If using Vite: run `vite build` and check 
+     dist/assets/*.js file sizes
+   - Confirm minification is enabled in the build config 
+     (it should be by default in production mode — verify 
+     mode is actually "production" and not accidentally 
+     running in dev mode when deployed)
+
+2. Reduce unused JavaScript (861 KiB savings available):
+   - If the marketing/landing page imports anything from 
+     the main app (dashboard components, admin routes, 
+     coach tools, etc.), remove those imports entirely
+   - The landing page should be a separate, minimal bundle 
+     that does NOT include React Query, the dashboard 
+     component library, charts, or any authenticated-app 
+     code
+   - Check for unused npm packages bundled in 
+     (e.g., date libraries, icon sets) — tree-shake or 
+     remove what isn't used on this specific page
+   - Run the build tool's bundle analyzer to find the 
+     largest unused chunks specifically
+
+3. Minify JavaScript (1,280 KiB savings available):
+   - Confirm the build is NOT shipping a dev/unminified 
+     bundle to production
+   - Verify build command uses production mode explicitly
+   - Check that source maps aren't being served alongside 
+     unminified code in a way that inflates payload
+
+4. Reduce render-blocking requests (450ms savings):
+   - Defer non-critical <script> tags
+   - Inline critical CSS, defer the rest
+   - Move any synchronous third-party scripts to async/defer
+
+5. Use modern HTTP (990ms savings available):
+   - Verify HTTP/2 or HTTP/3 is enabled on the hosting 
+     platform (most modern hosts like Vercel/Cloudflare 
+     enable this by default — verify it's not being 
+     served through a proxy that downgrades it)
+
+6. Fix document request latency (37 KiB / improve TTFB):
+   - Check server response time for the initial HTML
+   - If using SSR, verify no blocking data fetches happen 
+     before the HTML is sent
+
+7. Use efficient cache lifetimes (5 KiB savings, but 
+   also fix this for repeat-visit performance):
+   Set Cache-Control: public, max-age=31536000, immutable 
+   on all static assets (JS, CSS, fonts, images)
+
+8. Fix "Page prevented back/forward cache restoration":
+   Find the specific failure reason in the Lighthouse 
+   report diagnostics and fix it — this is usually caused 
+   by an unload event listener or a Cache-Control: 
+   no-store header on the page itself
+
+9. After these fixes, total payload should drop from 
+   3,447 KiB to under 500 KiB for a landing page, and 
+   LCP should drop from 4.8s to under 2.5s.
+
+═══════════════════════════════
+PRIORITY 3 — BEST PRACTICES (96 → 100)
+═══════════════════════════════
+
+1. Add charset declaration as the FIRST element in <head>, 
+   before any other meta tag or title:
+   <meta charset="UTF-8">
+
+2. Add security headers (configure at the server/hosting 
+   level, e.g., vercel.json or nginx config):
+   - Content-Security-Policy with a real policy (not just 
+     a placeholder) to prevent XSS
+   - Strict-Transport-Security with a strong max-age 
+     (e.g., max-age=31536000; includeSubDomains)
+   - Cross-Origin-Opener-Policy: same-origin
+   - X-Frame-Options: DENY (or use CSP frame-ancestors)
+
+3. Add source maps for large first-party JS bundles, or 
+   explicitly exclude them from the production deploy if 
+   intentionally hidden — currently they're missing, which 
+   Lighthouse flags as a debugging/best-practice issue.
+
+═══════════════════════════════
+PRIORITY 4 — ACCESSIBILITY (96 → 100)
+═══════════════════════════════
+
+1. Fix the contrast issue: find the specific text/background 
+   combination Lighthouse flagged (likely the muted gray 
+   description text in feature cards against the dark navy 
+   background, or the "عربي" toggle button text).
+   Run Lighthouse accessibility audit, click into the 
+   "Contrast" finding to see the exact element, and 
+   increase contrast to at least 4.5:1.
+   
+2. Manually review the 10 "Additional items to manually 
+   check" listed in the accessibility report — go through 
+   each one (these are things automated tools can't verify, 
+   like meaningful reading order and logical tab order).
+
+═══════════════════════════════
+VERIFICATION
+═══════════════════════════════
+
+After all fixes, re-run Lighthouse on both Mobile and 
+Desktop. Target:
+- Performance: 90+
+- Accessibility: 100
+- Best Practices: 100
+- SEO: 100
+
+Report the new scores and specifically confirm:
+1. "Page is blocked from indexing" is resolved
+2. robots.txt shows 0 errors
+3. Total page payload is under 500 KiB
+4. LCP is under 2.5s
