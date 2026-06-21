@@ -115,9 +115,10 @@ export default function LoginPage() {
               render={({ field }) => (
                 <FormItem>
                   <FormControl>
-                    <Input 
-                      placeholder={t("auth.email_placeholder")} 
-                      {...field} 
+                    <Input
+                      placeholder={t("auth.email_placeholder")}
+                      {...field}
+                      autoComplete="email"
                       className="bg-black/20 border-white/10 focus-visible:ring-primary focus-visible:border-primary h-12"
                     />
                   </FormControl>
@@ -133,16 +134,18 @@ export default function LoginPage() {
                 <FormItem>
                   <FormControl>
                     <div className="relative">
-                      <Input 
-                        type={showPassword ? "text" : "password"} 
-                        placeholder={t("auth.password_placeholder")} 
-                        {...field} 
+                      <Input
+                        type={showPassword ? "text" : "password"}
+                        placeholder={t("auth.password_placeholder")}
+                        {...field}
+                        autoComplete="current-password"
                         className="bg-black/20 border-white/10 focus-visible:ring-primary focus-visible:border-primary h-12 pr-10 rtl:pl-10 rtl:pr-3"
                       />
-                      <button 
+                      <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white rtl:left-3 rtl:right-auto"
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white rtl:left-3 rtl:right-auto focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 rounded"
                       >
                         {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                       </button>

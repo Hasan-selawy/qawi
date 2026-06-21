@@ -1,0 +1,243 @@
+Optimize the Qawi marketing website to score 100/100 
+(or as close as possible) on Lighthouse for Performance, 
+Accessibility, Best Practices, and SEO.
+
+Current scores: Performance 56, Accessibility 96, 
+Best Practices 96, SEO 58.
+
+═══════════════════════════════
+1. PERFORMANCE (56 → target 95+)
+═══════════════════════════════
+
+IMAGES:
+- Convert all images to WebP format with fallback
+- Add explicit width and height attributes to every 
+  <img> tag to prevent layout shift (CLS)
+- Lazy load all images below the fold: loading="lazy"
+- Compress all images — no image should exceed 200KB
+- If using a phone mockup illustration, convert it 
+  from PNG to SVG if possible (much smaller file size)
+- Add fetchpriority="high" to the hero section's 
+  largest image if any
+
+FONTS:
+- Preload critical fonts in <head>:
+  <link rel="preload" href="/fonts/inter-var.woff2" 
+   as="font" type="font/woff2" crossorigin>
+- Use font-display: swap on all @font-face rules
+- Subset fonts to only the characters needed 
+  (Latin + Arabic) instead of loading full font files
+- Self-host fonts instead of loading from Google Fonts 
+  CDN to eliminate the extra DNS lookup and request
+
+JAVASCRIPT:
+- Audit bundle size with build tool analyzer
+- Code-split any route that isn't the landing page itself
+- Remove unused JavaScript and CSS (check for unused 
+  Tailwind classes via PurgeCSS/content config)
+- Defer non-critical JavaScript:
+  <script defer src="...">
+- If using animation libraries (Framer Motion, etc.), 
+  verify they're tree-shaken and only animated 
+  components are imported
+
+CSS:
+- Inline critical above-the-fold CSS in <head>
+- Defer non-critical CSS loading
+- Minify all CSS and JS for production build
+- Remove any unused CSS from the bundle
+
+RENDERING:
+- Eliminate render-blocking resources
+- Use CSS containment (contain: layout) on 
+  independent sections like the feature cards grid
+- Avoid layout shift from the floating phone 
+  mockup animation — reserve space with explicit 
+  dimensions before animation starts
+
+CACHING:
+- Set long cache headers for static assets:
+  Cache-Control: public, max-age=31536000, immutable
+- Use a CDN (Cloudflare, Vercel Edge) for static assets
+- Enable Brotli or gzip compression on the server
+
+═══════════════════════════════
+2. ACCESSIBILITY (96 → target 100)
+═══════════════════════════════
+
+- Run axe DevTools or Lighthouse accessibility 
+  audit and fix every flagged issue specifically
+- Ensure every interactive element (buttons, links) 
+  has a minimum touch target of 44x44px
+- Add aria-label to icon-only buttons (e.g., 
+  language toggle, App Store/Google Play badges)
+- Verify color contrast ratio is at least 4.5:1 
+  for all text — check the muted gray text 
+  (#94A3B8 or similar) against the dark navy 
+  background especially in feature card descriptions
+- Add alt text to every image, including decorative 
+  ones (use alt="" for purely decorative images, 
+  not missing alt entirely)
+- Ensure all form inputs (if any signup form exists) 
+  have associated <label> elements
+- Verify focus states are visible on all interactive 
+  elements (buttons, links) — add a visible 
+  focus ring: focus-visible:ring-2 focus-visible:ring-green-500
+- Test full keyboard navigation — Tab through the 
+  entire page and verify logical order, no traps
+- Add skip-to-content link for screen reader users
+- Verify heading hierarchy is correct: one <h1>, 
+  then <h2> for major sections (Features, Pricing, 
+  Roles), <h3> for sub-items — do not skip levels
+- For the language toggle (عربي), ensure the 
+  lang attribute on <html> changes when language 
+  switches, and dir="rtl" is set correctly
+
+═══════════════════════════════
+3. BEST PRACTICES (96 → target 100)
+═══════════════════════════════
+
+- Ensure all images have correct aspect ratio 
+  set via CSS to avoid distortion
+- Remove any console errors or warnings in production
+- Ensure all external links open safely:
+  rel="noopener noreferrer" on target="_blank" links
+- Verify HTTPS is enforced (no mixed content warnings)
+- Add a valid Content Security Policy (CSP) header
+- Ensure no deprecated APIs are used
+- Verify there are no browser console errors related 
+  to source maps in production build
+- Check that all third-party scripts (analytics, etc.) 
+  are loaded async and don't block rendering
+
+═══════════════════════════════
+4. SEO (58 → target 100)
+═══════════════════════════════
+
+META TAGS:
+Add complete meta tags in <head>:
+<title>Qawi - Smart Gym Management Platform | قوي</title>
+<meta name="description" content="Qawi gives gym 
+owners, coaches, and nutritionists one intelligent 
+platform to manage members, workouts, nutrition, 
+and analytics — in Arabic and English. Start your 
+free trial today.">
+<meta name="keywords" content="gym management software, 
+Arabic gym app, fitness SaaS Jordan, gym CRM, 
+nutrition tracking app">
+
+OPEN GRAPH (for social sharing):
+<meta property="og:title" content="Qawi - Run Your 
+Gym Like Never Before">
+<meta property="og:description" content="...">
+<meta property="og:image" content="https://qawi.app/og-image.png">
+<meta property="og:url" content="https://qawi.app">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="ar_JO">
+
+TWITTER CARD:
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Qawi - Smart Gym 
+Management Platform">
+<meta name="twitter:description" content="...">
+<meta name="twitter:image" content="https://qawi.app/og-image.png">
+
+STRUCTURED DATA:
+Add JSON-LD structured data for SoftwareApplication:
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Qawi",
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "iOS, Android, Web",
+  "offers": {
+    "@type": "Offer",
+    "price": "30",
+    "priceCurrency": "JOD"
+  },
+  "description": "Smart gym management platform 
+  for the Middle East market"
+}
+</script>
+
+TECHNICAL SEO:
+- Add a robots.txt file allowing all crawlers
+- Add an XML sitemap at /sitemap.xml
+- Ensure the page has exactly one <h1> tag 
+  (currently "Run Your Gym Like Never Before" 
+  should be the h1)
+- Add canonical URL tag:
+  <link rel="canonical" href="https://qawi.app">
+- Ensure all images have descriptive alt text 
+  containing relevant keywords where natural
+- Add hreflang tags for the Arabic version:
+  <link rel="alternate" hreflang="en" href="https://qawi.app/en">
+  <link rel="alternate" hreflang="ar" href="https://qawi.app/ar">
+- Verify the page is mobile-responsive 
+  (already appears to be — verify in Lighthouse 
+  mobile audit)
+- Ensure page load speed is fast (this overlaps 
+  with Performance fixes above — Google uses 
+  Core Web Vitals as a ranking factor)
+
+CONTENT:
+- Ensure body text content is substantial enough 
+  for SEO (the current page is mostly fine, just 
+  verify feature descriptions remain crawlable text, 
+  not rendered only via JavaScript without SSR)
+- If using client-side rendering only (React SPA), 
+  consider server-side rendering (SSR) or static 
+  site generation (SSG) for the marketing site 
+  specifically — this dramatically helps SEO crawlability
+- Add internal linking between sections (Features, 
+  Pricing, About) with descriptive anchor text
+
+═══════════════════════════════
+5. RENDERING STRATEGY (IMPORTANT)
+═══════════════════════════════
+
+If this landing page is currently a client-side 
+rendered React SPA, this is likely the #1 cause 
+of low Performance and SEO scores combined.
+
+STRONGLY RECOMMEND:
+Rebuild the marketing site specifically (not the 
+app dashboard) using Next.js with Static Site 
+Generation (SSG) or migrate to a static site 
+generator. This is separate from the main Qawi 
+web dashboard (which can stay as a React SPA 
+since it's behind login and SEO doesn't matter there).
+
+A static-generated marketing page will:
+- Load near-instantly (Performance 90+)
+- Be fully crawlable by Google (SEO 100)
+- Reduce JavaScript bundle size significantly
+- Eliminate most layout shift issues
+
+If a full Next.js migration isn't feasible right 
+now, at minimum ensure the current React build 
+pre-renders the initial HTML (via Vite SSR plugin 
+or prerendering the static marketing page at build time).
+
+═══════════════════════════════
+6. AFTER FIXES — VERIFY
+═══════════════════════════════
+
+Run Lighthouse audit again after each major change:
+1. Run in Chrome DevTools → Lighthouse tab
+2. Test on Mobile (not just Desktop) — mobile 
+   scores are usually lower and matter more for SEO
+3. Target: Performance 90+, Accessibility 100, 
+   Best Practices 100, SEO 100
+4. Report final scores after changes
+
+Prioritize in this order:
+1. Image optimization (biggest Performance win, easiest)
+2. Meta tags + structured data (biggest SEO win, easiest)
+3. Font loading optimization
+4. JS bundle size reduction
+5. Accessibility fixes (smallest gap, quick wins)
+6. Consider SSG migration if score targets aren't met 
+   with the above changes alone

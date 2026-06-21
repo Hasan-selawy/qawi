@@ -56,14 +56,14 @@ function fadeUp(delay = 0) {
 // ─── Section Wrapper ─────────────────────────────────────────────────────────
 
 function Section({
-  children, className = '', id,
-}: { children: React.ReactNode; className?: string; id?: string }) {
+  children, className = '', id, style,
+}: { children: React.ReactNode; className?: string; id?: string; style?: React.CSSProperties }) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: '-60px' });
   const ctrl = useAnimation();
   useEffect(() => { if (inView) ctrl.start('visible'); }, [inView, ctrl]);
   return (
-    <motion.section ref={ref} id={id} initial="hidden" animate={ctrl} className={className}>
+    <motion.section ref={ref} id={id} initial="hidden" animate={ctrl} className={className} style={style}>
       {children}
     </motion.section>
   );
@@ -374,10 +374,10 @@ function GetAccessModal({
                 {/* Close */}
                 <button
                   onClick={onClose}
-                  aria-label="Close"
-                  className="absolute top-4 end-4 w-8 h-8 flex items-center justify-center rounded-full text-white/40 hover:text-white hover:bg-white/10 transition-colors text-lg leading-none"
+                  aria-label="Close modal"
+                  className="absolute top-4 end-4 w-8 h-8 flex items-center justify-center rounded-full text-white/40 hover:text-white hover:bg-white/10 transition-colors text-lg leading-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f172a] outline-none min-w-[44px] min-h-[44px]"
                 >
-                  ✕
+                  <span aria-hidden="true">✕</span>
                 </button>
 
                 <AnimatePresence mode="wait">
@@ -386,17 +386,20 @@ function GetAccessModal({
                       key="success"
                       initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
                       className="text-center py-6 space-y-4"
+                      role="status"
+                      aria-live="polite"
                     >
                       <motion.div
                         className="text-6xl"
                         animate={{ rotate: [0, -10, 10, -10, 0], scale: [1, 1.2, 1] }}
                         transition={{ duration: 0.6 }}
+                        aria-hidden="true"
                       >🎉</motion.div>
                       <h3 className="text-2xl font-bold text-white">{t.success}</h3>
                       <p className="text-white/50 text-sm leading-relaxed">{t.successSub}</p>
                       <button
                         onClick={onClose}
-                        className="mt-2 px-7 py-2.5 rounded-xl font-semibold text-sm transition-all hover:opacity-90"
+                        className="mt-2 px-7 py-2.5 rounded-xl font-semibold text-sm transition-all hover:opacity-90 focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f172a] outline-none min-w-[44px] min-h-[44px]"
                         style={{ background: GREEN, color: BG }}
                       >{t.close}</button>
                     </motion.div>
@@ -407,38 +410,38 @@ function GetAccessModal({
                           <div className="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-sm" style={{ background: GREEN, color: BG }}>Q</div>
                           <span className="text-white/40 text-sm">Qawi</span>
                         </div>
-                        <h3 className="text-2xl font-bold text-white">{t.title}</h3>
-                        <p className="text-white/45 text-sm mt-1">{t.sub}</p>
+                        <h3 id="modal-title" className="text-2xl font-bold text-white">{t.title}</h3>
+                        <p id="modal-desc" className="text-white/45 text-sm mt-1">{t.sub}</p>
                       </div>
 
-                      <form onSubmit={handleSubmit} className="space-y-3">
+                      <form onSubmit={handleSubmit} aria-labelledby="modal-title" aria-describedby="modal-desc" className="space-y-3">
                         <div className="grid grid-cols-2 gap-3">
                           <div className="col-span-2">
                             <label className={cn('block text-xs text-white/50 mb-1.5', isAr && 'text-right')}>{t.name}</label>
-                            <input required value={form.name} onChange={set('name')} placeholder={t.namePh} className={inputCls} style={inputStyle} />
+                            <input required value={form.name} onChange={set('name')} placeholder={t.namePh} autoComplete="name" className={inputCls} style={inputStyle} />
                           </div>
                           <div className="col-span-2">
                             <label className={cn('block text-xs text-white/50 mb-1.5', isAr && 'text-right')}>{t.email}</label>
-                            <input required type="email" value={form.email} onChange={set('email')} placeholder={t.emailPh} className={inputCls} style={inputStyle} />
+                            <input required type="email" value={form.email} onChange={set('email')} placeholder={t.emailPh} autoComplete="email" className={inputCls} style={inputStyle} />
                           </div>
                           <div>
                             <label className={cn('block text-xs text-white/50 mb-1.5', isAr && 'text-right')}>{t.gym}</label>
-                            <input required value={form.gym} onChange={set('gym')} placeholder={t.gymPh} className={inputCls} style={inputStyle} />
+                            <input required value={form.gym} onChange={set('gym')} placeholder={t.gymPh} autoComplete="organization" className={inputCls} style={inputStyle} />
                           </div>
                           <div>
                             <label className={cn('block text-xs text-white/50 mb-1.5', isAr && 'text-right')}>{t.phone}</label>
-                            <input type="tel" value={form.phone} onChange={set('phone')} placeholder={t.phonePh} className={inputCls} style={inputStyle} />
+                            <input type="tel" value={form.phone} onChange={set('phone')} placeholder={t.phonePh} autoComplete="tel" className={inputCls} style={inputStyle} />
                           </div>
                           <div className="col-span-2">
                             <label className={cn('block text-xs text-white/50 mb-1.5', isAr && 'text-right')}>{t.city}</label>
-                            <input value={form.city} onChange={set('city')} placeholder={t.cityPh} className={inputCls} style={inputStyle} />
+                            <input value={form.city} onChange={set('city')} placeholder={t.cityPh} autoComplete="address-level2" className={inputCls} style={inputStyle} />
                           </div>
                         </div>
 
                         <button
                           type="submit"
                           disabled={submitting}
-                          className="w-full py-3.5 rounded-xl font-bold text-sm mt-2 transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-60"
+                          className="w-full py-3.5 rounded-xl font-bold text-sm mt-2 transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0f172a] outline-none min-h-[44px]"
                           style={{ background: GREEN, color: BG, boxShadow: `0 0 28px rgba(34,197,94,0.3)` }}
                         >
                           {submitting ? (
@@ -492,24 +495,24 @@ function Navbar({ t, isAr, toggle, onCTA }: {
 
         {/* Nav links */}
         <nav className="hidden md:flex items-center gap-7 text-sm text-white/55">
-          <a href="#features" className="hover:text-white transition-colors">{t.features}</a>
-          <a href="#stats" className="hover:text-white transition-colors">{t.pricing}</a>
-          <a href="#testimonials" className="hover:text-white transition-colors">{t.about}</a>
+          <a href="#features" className="hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A0F1E] outline-none rounded px-1 py-1">{t.features}</a>
+          <a href="#stats" className="hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A0F1E] outline-none rounded px-1 py-1">{t.pricing}</a>
+          <a href="#testimonials" className="hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A0F1E] outline-none rounded px-1 py-1">{t.about}</a>
         </nav>
 
         {/* Actions */}
         <div className="flex items-center gap-2.5">
           <button
             onClick={toggle}
-            aria-label="Switch language"
-            className="text-xs px-3 py-1.5 rounded-lg font-medium transition-colors hover:bg-white/10"
+            aria-label={isAr ? 'Switch to English' : 'Switch to Arabic'}
+            className="text-xs px-3 py-1.5 rounded-lg font-medium transition-colors hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A0F1E] outline-none min-w-[44px] min-h-[44px]"
             style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.6)' }}
           >
             {isAr ? 'EN' : 'عربي'}
           </button>
           <button
             onClick={onCTA}
-            className="hidden sm:inline-flex px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90 active:scale-95"
+            className="hidden sm:inline-flex px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90 active:scale-95 focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A0F1E] outline-none"
             style={{ background: GREEN, color: BG, boxShadow: `0 0 20px rgba(34,197,94,0.25)` }}
           >
             {t.getStarted}
@@ -527,7 +530,7 @@ function PhoneMockup({ isAr }: { isAr: boolean }) {
     <motion.div
       animate={{ y: [0, -14, 0] }}
       transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
-      className="relative w-52 h-[22rem] mx-auto"
+      className="relative w-52 min-h-[22rem] mx-auto"
     >
       <div
         className="w-full h-full rounded-[2.5rem] overflow-hidden border-4"
@@ -571,7 +574,7 @@ function Hero({ t, isAr, onCTA, reduced }: {
   t: typeof content.en.hero; isAr: boolean; onCTA: () => void; reduced: boolean;
 }) {
   return (
-    <section className="relative min-h-screen flex items-center pt-20 pb-28 overflow-hidden px-4">
+    <section id="main-content" className="relative min-h-screen flex items-center pt-20 pb-28 overflow-hidden px-4" style={{ contain: 'layout' }}>
       <ParticleField reduced={reduced} />
       {/* Radial glows */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -597,6 +600,7 @@ function Hero({ t, isAr, onCTA, reduced }: {
             initial="hidden"
             animate="visible"
             className="text-4xl sm:text-5xl lg:text-6xl font-black leading-[1.08] text-white"
+            style={{ contain: 'layout' }}
           >
             <WordReveal text={t.line1} delay={0.08} />
             <br />
@@ -610,17 +614,17 @@ function Hero({ t, isAr, onCTA, reduced }: {
           <motion.div variants={fadeUp(0.45)} initial="hidden" animate="visible" className="flex flex-wrap gap-3">
             <button
               onClick={onCTA}
-              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-bold text-base transition-all hover:scale-[1.03] active:scale-95"
+              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-bold text-base transition-all hover:scale-[1.03] active:scale-95 focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A0F1E] outline-none"
               style={{ background: GREEN, color: BG, boxShadow: `0 0 35px rgba(34,197,94,0.38)` }}
             >
-              {t.cta} <span aria-hidden>→</span>
+              {t.cta} <span aria-hidden="true">→</span>
             </button>
             <a
               href="#features"
-              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-bold text-base text-white/65 hover:text-white transition-colors"
+              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-bold text-base text-white/65 hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A0F1E] outline-none"
               style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
             >
-              ▶ {t.demo}
+              <span aria-hidden="true">▶</span> {t.demo}
             </a>
           </motion.div>
 
@@ -629,7 +633,7 @@ function Hero({ t, isAr, onCTA, reduced }: {
           </motion.p>
         </div>
 
-        <div className="flex justify-center lg:justify-end">
+        <div className="flex justify-center lg:justify-end hero-phone-slot">
           <motion.div
             initial={{ opacity: 0, y: 40, rotateY: isAr ? 15 : -15 }}
             animate={{ opacity: 1, y: 0, rotateY: 0 }}
@@ -648,7 +652,7 @@ function Hero({ t, isAr, onCTA, reduced }: {
 
 function Features({ t, isAr }: { t: typeof content.en.features; isAr: boolean }) {
   return (
-    <Section id="features" className="py-24 px-4">
+    <Section id="features" className="py-24 px-4" style={{ contain: 'layout' }}>
       <div className="max-w-6xl mx-auto">
         <motion.div variants={fadeUp(0)} className={cn('mb-14 space-y-3', isAr ? 'text-right' : 'text-center')}>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-white">{t.heading}</h2>
@@ -761,7 +765,7 @@ function DualPhoneShowcase({
   const y2 = useTransform(scrollYProgress, [0, 1], reduced ? [0, 0] : [40, -40]);
 
   return (
-    <Section className="py-24 px-4 overflow-hidden" id="showcase">
+    <Section className="py-24 px-4 overflow-hidden" id="showcase" style={{ contain: 'layout' }}>
       <div className="max-w-6xl mx-auto" ref={sectionRef}>
         <motion.div variants={fadeUp(0)} className={cn('mb-14 space-y-3', isAr ? 'text-right' : 'text-center')}>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-white">{t.heading}</h2>
@@ -832,7 +836,8 @@ function DualPhoneShowcase({
             <button
               key={badge.label}
               onClick={onCTA}
-              className="flex items-center gap-3 px-5 py-3 rounded-xl font-semibold text-sm text-white transition-all hover:scale-[1.03] active:scale-95"
+              aria-label={`Download on ${badge.label}`}
+              className="flex items-center gap-3 px-5 py-3 rounded-xl font-semibold text-sm text-white transition-all hover:scale-[1.03] active:scale-95 focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A0F1E] outline-none min-w-[44px] min-h-[44px]"
               style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
             >
               {badge.icon}
@@ -852,7 +857,7 @@ function DualPhoneShowcase({
 
 function Stats({ t, isAr, reduced }: { t: typeof content.en.stats; isAr: boolean; reduced: boolean }) {
   return (
-    <Section id="stats" className="py-20 px-4">
+    <Section id="stats" className="py-20 px-4" style={{ contain: 'layout' }}>
       <div className="max-w-6xl mx-auto">
         <motion.div variants={fadeUp(0)} className={cn('mb-12 space-y-2', isAr ? 'text-right' : 'text-center')}>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-white">{t.heading}</h2>
@@ -884,7 +889,7 @@ function Testimonials({ t, isAr, reduced }: {
   const arItems = content.ar.testimonials.items;
 
   return (
-    <Section id="testimonials" className="py-24 px-4">
+    <Section id="testimonials" className="py-24 px-4" style={{ contain: 'layout' }}>
       <div className="max-w-6xl mx-auto">
         <motion.div variants={fadeUp(0)} className={cn('mb-14 space-y-2', isAr ? 'text-right' : 'text-center')}>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-white">{t.heading}</h2>
@@ -941,7 +946,7 @@ function CTA({ t, isAr, onCTA, reduced }: {
   t: typeof content.en.cta; isAr: boolean; onCTA: () => void; reduced: boolean;
 }) {
   return (
-    <Section className="py-24 px-4">
+    <Section className="py-24 px-4" style={{ contain: 'layout' }}>
       <div className="max-w-3xl mx-auto relative">
         {/* Animated gradient background */}
         <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
@@ -976,10 +981,10 @@ function CTA({ t, isAr, onCTA, reduced }: {
               <Sparkles reduced={reduced} />
               <button
                 onClick={onCTA}
-                className="relative px-10 py-4 rounded-2xl font-black text-lg transition-all hover:scale-[1.04] active:scale-[0.97]"
+                className="relative px-10 py-4 rounded-2xl font-black text-lg transition-all hover:scale-[1.04] active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A0F1E] outline-none min-w-[44px] min-h-[44px]"
                 style={{ background: GREEN, color: BG, boxShadow: `0 0 55px rgba(34,197,94,0.45)` }}
               >
-                {t.button} →
+                {t.button} <span aria-hidden="true">→</span>
               </button>
             </div>
             <p className="text-white/28 text-sm">{t.note}</p>
@@ -1018,7 +1023,8 @@ function Footer({ t, isAr, onCTA, toggle }: {
             <p className="text-sm text-white/40 leading-relaxed max-w-[200px]">{t.tagline}</p>
             <button
               onClick={toggle}
-              className="text-xs px-3 py-1.5 rounded-lg font-medium text-white/50 hover:text-white transition-colors"
+              aria-label={isAr ? 'Switch to English' : 'Switch to Arabic'}
+              className="text-xs px-3 py-1.5 rounded-lg font-medium text-white/50 hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A0F1E] outline-none min-w-[44px] min-h-[44px]"
               style={{ background: 'rgba(255,255,255,0.05)' }}
             >
               {t.lang}
@@ -1034,7 +1040,8 @@ function Footer({ t, isAr, onCTA, toggle }: {
                   <li key={link}>
                     <button
                       onClick={link === col.links[0] ? onCTA : undefined}
-                      className="text-sm text-white/40 hover:text-white transition-colors"
+                      className="text-sm text-white/40 hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A0F1E] outline-none rounded px-1 py-0.5"
+                      aria-label={link}
                     >
                       {link}
                     </button>
@@ -1052,8 +1059,8 @@ function Footer({ t, isAr, onCTA, toggle }: {
         >
           <p className="text-xs text-white/22">{t.rights}</p>
           <div className="flex items-center gap-5 text-xs text-white/28">
-            <button className="hover:text-white/50 transition-colors">{isAr ? 'سياسة الخصوصية' : 'Privacy Policy'}</button>
-            <button className="hover:text-white/50 transition-colors">{isAr ? 'الشروط' : 'Terms'}</button>
+            <button className="hover:text-white/50 transition-colors focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A0F1E] outline-none rounded px-1 py-0.5">{isAr ? 'سياسة الخصوصية' : 'Privacy Policy'}</button>
+            <button className="hover:text-white/50 transition-colors focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A0F1E] outline-none rounded px-1 py-0.5">{isAr ? 'الشروط' : 'Terms'}</button>
           </div>
         </div>
       </div>
