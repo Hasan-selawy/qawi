@@ -106,11 +106,11 @@ public class GymAdminService {
         crm.setStatus(crmStatus);
         memberLeadRepository.save(crm);
 
-        notifyAdminsNewMember(gymId, saved.getName());
+        notifyAdminsNewMember(gymId, saved.getId(), saved.getName());
         return saved;
     }
 
-    private void notifyAdminsNewMember(UUID gymId, String memberName) {
+    private void notifyAdminsNewMember(UUID gymId, UUID memberId, String memberName) {
         NotificationTemplates.Content c = NotificationTemplates.newMemberAdmin(memberName);
         List<NotificationCommand> cmds = new ArrayList<>();
         for (User adminUser : userRepository.findByGymIdAndRole(gymId, Role.GYM_ADMIN)) {
@@ -120,6 +120,7 @@ public class GymAdminService {
                     .titleEn(c.titleEn()).titleAr(c.titleAr())
                     .message(c.bodyEn()).messageAr(c.bodyAr())
                     .actionUrl("/admin/members")
+                    .uniqueKey("new-member:" + memberId + ":" + adminUser.getId())
                     .build());
         }
         if (!cmds.isEmpty()) eventPublisher.publishEvent(new NotificationDispatchEvent(cmds));
@@ -183,6 +184,7 @@ public class GymAdminService {
                         .titleEn(toMember.titleEn()).titleAr(toMember.titleAr())
                         .message(toMember.bodyEn()).messageAr(toMember.bodyAr())
                         .actionUrl("/member/workout")
+                        .uniqueKey("coach-assigned:" + member.getId() + ":" + coach.getId() + ":member")
                         .build(),
                 NotificationCommand.builder()
                         .userId(coach.getId()).gymId(gymId)
@@ -190,6 +192,7 @@ public class GymAdminService {
                         .titleEn(toCoach.titleEn()).titleAr(toCoach.titleAr())
                         .message(toCoach.bodyEn()).messageAr(toCoach.bodyAr())
                         .actionUrl("/coach/dashboard")
+                        .uniqueKey("coach-assigned:" + member.getId() + ":" + coach.getId() + ":coach")
                         .build());
         eventPublisher.publishEvent(new NotificationDispatchEvent(cmds));
     }

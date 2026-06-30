@@ -113,7 +113,7 @@ public class ReceptionService {
                     .ifPresent(coach -> notifyCoachAssignment(caller.getGymId(), savedMember, coach));
         }
 
-        notifyAdminsNewMember(caller.getGymId(), savedMember.getName());
+        notifyAdminsNewMember(caller.getGymId(), savedMember.getId(), savedMember.getName());
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("memberId", member.getId());
@@ -123,7 +123,7 @@ public class ReceptionService {
         return result;
     }
 
-    private void notifyAdminsNewMember(UUID gymId, String memberName) {
+    private void notifyAdminsNewMember(UUID gymId, UUID memberId, String memberName) {
         NotificationTemplates.Content c = NotificationTemplates.newMemberAdmin(memberName);
         List<NotificationCommand> cmds = new ArrayList<>();
         for (User adminUser : userRepository.findByGymIdAndRole(gymId, Role.GYM_ADMIN)) {
@@ -133,6 +133,7 @@ public class ReceptionService {
                     .titleEn(c.titleEn()).titleAr(c.titleAr())
                     .message(c.bodyEn()).messageAr(c.bodyAr())
                     .actionUrl("/admin/members")
+                    .uniqueKey("new-member:" + memberId + ":" + adminUser.getId())
                     .build());
         }
         if (!cmds.isEmpty()) eventPublisher.publishEvent(new NotificationDispatchEvent(cmds));
@@ -148,6 +149,7 @@ public class ReceptionService {
                         .titleEn(toMember.titleEn()).titleAr(toMember.titleAr())
                         .message(toMember.bodyEn()).messageAr(toMember.bodyAr())
                         .actionUrl("/member/workout")
+                        .uniqueKey("coach-assigned:" + member.getId() + ":" + coach.getId() + ":member")
                         .build(),
                 NotificationCommand.builder()
                         .userId(coach.getId()).gymId(gymId)
@@ -155,6 +157,7 @@ public class ReceptionService {
                         .titleEn(toCoach.titleEn()).titleAr(toCoach.titleAr())
                         .message(toCoach.bodyEn()).messageAr(toCoach.bodyAr())
                         .actionUrl("/coach/dashboard")
+                        .uniqueKey("coach-assigned:" + member.getId() + ":" + coach.getId() + ":coach")
                         .build());
         eventPublisher.publishEvent(new NotificationDispatchEvent(cmds));
     }

@@ -30,6 +30,20 @@ public class NotificationSettingService {
                 .orElseGet(() -> settingRepository.save(NotificationSetting.builder().gymId(gymId).build()));
     }
 
+    /**
+     * Read-only check used by the notification dispatch hot path. Returns the
+     * gym's adminAlertsEnabled flag, defaulting to {@code true} (the entity
+     * default) when no settings row exists yet — so dispatch never creates a
+     * settings row as a side effect of sending a notification, avoiding a
+     * first-writer race under concurrent first dispatches for the same gym.
+     */
+    @Transactional(readOnly = true)
+    public boolean adminAlertsEnabled(UUID gymId) {
+        return settingRepository.findByGymId(gymId)
+                .map(NotificationSetting::isAdminAlertsEnabled)
+                .orElse(true);
+    }
+
     @Transactional
     public NotificationSetting update(UUID gymId, NotificationSettingRequest req) {
         NotificationSetting s = getOrCreate(gymId);

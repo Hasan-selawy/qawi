@@ -142,12 +142,13 @@ public class GymMemberPlanService {
                 .notes(req.getNotes())
                 .status(RenewalRequestStatus.PENDING)
                 .build();
-        RenewalRequestDto dto = toRenewalDto(renewalRequestRepository.save(renewal));
-        notifyAdminsRenewalRequest(member.getGymId(), member.getName(), req.getPlanName());
+        var savedRenewal = renewalRequestRepository.save(renewal);
+        RenewalRequestDto dto = toRenewalDto(savedRenewal);
+        notifyAdminsRenewalRequest(member.getGymId(), savedRenewal.getId(), member.getName(), req.getPlanName());
         return dto;
     }
 
-    private void notifyAdminsRenewalRequest(UUID gymId, String memberName, String planName) {
+    private void notifyAdminsRenewalRequest(UUID gymId, UUID requestId, String memberName, String planName) {
         if (gymId == null) return;
         NotificationTemplates.Content c = NotificationTemplates.renewalRequestAdmin(memberName, planName);
         List<NotificationCommand> cmds = new ArrayList<>();
@@ -158,6 +159,7 @@ public class GymMemberPlanService {
                     .titleEn(c.titleEn()).titleAr(c.titleAr())
                     .message(c.bodyEn()).messageAr(c.bodyAr())
                     .actionUrl("/admin/subscriptions")
+                    .uniqueKey("renewal-request:" + requestId + ":" + adminUser.getId())
                     .build());
         }
         if (!cmds.isEmpty()) eventPublisher.publishEvent(new NotificationDispatchEvent(cmds));

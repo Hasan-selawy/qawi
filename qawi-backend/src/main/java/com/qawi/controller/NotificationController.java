@@ -7,6 +7,7 @@ import com.qawi.entity.MobilePushToken;
 import com.qawi.entity.Notification;
 import com.qawi.entity.NotificationCategory;
 import com.qawi.entity.NotificationPreference;
+import com.qawi.entity.NotificationType;
 import com.qawi.entity.PushSubscription;
 import com.qawi.entity.User;
 import com.qawi.exception.AppException;
@@ -19,6 +20,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -45,54 +47,56 @@ public class NotificationController {
     @GetMapping
     public ResponseEntity<List<Notification>> getMyNotifications(
             @AuthenticationPrincipal UserDetails userDetails) {
-        return ResponseEntity.ok(notificationService.getForUser(currentUser(userDetails).getId()));
+        return ResponseEntity.ok(notificationService.getForUser(currentUser(userDetails)));
     }
 
-    /** Paginated + filterable feed for richer clients. */
+    /** Paginated + filterable feed for richer clients (unread / category / type). */
     @GetMapping("/page")
     public ResponseEntity<Page<Notification>> getPaged(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "false") boolean unreadOnly,
-            @RequestParam(required = false) NotificationCategory category) {
+            @RequestParam(required = false) NotificationCategory category,
+            @RequestParam(required = false) NotificationType type) {
         int safeSize = Math.min(Math.max(size, 1), 100);
         int safePage = Math.max(page, 0);
+        PageRequest pageReq = PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<Notification> result = notificationService.getPage(
-                currentUser(userDetails).getId(), unreadOnly, category, PageRequest.of(safePage, safeSize));
+                currentUser(userDetails), unreadOnly, category, type, pageReq);
         return ResponseEntity.ok(result);
     }
 
     @GetMapping("/unread-count")
     public ResponseEntity<Map<String, Long>> unreadCount(
             @AuthenticationPrincipal UserDetails userDetails) {
-        long count = notificationService.unreadCount(currentUser(userDetails).getId());
+        long count = notificationService.unreadCount(currentUser(userDetails));
         return ResponseEntity.ok(Map.of("count", count));
     }
 
     @PutMapping("/{id}/read")
     public ResponseEntity<Notification> markRead(
             @PathVariable UUID id, @AuthenticationPrincipal UserDetails userDetails) {
-        return ResponseEntity.ok(notificationService.markRead(id, currentUser(userDetails).getId()));
+        return ResponseEntity.ok(notificationService.markRead(id, currentUser(userDetails)));
     }
 
     /** PATCH alias for marking a single notification read. */
     @PatchMapping("/{id}/read")
     public ResponseEntity<Notification> markReadPatch(
             @PathVariable UUID id, @AuthenticationPrincipal UserDetails userDetails) {
-        return ResponseEntity.ok(notificationService.markRead(id, currentUser(userDetails).getId()));
+        return ResponseEntity.ok(notificationService.markRead(id, currentUser(userDetails)));
     }
 
     @PutMapping("/read-all")
     public ResponseEntity<Void> markAllRead(@AuthenticationPrincipal UserDetails userDetails) {
-        notificationService.markAllRead(currentUser(userDetails).getId());
+        notificationService.markAllRead(currentUser(userDetails));
         return ResponseEntity.noContent().build();
     }
 
     /** PATCH alias for marking all notifications read. */
     @PatchMapping("/read-all")
     public ResponseEntity<Void> markAllReadPatch(@AuthenticationPrincipal UserDetails userDetails) {
-        notificationService.markAllRead(currentUser(userDetails).getId());
+        notificationService.markAllRead(currentUser(userDetails));
         return ResponseEntity.noContent().build();
     }
 
@@ -100,7 +104,7 @@ public class NotificationController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> archive(
             @PathVariable UUID id, @AuthenticationPrincipal UserDetails userDetails) {
-        notificationService.archive(id, currentUser(userDetails).getId());
+        notificationService.archive(id, currentUser(userDetails));
         return ResponseEntity.noContent().build();
     }
 
@@ -151,6 +155,17 @@ public class NotificationController {
             @RequestParam String token, @AuthenticationPrincipal UserDetails userDetails) {
         pushRegistrationService.removeMobile(currentUser(userDetails).getId(), token);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Sends a one-off test push to the caller across their enabled push channels.
+     * Respects the gym push feature flag and the user's preferences; returns a map
+     * indicating which channels were attempted (e.g. {@code {featureEnabled,browser,mobile}}).
+     */
+    @PostMapping("/push/test")
+    public ResponseEntity<Map<String, Boolean>> testPush(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(notificationService.sendTestPush(currentUser(userDetails)));
     }
 
     /**

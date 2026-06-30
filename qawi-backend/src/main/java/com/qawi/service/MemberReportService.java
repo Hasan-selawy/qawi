@@ -32,7 +32,8 @@ public class MemberReportService {
                 .description(description)
                 .status(ReportStatus.PENDING)
                 .build());
-        notifyAdmins(member.getGymId(), NotificationTemplates.reportSubmittedAdmin(member.getName()));
+        notifyAdmins(member.getGymId(), NotificationTemplates.reportSubmittedAdmin(member.getName()),
+                "report:" + saved.getId());
         return saved;
     }
 
@@ -44,11 +45,12 @@ public class MemberReportService {
                 .gymId(member.getGymId())
                 .text(text)
                 .build());
-        notifyAdmins(member.getGymId(), NotificationTemplates.suggestionSubmittedAdmin(member.getName()));
+        notifyAdmins(member.getGymId(), NotificationTemplates.suggestionSubmittedAdmin(member.getName()),
+                "suggestion:" + saved.getId());
         return saved;
     }
 
-    private void notifyAdmins(UUID gymId, NotificationTemplates.Content c) {
+    private void notifyAdmins(UUID gymId, NotificationTemplates.Content c, String keyPrefix) {
         if (gymId == null) return;
         List<NotificationCommand> cmds = new ArrayList<>();
         for (User adminUser : userRepository.findByGymIdAndRole(gymId, Role.GYM_ADMIN)) {
@@ -58,6 +60,7 @@ public class MemberReportService {
                     .titleEn(c.titleEn()).titleAr(c.titleAr())
                     .message(c.bodyEn()).messageAr(c.bodyAr())
                     .actionUrl("/admin/reports")
+                    .uniqueKey(keyPrefix + ":" + adminUser.getId())
                     .build());
         }
         if (!cmds.isEmpty()) eventPublisher.publishEvent(new NotificationDispatchEvent(cmds));

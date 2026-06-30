@@ -10,9 +10,11 @@ import com.qawi.entity.User;
 import com.qawi.exception.AppException;
 import com.qawi.repository.NotificationRepository;
 import com.qawi.repository.UserRepository;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,7 +23,10 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -29,8 +34,8 @@ import java.util.UUID;
  *
  * <p>Every notification — legacy events, automatic jobs, scheduled broadcasts,
  * manual admin sends — funnels through {@link #dispatch(NotificationCommand)} so
- * the gym feature-flag gate, idempotency and (in a later milestone) preference
- * checks and push fan-out are applied consistently in one place.
+ * the gym feature-flag gate, per-gym automatic settings, per-user preferences,
+ * idempotency and push fan-out are applied consistently in one place.
  */
 @Service
 @RequiredArgsConstructor
@@ -41,6 +46,7 @@ public class NotificationService {
     private final GymFeatureService gymFeatureService;
     private final DeliveryLogService deliveryLogService;
     private final NotificationPreferenceService preferenceService;
+    private final NotificationSettingService notificationSettingService;
     private final WebPushService webPushService;
     private final ExpoPushService expoPushService;
 
@@ -62,8 +68,9 @@ public class NotificationService {
 
     /**
      * Canonical creation path. Returns the saved notification, or null when the
-     * recipient is unknown, the gym feature is disabled, or the command was a
-     * duplicate (idempotency key already delivered).
+     * recipient is unknown, the gym feature is disabled, the gym has muted this
+     * automatic category, the user opted out, or the command was a duplicate
+     * (idempotency key already delivered).
      */
     @Transactional
     public Notification dispatch(NotificationCommand cmd) {
@@ -81,13 +88,22 @@ public class NotificationService {
 
         NotificationCategory category = cmd.getCategory() != null ? cmd.getCategory() : categoryFor(cmd.getType());
 
+        // Per-gym automatic-settings gate: admin-alert notifications respect the
+        // gym's adminAlertsEnabled toggle. Applies uniformly to in-process events
+        // (new member, coach assignment, report/suggestion, renewal request) and to
+        // job-driven admin alerts. Skipped for platform-level (null-gym) recipients.
+        if (category == NotificationCategory.ADMIN_ALERT && gymId != null
+                && !notificationSettingService.adminAlertsEnabled(gymId)) {
+            return null;
+        }
+
         // Per-user category opt-out. Defaults are all-on, so existing behaviour is unchanged.
         NotificationPreference pref = preferenceService.getOrCreate(cmd.getUserId());
         if (!preferenceService.categoryAllowed(pref, category)) {
             return null;
         }
 
-        // Idempotency: automatic/scheduled callers pass a stable uniqueKey.
+        // Idempotency: automatic/scheduled/in-process callers pass a stable uniqueKey.
         if (cmd.getUniqueKey() != null && !cmd.getUniqueKey().isBlank()) {
             boolean reserved = deliveryLogService.reserve(cmd.getUniqueKey(), gymId, cmd.getUserId(), cmd.getType());
             if (!reserved) return null;
@@ -168,33 +184,98 @@ public class NotificationService {
         }
     }
 
+    /**
+     * Sends a one-off test push to the caller across whichever push channels they
+     * have enabled, respecting the gym push feature flag and the user's per-channel
+     * preferences. Does not create an in-app row or consume an idempotency key.
+     * Returns a small map describing what was attempted so the client can report it.
+     */
+    public Map<String, Boolean> sendTestPush(User caller) {
+        Map<String, Boolean> result = new LinkedHashMap<>();
+        result.put("featureEnabled", false);
+        result.put("browser", false);
+        result.put("mobile", false);
+
+        if (!gymFeatureService.isEnabledForGymId(caller.getGymId(), GymFeatureService.Feature.PUSH_NOTIFICATIONS)) {
+            return result;
+        }
+        result.put("featureEnabled", true);
+
+        NotificationPreference pref = preferenceService.getOrCreate(caller.getId());
+        final String titleEn = "Test notification";
+        final String titleAr = "إشعار تجريبي";
+        final String bodyEn = "Your push notifications are working.";
+        final String bodyAr = "إشعارات الدفع لديك تعمل.";
+
+        if (pref.isBrowserPushEnabled()) {
+            try {
+                webPushService.sendToUser(caller.getId(), titleEn, titleAr, bodyEn, bodyAr,
+                        "/notifications", NotificationType.ADMIN_ALERT);
+                result.put("browser", true);
+            } catch (Exception ignored) {
+                // best-effort
+            }
+        }
+        if (pref.isMobilePushEnabled()) {
+            try {
+                expoPushService.sendToUser(caller.getId(), titleEn, titleAr, bodyEn, bodyAr,
+                        "/notifications", NotificationType.ADMIN_ALERT);
+                result.put("mobile", true);
+            } catch (Exception ignored) {
+                // best-effort
+            }
+        }
+        return result;
+    }
+
     // ── Reads ─────────────────────────────────────────────────────────────
 
-    public List<Notification> getForUser(UUID userId) {
-        return notificationRepository.findByUserIdAndArchivedFalseOrderByCreatedAtDesc(userId);
+    public List<Notification> getForUser(User caller) {
+        if (caller.getGymId() == null) {
+            return notificationRepository.findByUserIdAndArchivedFalseOrderByCreatedAtDesc(caller.getId());
+        }
+        return notificationRepository.findOwnedFeed(caller.getId(), caller.getGymId());
     }
 
-    public Page<Notification> getPage(UUID userId, boolean unreadOnly, NotificationCategory category, Pageable pageable) {
-        if (category != null) {
-            return notificationRepository
-                    .findByUserIdAndArchivedFalseAndCategoryOrderByCreatedAtDesc(userId, category, pageable);
-        }
-        if (unreadOnly) {
-            return notificationRepository
-                    .findByUserIdAndArchivedFalseAndIsReadFalseOrderByCreatedAtDesc(userId, pageable);
-        }
-        return notificationRepository.findByUserIdAndArchivedFalseOrderByCreatedAtDesc(userId, pageable);
+    /**
+     * Paginated + filterable feed. Tenant-scoped by both userId and the caller's
+     * gym (legacy rows predate the gymId column and carry null — kept visible to
+     * their owner). Optional unread-only, category and type filters.
+     */
+    public Page<Notification> getPage(User caller, boolean unreadOnly, NotificationCategory category,
+                                      NotificationType type, Pageable pageable) {
+        final UUID userId = caller.getId();
+        final UUID gymId = caller.getGymId();
+        Specification<Notification> spec = (root, query, cb) -> {
+            List<Predicate> preds = new ArrayList<>();
+            preds.add(cb.equal(root.get("userId"), userId));
+            preds.add(cb.isFalse(root.get("archived")));
+            // Tenant guard: a recipient only ever sees their own gym's rows.
+            if (gymId != null) {
+                preds.add(cb.or(cb.isNull(root.get("gymId")), cb.equal(root.get("gymId"), gymId)));
+            } else {
+                preds.add(cb.isNull(root.get("gymId")));
+            }
+            if (category != null) preds.add(cb.equal(root.get("category"), category));
+            if (type != null) preds.add(cb.equal(root.get("type"), type));
+            if (unreadOnly) preds.add(cb.isFalse(root.get("isRead")));
+            return cb.and(preds.toArray(new Predicate[0]));
+        };
+        return notificationRepository.findAll(spec, pageable);
     }
 
-    public long unreadCount(UUID userId) {
-        return notificationRepository.countByUserIdAndArchivedFalseAndIsReadFalse(userId);
+    public long unreadCount(User caller) {
+        if (caller.getGymId() == null) {
+            return notificationRepository.countByUserIdAndArchivedFalseAndIsReadFalse(caller.getId());
+        }
+        return notificationRepository.countOwnedUnread(caller.getId(), caller.getGymId());
     }
 
     // ── Mutations ─────────────────────────────────────────────────────────
 
     @Transactional
-    public Notification markRead(UUID notificationId, UUID callerUserId) {
-        Notification n = loadOwned(notificationId, callerUserId);
+    public Notification markRead(UUID notificationId, User caller) {
+        Notification n = loadOwned(notificationId, caller);
         if (!n.isRead()) {
             n.setRead(true);
             n.setReadAt(LocalDateTime.now());
@@ -204,13 +285,20 @@ public class NotificationService {
     }
 
     @Transactional
-    public void markAllRead(UUID userId) {
-        notificationRepository.markAllReadByUserId(userId, LocalDateTime.now());
+    public void markAllRead(User caller) {
+        // Tenant-scoped bulk update: only the caller's own rows in their gym
+        // (legacy null-gym rows included). Null-gym callers touch their null-gym rows.
+        if (caller.getGymId() == null) {
+            notificationRepository.markAllReadByUserId(caller.getId(), LocalDateTime.now());
+        } else {
+            notificationRepository.markAllReadByUserIdAndGym(
+                    caller.getId(), caller.getGymId(), LocalDateTime.now());
+        }
     }
 
     @Transactional
-    public void archive(UUID notificationId, UUID callerUserId) {
-        Notification n = loadOwned(notificationId, callerUserId);
+    public void archive(UUID notificationId, User caller) {
+        Notification n = loadOwned(notificationId, caller);
         if (!n.isArchived()) {
             n.setArchived(true);
             notificationRepository.save(n);
@@ -219,11 +307,17 @@ public class NotificationService {
 
     // ── Helpers ───────────────────────────────────────────────────────────
 
-    private Notification loadOwned(UUID notificationId, UUID callerUserId) {
+    private Notification loadOwned(UUID notificationId, User caller) {
         Notification n = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new AppException(
                         "Notification not found", "الإشعار غير موجود", HttpStatus.NOT_FOUND));
-        if (!n.getUserId().equals(callerUserId)) {
+        // Ownership (userId) already binds a notification to a single user — hence a
+        // single gym. The explicit gym check is defence-in-depth and tolerates
+        // legacy rows whose gymId predates the column (null).
+        boolean sameUser = n.getUserId().equals(caller.getId());
+        boolean sameGym = n.getGymId() == null || caller.getGymId() == null
+                || n.getGymId().equals(caller.getGymId());
+        if (!sameUser || !sameGym) {
             throw new AppException("Access denied", "غير مصرح لك", HttpStatus.FORBIDDEN);
         }
         return n;
