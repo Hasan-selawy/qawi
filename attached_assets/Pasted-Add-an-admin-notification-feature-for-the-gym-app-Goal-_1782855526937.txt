@@ -1,0 +1,60 @@
+Add an admin notification feature for the gym app.
+
+Goal:
+The gym admin should have a button in the admin dashboard that lets them send notifications to members.
+
+Requirements:
+
+1. Add a new section/button in the admin dashboard called “Send Notification”.
+
+2. When the admin clicks it, show a form with:
+
+   * Notification title
+   * Notification message
+   * Recipient selection:
+
+     * Send to all members
+     * Send to one specific member
+     * Send to members by membership status, if the app already has active/expired status
+
+3. When the admin submits the form:
+
+   * Save the notification in the database
+   * Send it through the existing notification system
+   * Show it inside the member’s in-app notifications
+   * Send browser push notification if VAPID keys are configured
+   * Send mobile/Expo push notification if the member has a registered mobile push token
+
+4. Only admins should be able to access this feature.
+
+   * Add backend authorization checks.
+   * Do not rely only on frontend hiding.
+
+5. Add backend API endpoint:
+
+   * POST /api/admin/notifications/send
+   * It should accept title, message, and recipient targeting options.
+   * It should validate input and return success/failure.
+
+6. Add frontend UI:
+
+   * A clean admin form
+   * Loading state while sending
+   * Success message after sending
+   * Error message if something fails
+
+7. Reuse the existing notification backend if one already exists.
+
+   * Do not create a duplicate notification system.
+   * Connect this admin feature to the current notification tables/services.
+
+8. Make sure members receive the notification in real time if the app supports real-time updates. If not, they should see it after refresh/login.
+
+9. Add basic testing or verify:
+
+   * Admin can send notification to all members
+   * Admin can send notification to one member
+   * Non-admin users cannot access or call the endpoint
+   * Notification appears in member notification list
+
+Do not expose secret keys in frontend code. VAPID_PRIVATE_KEY must only be read from environment variables/secrets.

@@ -1,0 +1,99 @@
+Add a Super Admin Leads section to the dashboard.
+
+Goal:
+The super admin should have a “Leads” section in their dashboard where they can view all registered gyms and access the members of each gym as potential leads.
+
+Requirements:
+
+1. Add a new dashboard section for users with the Super Admin role:
+
+   * Section name: “Leads”
+   * Only Super Admin users can access it
+   * Normal admins, gym staff, trainers, and members must not be able to access it
+
+2. In the Leads section, show a list/table of all registered gyms.
+
+Each gym row/card should show:
+
+* Gym name
+* Gym owner/admin name, if available
+* Gym contact email/phone, if available
+* Total number of members
+* Number of active members
+* Number of inactive/expired members
+* Date the gym was registered, if available
+
+3. When the Super Admin clicks a gym, open a detailed view showing all members registered under that gym.
+
+The member list should show:
+
+* Member name
+* Email
+* Phone number, if available
+* Membership/subscription status: Active, Expired, Inactive, Cancelled, or Pending
+* Subscription start date, if available
+* Subscription end/expiry date, if available
+* Last login or last activity date, if available
+* Joined/created date
+
+4. Add filtering and search:
+
+   * Search members by name, email, or phone
+   * Filter members by subscription status
+   * Filter gyms by gym name or owner/admin name
+   * Optional: sort by newest, oldest, active members, expired members, or total members
+
+5. Add backend API endpoints:
+
+   * GET /api/super-admin/leads/gyms
+     Returns all registered gyms with member counts and active/inactive subscription counts.
+
+   * GET /api/super-admin/leads/gyms/:gymId/members
+     Returns all members for the selected gym, including their subscription status.
+
+6. Security requirements:
+
+   * Add backend authorization checks to confirm the logged-in user is a Super Admin.
+   * Do not rely only on frontend checks.
+   * Gym admins should only see their own gym data elsewhere in the app.
+   * Only Super Admin should be able to see members from all gyms.
+   * Do not expose sensitive secrets or private environment variables.
+
+7. Database/query requirements:
+
+   * Reuse the existing gyms, users, members, subscriptions, and memberships tables/models if they already exist.
+   * Do not create duplicate member records.
+   * If subscription status is calculated from an expiry date, calculate it consistently:
+
+     * Active if subscription expiry date is today or in the future
+     * Expired if subscription expiry date is in the past
+     * Pending/Inactive/Cancelled if those statuses already exist in the database
+   * Include pagination for member lists so the page does not break with many members.
+
+8. Frontend UI requirements:
+
+   * Add “Leads” to the Super Admin dashboard navigation.
+   * Show a clean gyms table/cards layout.
+   * On gym click, show the selected gym’s member list.
+   * Include loading states, empty states, and error messages.
+   * Use the app’s existing design/components and styling.
+   * Make the page responsive for desktop and mobile.
+
+9. Optional but useful:
+
+   * Add an “Export CSV” button for the Super Admin to export members from a selected gym.
+   * Add quick stats at the top:
+
+     * Total gyms
+     * Total members across all gyms
+     * Total active subscriptions
+     * Total expired/inactive subscriptions
+
+10. Verification:
+
+* Log in as Super Admin and confirm the Leads section appears.
+* Confirm all registered gyms are visible.
+* Click a gym and confirm its members appear.
+* Confirm each member shows whether their subscription is active or not.
+* Confirm a normal gym admin cannot access /api/super-admin/leads/gyms or /api/super-admin/leads/gyms/:gymId/members.
+* Confirm members and non-admin users cannot access the Leads section.

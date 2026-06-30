@@ -49,7 +49,8 @@
     "my_account": "حسابي",
     "notifications": "الإشعارات",
     "mark_all_read": "تعليم الكل كمقروء",
-    "workout": "تمريني"
+    "workout": "تمريني",
+    "sendNotification": "إرسال إشعار"
   },
   "auth": {
     "login": "تسجيل الدخول",
@@ -124,5 +125,40 @@
   },
   "notification": {},
   "validation": {},
-  "time": {}
+  "time": {},
+  "adminNotify": {
+    "pageTitle": "إرسال إشعار",
+    "subtitle": "أرسل إعلانًا إلى أعضائك — يظهر داخل التطبيق ويُرسل عبر الإشعارات.",
+    "titleEn": "العنوان (إنجليزي)",
+    "titleAr": "العنوان (عربي)",
+    "messageEn": "الرسالة (إنجليزي)",
+    "messageAr": "الرسالة (عربي)",
+    "titleEnPlaceholder": "e.g. Holiday schedule update",
+    "titleArPlaceholder": "مثال: تحديث مواعيد العطلة",
+    "messageEnPlaceholder": "Write your announcement…",
+    "messageArPlaceholder": "اكتب إعلانك…",
+    "recipients": "المستلمون",
+    "audience": {
+      "ALL_MEMBERS": "جميع الأعضاء",
+      "ACTIVE_MEMBERS": "الأعضاء النشطون",
+      "EXPIRING_MEMBERS": "الأعضاء على وشك الانتهاء",
+      "EXPIRED_MEMBERS": "الأعضاء المنتهون",
+      "SPECIFIC_MEMBER": "عضو محدد"
+    },
+    "selectMember": "اختر عضوًا",
+    "willReach": "سيصل هذا إلى {count} مستلم.",
+    "reachLoading": "جارٍ حساب الجمهور…",
+    "send": "إرسال الإشعار",
+    "sending": "جارٍ الإرسال…",
+    "successTitle": "تم إرسال الإشعار",
+    "successBody": "تم التسليم إلى {count} مستلم.",
+    "errorGeneric": "فشل إرسال الإشعار",
+    "errors": {
+      "titleEn": "العنوان بالإنجليزية مطلوب",
+      "titleAr": "العنوان بالعربية مطلوب",
+      "messageEn": "الرسالة بالإنجليزية مطلوبة",
+      "messageAr": "الرسالة بالعربية مطلوبة",
+      "member": "يرجى اختيار عضو"
+    }
+  }
 }

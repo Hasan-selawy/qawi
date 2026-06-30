@@ -22,6 +22,7 @@ import AdminAnalytics from "@/pages/admin/analytics";
 import AdminRevenue from "@/pages/admin/revenue";
 import AdminReports from "@/pages/admin/reports";
 import AdminClasses from "@/pages/admin/classes";
+import AdminNotifications from "@/pages/admin/notifications";
 
 import CoachDashboard from "@/pages/coach/dashboard";
 import MemberDetail from "@/pages/coach/member-detail";
@@ -86,6 +87,9 @@ function Router() {
       </Route>
       <Route path="/admin/classes">
         <RoleRoute role="GYM_ADMIN"><AppShell><ErrorBoundary><AdminClasses /></ErrorBoundary></AppShell></RoleRoute>
+      </Route>
+      <Route path="/admin/notifications">
+        <RoleRoute role="GYM_ADMIN"><AppShell><ErrorBoundary><AdminNotifications /></ErrorBoundary></AppShell></RoleRoute>
       </Route>
       <Route path="/admin/pricing">
         <RoleRoute role="GYM_ADMIN"><AppShell><ErrorBoundary><AdminPricing /></ErrorBoundary></AppShell></RoleRoute>

@@ -6,7 +6,7 @@ import { useGymConfig } from '@/hooks/use-gym-config';
 import {
   LayoutDashboard, Users, UserSquare2, CreditCard, BarChart3,
   Dumbbell, Library, ChevronLeft, ChevronRight, Activity, Building2, UtensilsCrossed,
-  TrendingUp, Flag, Calendar, Tag, Home, Target, UserPlus, Briefcase, DoorOpen
+  TrendingUp, Flag, Calendar, Tag, Home, Target, UserPlus, Briefcase, DoorOpen, Bell
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -99,6 +99,7 @@ export function Sidebar({ isOpen, setIsOpen, overlayMode }: SidebarProps) {
           { href: '/admin/subscriptions', icon: CreditCard, label: 'subscriptions' },
           { href: '/admin/analytics', icon: BarChart3, label: 'analytics' },
           { href: '/admin/reports', icon: Flag, label: 'memberReports' },
+          { href: '/admin/notifications', icon: Bell, label: 'sendNotification' },
           { href: '/coach/library', icon: Library, label: 'library' },
         ];
         if (features.analyticsAdvancedEnabled) {

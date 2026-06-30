@@ -227,6 +227,7 @@ Per-user: `user.selfTrainingEnabled` (boolean) — when true for a MEMBER, they 
 | `/admin/analytics` | Recharts bar charts (monthly revenue, weekly attendance), Print + CSV export |
 | `/admin/subscriptions` | Subscription plan management |
 | `/admin/reports` | Member feedback and suggestions |
+| `/admin/notifications` | Send Notification: broadcast in-app + push to members (all / by membership status / specific member); wired to `POST /api/v1/admin/notifications/send` |
 | `/admin/employees` | Staff account management |
 | `/admin/revenue` | Revenue breakdown |
 | `/admin/sales` | Sales leads pipeline (shared with RECEPTIONIST, SALES) |

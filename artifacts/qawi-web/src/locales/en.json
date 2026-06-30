@@ -49,7 +49,8 @@
     "my_account": "My Account",
     "notifications": "Notifications",
     "mark_all_read": "Mark all read",
-    "workout": "Workout"
+    "workout": "Workout",
+    "sendNotification": "Send Notification"
   },
   "auth": {
     "login": "Login",
@@ -124,5 +125,40 @@
   },
   "notification": {},
   "validation": {},
-  "time": {}
+  "time": {},
+  "adminNotify": {
+    "pageTitle": "Send Notification",
+    "subtitle": "Send an announcement to your members — shown in-app and delivered via push.",
+    "titleEn": "Title (English)",
+    "titleAr": "Title (Arabic)",
+    "messageEn": "Message (English)",
+    "messageAr": "Message (Arabic)",
+    "titleEnPlaceholder": "e.g. Holiday schedule update",
+    "titleArPlaceholder": "مثال: تحديث مواعيد العطلة",
+    "messageEnPlaceholder": "Write your announcement…",
+    "messageArPlaceholder": "اكتب إعلانك…",
+    "recipients": "Recipients",
+    "audience": {
+      "ALL_MEMBERS": "All members",
+      "ACTIVE_MEMBERS": "Active members",
+      "EXPIRING_MEMBERS": "Members expiring soon",
+      "EXPIRED_MEMBERS": "Expired members",
+      "SPECIFIC_MEMBER": "A specific member"
+    },
+    "selectMember": "Select a member",
+    "willReach": "This will reach {count} recipient(s).",
+    "reachLoading": "Calculating audience…",
+    "send": "Send Notification",
+    "sending": "Sending…",
+    "successTitle": "Notification sent",
+    "successBody": "Delivered to {count} recipient(s).",
+    "errorGeneric": "Failed to send notification",
+    "errors": {
+      "titleEn": "English title is required",
+      "titleAr": "Arabic title is required",
+      "messageEn": "English message is required",
+      "messageAr": "Arabic message is required",
+      "member": "Please select a member"
+    }
+  }
 }
