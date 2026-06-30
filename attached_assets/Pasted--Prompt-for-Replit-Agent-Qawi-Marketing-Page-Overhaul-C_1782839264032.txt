@@ -1,0 +1,95 @@
+# Prompt for Replit Agent — Qawi Marketing Page Overhaul
+
+Copy everything below into Replit's Agent chat.
+
+---
+
+You are a senior product designer, frontend engineer, technical SEO specialist, and performance engineer.
+
+I have a website/landing page for **Qawi**, an AI gym management platform for the Arab world. Fully audit and improve the existing `/marketing` page and all related frontend/SEO/performance files.
+
+**Goal:** make the site feel like a polished, trustworthy, modern SaaS landing page that converts gym owners and ranks well on Google in both English and Arabic.
+
+**Hard constraints:**
+- Do not break existing app routes, backend logic, authentication, APIs, database, or dashboard functionality.
+- Keep the existing brand name: **Qawi**.
+- Target audience: gym owners and fitness businesses in the Arab world.
+- Support English and Arabic naturally, with proper RTL layout, spacing, typography, and alignment for Arabic.
+- Make the page production-ready, not just visually nicer.
+- Improve the code using the current project's existing style/stack — don't rewrite the whole app unnecessarily.
+- Do NOT include a pricing section anywhere on this page.
+
+**Measurable targets — this task is not done until these are met:**
+- Google Lighthouse/PageSpeed SEO score: **95 or above**
+- Google Lighthouse/PageSpeed Performance score: **80 or above**
+- Run Lighthouse (or `npx lighthouse` / PageSpeed Insights) against the page yourself after implementing changes, report the actual scores you got, and keep iterating on whatever is dragging the score down until both thresholds are met. If you cannot run Lighthouse directly in this environment, tell me explicitly so I can run it and report results back to you for another pass.
+- Design should match and elevate the existing dark, green-accented SaaS aesthetic already used in the current dashboard mockup (dark navy/black background, green accent color, clean sans-serif type, card-based UI) — refine and polish that direction rather than replacing it with something generic.
+
+---
+
+## 1. Inspect the current project first
+
+Before changing anything, report back on:
+- What stack this is (React, Vite, Next.js, Remix, Astro, Express, etc.)
+- Whether `/marketing` is client-side rendered only, and whether real content is present in the initial HTML response (not just after JS runs)
+- Existing layout components, design tokens, Tailwind config, CSS variables, or component libraries
+- Existing SEO utilities, i18n/language utilities, and asset/logo files already in the project
+
+Use what already exists where possible instead of introducing new patterns.
+
+## 2. Fix the core SEO problem
+
+The marketing page must be indexable and understandable by search engines and social-preview bots (Google, WhatsApp link previews, Twitter/X, Facebook).
+
+- Ensure the rendered page includes real semantic HTML content in the initial server response, not an empty shell that only populates after JavaScript executes.
+- If the stack supports SSR or static generation, implement SSR/static rendering for `/marketing`.
+- If it's a Vite/React SPA without SSR available, add a strong static HTML fallback, ensure metadata lives in `index.html` or route-specific head handling, and consider pre-rendering `/marketing` specifically. Keep it simple and stable — don't destabilize the rest of the app to do this.
+
+## 3. Page title and meta tags
+
+- Title: `Qawi — AI Gym Management Software for Arab Gyms | نظام إدارة الصالات الرياضية`
+- Meta description: `Qawi is an AI-powered gym management platform for Arabic-speaking gyms. Manage memberships, subscriptions, attendance, payments, trainers, WhatsApp reminders, and AI insights in one smart dashboard.`
+- Add: canonical URL (use a placeholder/TODO if no production domain exists yet — do not use the Replit preview URL as a permanent canonical), Open Graph title/description/image, Twitter/X card metadata, language metadata, theme color, favicon references, mobile viewport, and an appropriate robots meta tag.
+
+## 4. Bilingual SEO structure
+
+- Add real content in both English and Arabic (or wire up the existing i18n system if one exists already — don't build a second one).
+- Weave in keywords naturally, no stuffing: AI gym management software, gym management platform, gym membership management, gym attendance tracking, gym subscription billing, WhatsApp reminders for gyms, trainer scheduling software, Arabic gym software, fitness club management system, نظام إدارة صالات رياضية, برنامج إدارة الجيم, إدارة اشتراكات الصالة الرياضية, إدارة أعضاء النادي الرياضي, تتبع حضور المشتركين, تذكير واتساب للاشتراكات, نظام ذكي لإدارة النوادي الرياضية.
+- Add proper `lang` and `dir` attributes. If separate language URLs exist (e.g. `/ar`, `/en`), add `hreflang` tags. If they don't exist, recommend whether they should before adding them — don't fragment routing without checking with me first.
+
+## 5. Structured data
+
+Add `SoftwareApplication` JSON-LD schema for the product, and `FAQPage` schema if an FAQ section is added. Validate against Google's Rich Results guidelines conceptually (no need to call external APIs).
+
+## 6. Hero section and visual content
+
+- Make the first screen instantly communicate: AI-powered gym management for Arabic-speaking gyms.
+- One clear, single primary CTA (e.g. "Book a Demo" / "Start Free Trial" — use whichever matches our actual current signup flow, don't invent a flow that doesn't exist).
+- Add a clean single `H1` per page in each language.
+- Keep/expand the product screenshot or dashboard mockup already in the hero — don't remove it, refine it.
+- Arabic CTAs should read naturally (e.g. "جرّب النظام الآن", "احجز عرض تجريبي"), not literal translations.
+
+## 7. Trust and conversion sections
+
+Add or improve, only using real/placeholder-marked content (flag clearly anything that's a placeholder, like testimonials or logos, so I know to replace it before launch). Do NOT add a pricing table or pricing numbers anywhere:
+- Region/market credibility (e.g. "Built for gyms across Jordan, Saudi Arabia, UAE, Egypt…")
+- Testimonials or sample gym logos (mark as placeholder content if no real ones exist yet)
+- Clear "Book a Demo" / "Get Early Access" CTA path (no pricing mentioned)
+- FAQ section
+
+## 8. Performance
+
+- Keep the marketing route's JS bundle minimal — don't ship the full authenticated dashboard app bundle on the public marketing page.
+- Convert images to WebP/AVIF, set explicit width/height to avoid layout shift, lazy-load below-the-fold images, preload the hero image.
+- Audit any animations to make sure they don't delay first paint of real content.
+- Target Core Web Vitals: LCP under 2.5s, INP under 200ms, CLS under 0.1.
+
+## 9. Report back
+
+After implementing, give me:
+1. A summary of exactly what changed, file by file.
+2. Anything you flagged as a placeholder that needs real content from me before launch.
+3. Any risk to existing routes/auth/dashboard functionality, and how you mitigated it.
+4. What's still needed from me (e.g. real domain, real testimonials, real logos, OG image asset) before this is launch-ready.
+
+Do not make assumptions about pricing, testimonials, or domain — flag them as open items instead of inventing data.
