@@ -47,12 +47,15 @@ export const content = {
       },
     },
     stats: {
-      heading: 'Built for serious gym operations',
+      eyebrow: 'Product Highlights',
+      heading: 'Built with the tools modern gyms actually need',
       items: [
-        { value: '200+', label: 'Arabic foods in the database' },
-        { value: '7', label: 'Role-based dashboards' },
-        { value: 'AR · EN', label: 'Arabic & English support' },
-        { value: 'Real-time', label: 'Analytics and reports' },
+        { value: '200+', title: 'Arabic foods', subtitle: 'Localized food database for better nutrition tracking' },
+        { value: '7', title: 'Role dashboards', subtitle: 'Admin, coach, nutritionist, receptionist, member, and staff views' },
+        { value: 'AR · EN', title: 'Bilingual platform', subtitle: 'Designed for Arabic and English gym teams' },
+        { value: 'Real-time', title: 'Analytics', subtitle: 'Track attendance, members, revenue, and progress faster' },
+        { value: 'Pre-built', title: 'Training library', subtitle: 'Ready-to-use exercises and workout templates for coaches' },
+        { value: 'AI', title: 'Nutrition calculator', subtitle: 'Generate meal targets, calories, macros, and plan suggestions' },
       ],
     },
     problem: {
@@ -353,12 +356,15 @@ export const content = {
       },
     },
     stats: {
-      heading: 'مصمم لإدارة صالات احترافية',
+      eyebrow: 'أبرز ميزات المنصة',
+      heading: 'مبني بالأدوات التي تحتاجها الصالات الحديثة فعلاً',
       items: [
-        { value: '+200', label: 'طعام عربي في قاعدة البيانات' },
-        { value: '7', label: 'لوحات تحكم حسب الدور' },
-        { value: 'عربي · EN', label: 'دعم العربية والإنجليزية' },
-        { value: 'فوري', label: 'تحليلات وتقارير' },
+        { value: '+200', title: 'أطعمة عربية', subtitle: 'قاعدة بيانات طعام محلية لتتبع تغذية أفضل' },
+        { value: '7', title: 'لوحات تحكم للأدوار', subtitle: 'لوحات للمدير والمدرب وأخصائي التغذية والاستقبال والعضو والموظفين' },
+        { value: 'عربي · EN', title: 'منصة ثنائية اللغة', subtitle: 'مصممة لفرق الصالات بالعربية والإنجليزية' },
+        { value: 'فوري', title: 'تحليلات', subtitle: 'تتبع الحضور والأعضاء والإيرادات والتقدم بشكل أسرع' },
+        { value: 'جاهزة', title: 'مكتبة تدريب', subtitle: 'تمارين وقوالب تمرين جاهزة للاستخدام للمدربين' },
+        { value: 'ذكاء اصطناعي', title: 'حاسبة التغذية', subtitle: 'توليد أهداف الوجبات والسعرات والماكروز واقتراحات الخطط' },
       ],
     },
     problem: {
