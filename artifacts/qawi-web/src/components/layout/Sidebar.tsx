@@ -129,6 +129,7 @@ export function Sidebar({ isOpen, setIsOpen, overlayMode }: SidebarProps) {
         return [
           { href: '/super/dashboard', icon: Activity, label: 'dashboard' },
           { href: '/super/gyms', icon: Building2, label: 'gyms' },
+          { href: '/super/leads', icon: Users, label: 'leads' },
           { href: '/super/pricing', icon: Tag, label: 'pricing' },
           { href: '/super/sales', icon: Target, label: 'salesPipeline' },
           { href: '/coach/library', icon: Library, label: 'library' },

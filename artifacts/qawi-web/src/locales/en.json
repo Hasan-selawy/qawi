@@ -50,7 +50,8 @@
     "notifications": "Notifications",
     "mark_all_read": "Mark all read",
     "workout": "Workout",
-    "sendNotification": "Send Notification"
+    "sendNotification": "Send Notification",
+    "leads": "Leads"
   },
   "auth": {
     "login": "Login",
@@ -159,6 +160,56 @@
       "messageEn": "English message is required",
       "messageAr": "Arabic message is required",
       "member": "Please select a member"
+    }
+  },
+  "superLeads": {
+    "title": "Leads",
+    "subtitle": "Browse all gyms and drill into their members",
+    "statGyms": "Total Gyms",
+    "statMembers": "Total Members",
+    "statActive": "Active Subscriptions",
+    "statExpiredInactive": "Expired / Inactive",
+    "searchGyms": "Search by gym or owner name",
+    "sortNewest": "Newest first",
+    "sortOldest": "Oldest first",
+    "sortActive": "Most active members",
+    "sortExpired": "Most expired members",
+    "sortTotal": "Most members",
+    "colGym": "Gym",
+    "colOwner": "Owner / Admin",
+    "colContact": "Contact",
+    "colMembers": "Members",
+    "colRegistered": "Registered",
+    "colActions": "Actions",
+    "viewMembers": "View Members",
+    "membersLegend": "Members column: Total · Active / Expired / Inactive",
+    "membersSubtitle": "Gym members & subscription status",
+    "back": "Back to gyms",
+    "searchMembers": "Search by name, email, or phone",
+    "colName": "Name",
+    "colEmail": "Email",
+    "colPhone": "Phone",
+    "colStatus": "Status",
+    "colSubStart": "Start Date",
+    "colSubEnd": "End Date",
+    "colJoined": "Joined",
+    "exportCsv": "Export CSV",
+    "exportEmpty": "No members to export",
+    "exportError": "Export failed",
+    "emptyGyms": "No gyms registered",
+    "emptyMembers": "No members found",
+    "errorGyms": "Failed to load gyms",
+    "errorMembers": "Failed to load members",
+    "retry": "Retry",
+    "showing": "Showing",
+    "page": "Page",
+    "of": "of",
+    "status": {
+      "ALL": "All Statuses",
+      "ACTIVE": "Active",
+      "EXPIRED": "Expired",
+      "INACTIVE": "Inactive",
+      "PENDING": "Pending"
     }
   }
 }

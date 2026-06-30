@@ -74,6 +74,7 @@ com/qawi/dto/CreateMealRequest.class
 com/qawi/repository/MealRepository.class
 com/qawi/dto/CheckEmailRequest.class
 com/qawi/dto/ContactResponse.class
+com/qawi/dto/GymLeadSummaryResponse.class
 com/qawi/controller/ExerciseController.class
 com/qawi/controller/MeController.class
 com/qawi/config/PricingDataSeeder.class
@@ -142,6 +143,7 @@ com/qawi/entity/ExerciseCategory.class
 com/qawi/entity/NotificationPriority.class
 com/qawi/dto/UserDto.class
 com/qawi/entity/WorkoutTemplate.class
+com/qawi/service/SuperAdminLeadsService.class
 com/qawi/config/SecurityConfig.class
 com/qawi/repository/WorkoutTemplateRepository.class
 com/qawi/entity/PlatformTier$PlatformTierBuilder.class
@@ -201,6 +203,7 @@ com/qawi/entity/FoodEntry$FoodEntryBuilder.class
 com/qawi/entity/BiometricDevice.class
 com/qawi/controller/HrController.class
 com/qawi/dto/GymLeadNoteRequest.class
+com/qawi/dto/MemberLeadPageResponse.class
 com/qawi/entity/NutritionPlanDay$NutritionPlanDayBuilder.class
 com/qawi/service/WorkoutPlanService.class
 com/qawi/entity/CoachMember$CoachMemberBuilder.class
@@ -230,6 +233,7 @@ com/qawi/entity/PlatformTier.class
 com/qawi/repository/CoachMemberRepository.class
 com/qawi/entity/ExerciseCategory$ExerciseCategoryBuilder.class
 com/qawi/dto/ContactResponse$ContactResponseBuilder.class
+com/qawi/dto/LeadMemberResponse.class
 com/qawi/entity/PushSubscription$PushSubscriptionBuilder.class
 com/qawi/dto/ContactRequestDto$ContactRequestDtoBuilder.class
 com/qawi/repository/NotificationDeliveryLogRepository.class
@@ -279,6 +283,7 @@ com/qawi/entity/MobilePushToken.class
 com/qawi/dto/EmployeeRequest.class
 com/qawi/controller/PublicGymController.class
 com/qawi/controller/MemberClassController.class
+com/qawi/dto/GymLeadSummaryResponse$GymLeadSummaryResponseBuilder.class
 com/qawi/entity/CoachNote.class
 com/qawi/service/GymFeatureService$Feature.class
 com/qawi/dto/RegisterWebPushRequest.class
@@ -338,6 +343,7 @@ com/qawi/service/CoachNoteService.class
 com/qawi/dto/GymDetailResponse$GymDetailResponseBuilder.class
 com/qawi/service/NotificationAudienceService$1.class
 com/qawi/dto/CreateMeasurementRequest.class
+com/qawi/controller/SuperAdminLeadsController.class
 com/qawi/entity/NotificationType.class
 com/qawi/entity/AiNutritionLog.class
 com/qawi/dto/StreakResponse.class
@@ -372,12 +378,14 @@ com/qawi/dto/CreateGymRequest.class
 com/qawi/entity/GymExerciseOverride$GymExerciseOverrideBuilder.class
 com/qawi/dto/ContactRequestDto.class
 com/qawi/entity/MemberSuggestion$MemberSuggestionBuilder.class
+com/qawi/dto/MemberLeadPageResponse$MemberLeadPageResponseBuilder.class
 com/qawi/dto/CreateWalkInMemberRequest.class
 com/qawi/controller/NutritionV2Controller.class
 com/qawi/service/CoachDashboardService.class
 com/qawi/dto/CreateGymUserRequest.class
 com/qawi/repository/WorkoutLogRepository.class
 com/qawi/service/ExerciseService$1.class
+com/qawi/dto/LeadMemberResponse$LeadMemberResponseBuilder.class
 com/qawi/dto/GymBrandingRequest.class
 com/qawi/repository/NutritionTargetRepository.class
 com/qawi/service/EmployeeService.class

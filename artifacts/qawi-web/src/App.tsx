@@ -42,6 +42,7 @@ import HrDashboard from "@/pages/hr/dashboard";
 import SuperDashboard from "@/pages/super/dashboard";
 import SuperGyms from "@/pages/super/gyms";
 import SuperGymDetail from "@/pages/super/gym-detail";
+import SuperLeadGyms from "@/pages/super/lead-gyms";
 import SuperPricing from "@/pages/super/pricing";
 import SuperSales from "@/pages/super/sales";
 import AdminPricing from "@/pages/admin/pricing";
@@ -153,6 +154,9 @@ function Router() {
       </Route>
       <Route path="/super/gyms/:id">
         <RoleRoute role="SUPER_ADMIN"><AppShell><ErrorBoundary><SuperGymDetail /></ErrorBoundary></AppShell></RoleRoute>
+      </Route>
+      <Route path="/super/leads">
+        <RoleRoute role="SUPER_ADMIN"><AppShell><ErrorBoundary><SuperLeadGyms /></ErrorBoundary></AppShell></RoleRoute>
       </Route>
       <Route path="/super/pricing">
         <RoleRoute role="SUPER_ADMIN"><AppShell><ErrorBoundary><SuperPricing /></ErrorBoundary></AppShell></RoleRoute>

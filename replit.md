@@ -77,6 +77,7 @@ com.qawi
 | **Public Gym** | `/api/v1/public` | public | Public gym lookup by subdomain/slug |
 | **Super Admin** | `/api/v1/super` | SUPER_ADMIN | All gyms, feature flag management, platform pricing tiers, contact requests |
 | **Super Sales** | `/api/v1/super/leads` | SUPER_ADMIN | Platform-level sales pipeline, lead notes, status updates, followups |
+| **Super Leads (Gym Directory)** | `/api/v1/super/leads/gyms` | SUPER_ADMIN | `GET /gyms` (all gyms + member-count breakdown total/active/expired/inactive/pending, owner name, contact email/phone, registration date; `search`/`sort` params) and `GET /gyms/{gymId}/members` (paginated member list w/ subscription status + dates; `page`/`size`/`search`/`status` params). Coexists with Super Sales on the same base path (literal `/gyms` segment) |
 | **ZkTeco** | `/api/v1/zkteco` | RECEPTIONIST, GYM_ADMIN | Register biometric devices, member enrollment, ADMS protocol endpoints (`/iclock/cdata`, `/iclock/getrequest`) for hardware sync |
 
 ### Entities
@@ -259,8 +260,8 @@ Per-user: `user.selfTrainingEnabled` (boolean) — when true for a MEMBER, they 
 | `/super/dashboard` | Platform-wide stats |
 | `/super/gyms` | All gyms list |
 | `/super/gyms/:id` | Per-gym feature flag toggles + `maxMembers` limit |
-| `/super/leads` | Platform sales pipeline with notes + followups |
-| `/super/sales` | Sales analytics |
+| `/super/leads` | Leads: master-detail directory of all gyms with member-count breakdown + owner/contact + quick stats; drill into a gym's members (subscription status pills, dates, search, status filter, pagination, CSV export w/ BOM) |
+| `/super/sales` | Platform sales pipeline / analytics |
 | `/super/pricing` | Platform pricing tiers management |
 
 ### UI Polish (Phase 7B)

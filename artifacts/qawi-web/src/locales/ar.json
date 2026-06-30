@@ -50,7 +50,8 @@
     "notifications": "الإشعارات",
     "mark_all_read": "تعليم الكل كمقروء",
     "workout": "تمريني",
-    "sendNotification": "إرسال إشعار"
+    "sendNotification": "إرسال إشعار",
+    "leads": "العملاء المحتملون"
   },
   "auth": {
     "login": "تسجيل الدخول",
@@ -159,6 +160,56 @@
       "messageEn": "الرسالة بالإنجليزية مطلوبة",
       "messageAr": "الرسالة بالعربية مطلوبة",
       "member": "يرجى اختيار عضو"
+    }
+  },
+  "superLeads": {
+    "title": "العملاء المحتملون",
+    "subtitle": "تصفح جميع الصالات والوصول إلى أعضائها",
+    "statGyms": "إجمالي الصالات",
+    "statMembers": "إجمالي الأعضاء",
+    "statActive": "الاشتراكات النشطة",
+    "statExpiredInactive": "منتهية / غير نشطة",
+    "searchGyms": "ابحث باسم الصالة أو المالك",
+    "sortNewest": "الأحدث أولاً",
+    "sortOldest": "الأقدم أولاً",
+    "sortActive": "الأكثر أعضاءً نشطين",
+    "sortExpired": "الأكثر أعضاءً منتهين",
+    "sortTotal": "الأكثر أعضاءً",
+    "colGym": "الصالة",
+    "colOwner": "المالك / المسؤول",
+    "colContact": "التواصل",
+    "colMembers": "الأعضاء",
+    "colRegistered": "تاريخ التسجيل",
+    "colActions": "إجراءات",
+    "viewMembers": "عرض الأعضاء",
+    "membersLegend": "عمود الأعضاء: الإجمالي · نشط / منتهي / غير نشط",
+    "membersSubtitle": "أعضاء الصالة وحالة الاشتراك",
+    "back": "العودة إلى الصالات",
+    "searchMembers": "ابحث بالاسم أو البريد أو الهاتف",
+    "colName": "الاسم",
+    "colEmail": "البريد الإلكتروني",
+    "colPhone": "الهاتف",
+    "colStatus": "الحالة",
+    "colSubStart": "تاريخ البدء",
+    "colSubEnd": "تاريخ الانتهاء",
+    "colJoined": "تاريخ الانضمام",
+    "exportCsv": "تصدير CSV",
+    "exportEmpty": "لا يوجد أعضاء للتصدير",
+    "exportError": "فشل التصدير",
+    "emptyGyms": "لا توجد صالات مسجلة",
+    "emptyMembers": "لا يوجد أعضاء",
+    "errorGyms": "فشل تحميل الصالات",
+    "errorMembers": "فشل تحميل الأعضاء",
+    "retry": "إعادة المحاولة",
+    "showing": "عرض",
+    "page": "صفحة",
+    "of": "من",
+    "status": {
+      "ALL": "كل الحالات",
+      "ACTIVE": "نشط",
+      "EXPIRED": "منتهي",
+      "INACTIVE": "غير نشط",
+      "PENDING": "قيد الانتظار"
     }
   }
 }
