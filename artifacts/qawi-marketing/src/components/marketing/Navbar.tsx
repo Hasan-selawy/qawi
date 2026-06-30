@@ -14,12 +14,13 @@ function Logo() {
   return (
     <a href="#top" className="flex items-center gap-2 outline-none focus-visible:ring-2 focus-visible:ring-green-500 rounded-lg" aria-label="Qawi home">
       <img
-        src={`${import.meta.env.BASE_URL}qawi-logo.png`}
+        src={`${import.meta.env.BASE_URL}qawi-logo.webp`}
         alt="Qawi"
         width={36}
         height={36}
         className="w-9 h-9 rounded-xl"
         decoding="async"
+        fetchPriority="high"
       />
       <span className="font-bold text-white text-lg tracking-tight">Qawi</span>
     </a>

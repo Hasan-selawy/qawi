@@ -1,0 +1,52 @@
+# Prompt for Replit Agent — Fix Performance Score (Target: 80+)
+
+Copy everything below into Replit's Agent chat.
+
+---
+
+You are a senior frontend performance engineer. The `/marketing` page currently scores **59 on Lighthouse Performance**, with First Contentful Paint at 3.1s and Largest Contentful Paint at 4.7s. Target: **80 or above**, tested against the production build.
+
+**Hard constraints:**
+- Do not break existing app routes, backend logic, authentication, APIs, database, or dashboard functionality.
+- Do not change page content, copy, or design — this pass is performance-only.
+- Verify all changes by actually running Lighthouse/PageSpeed against the production build (not the Vite dev server) after each major change, and report the real score back to me.
+
+---
+
+## 1. Confirm what's actually being tested
+
+First confirm: when I test this, am I testing the Vite dev server or a real production build? The dev server ships unminified `lucide-react` (~1MB), unminified `react-dom`, hot-reload scripts, and no compression — all of which inflate scores artificially and aren't representative of real users. If there's any chance I've been testing the dev server, tell me exactly how to build and serve the production version (e.g. `vite build` + the correct preview/start command) so I can test the real number.
+
+## 2. Fix the LCP render delay (currently ~3.4s delay before the hero subheading paints)
+
+This is the single biggest lever — LCP is 4.7s and almost all of it is render delay, not network time. Investigate and fix:
+- Whether the hero text is blocked behind client-side JS execution before it can paint. If the marketing page isn't already statically rendered/pre-rendered, that's likely the root cause — prioritize getting the hero content (headline + subheading) into the initial HTML response so it paints immediately without waiting on JS hydration.
+- Whether web fonts are blocking text render. If custom fonts are used, ensure `font-display: swap` (or equivalent) is set so text isn't invisible while fonts load, and preload the critical font files.
+- Whether any component, animation, or library initialization is delaying the hero from mounting.
+
+## 3. Fix the oversized logo image
+
+`qawi-logo.png` is a 256×256 source file displayed at 36×36, wasting ~88KB. Resize it to its actual display dimensions (with appropriate 2x/3x density variants if needed for retina), convert to WebP or AVIF, and ensure explicit `width`/`height` attributes are set to avoid layout shift.
+
+## 4. Reduce JavaScript payload
+
+- Confirm `lucide-react` icons are imported individually (e.g. `import { IconName } from 'lucide-react'`) rather than the whole library, so the bundler can tree-shake unused icons. Audit actual icon usage on the marketing page and ensure nothing unused is bundled.
+- Audit whether the marketing route is bundling code it doesn't need — e.g. dashboard/app code, libraries only used in the authenticated app, or anything not required for the public landing page. Code-split so `/marketing` only loads what it actually uses.
+- Confirm the production build output is minified (this should happen automatically via Vite's build step — verify it's actually configured and not being skipped).
+
+## 5. Fix render-blocking requests
+
+Identify any scripts or stylesheets blocking initial render and either defer them, load them asynchronously, or inline only the critical CSS needed for above-the-fold content.
+
+## 6. Caching and compression
+
+- Ensure text-based assets (HTML, CSS, JS) are served with compression (gzip or brotli) — the current report shows "No compression applied" on the document request.
+- Set reasonable cache lifetimes on static assets (the dev banner script and similar dev-only assets won't apply in production, but confirm real static assets like images/fonts have proper cache headers).
+
+## 7. Verify and report
+
+After implementing the above:
+1. Build for production and run Lighthouse against the production build/URL.
+2. Report the actual new Performance score, plus updated FCP, LCP, TBT, and CLS numbers.
+3. If still below 80, identify what's now the biggest remaining bottleneck and propose the next fix rather than stopping.
+4. Tell me clearly which of these required testing against the real `.replit.app` deployment vs. what could be verified locally.
