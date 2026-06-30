@@ -29,3 +29,9 @@ id = "-GihfNiVUHLZYdUgwHP5K"
 uri = "file://SYSTEM_DESIGN_AND_MIGRATION.md"
 type = "text"
 title = "Qawi System Design & Migration Guide"
+
+[[outputs]]
+id = "tkW_DdDXVtc16ddH6Ld6u"
+uri = "file://QAWI_FEATURES.md"
+type = "text"
+title = "Qawi — Built Features Inventory"

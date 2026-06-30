@@ -1,0 +1,224 @@
+You are a senior product designer, frontend engineer, performance engineer, SEO specialist, and conversion-rate optimizer.
+
+I have an app called Qawi. It is an AI-powered gym management platform for gyms, coaches, nutritionists, receptionists, and members. The current landing page looks weak and unprofessional. Redesign and rebuild it into a premium SaaS landing page that feels like a serious MENA fitness-tech product.
+
+Important: first inspect the project structure and tech stack before editing. Do not break backend logic, auth, APIs, routing, environment variables, or existing app functionality. Improve only the landing/public marketing pages unless you clearly need shared components.
+
+Brand:
+- Name: Qawi
+- Product: smart gym management platform
+- Audience: gym owners, coaches, nutritionists, receptionists, and fitness businesses in the MENA region
+- Languages: English and Arabic support
+- Tone: premium, confident, clean, modern, trustworthy
+- Visual style: dark SaaS, high contrast, neon green accent, polished gradients, glass cards, subtle motion, professional spacing
+- Main color: green, but use it carefully and professionally
+- Avoid childish emojis everywhere. Use clean icons instead.
+- Fix all copy mistakes. For example, “Arabic Foods in DB” should become “200+ Arabic foods in database” or better copy.
+
+Goal:
+Create a world-class landing page with excellent UX, SEO, accessibility, performance, responsiveness, and conversion rate. It should feel like a polished startup/product website, not a template.
+
+Required page structure:
+1. Header
+   - Sticky or clean top nav
+   - Logo left
+   - Links: Features, Roles, Pricing, FAQ
+   - Language toggle: عربي / EN
+   - Main CTA: Get Early Access
+   - Mobile hamburger menu with smooth accessible behavior
+
+2. Hero section
+   - Strong headline:
+     “Run Your Gym Smarter with Qawi”
+     or create a better premium headline.
+   - Subheadline explaining:
+     Qawi helps gym owners manage members, workouts, nutrition, bookings, staff, and analytics from one bilingual platform.
+   - Primary CTA: Get Early Access
+   - Secondary CTA: See Features
+   - Add trust/value line: Built for gyms, coaches, and nutritionists across the MENA region.
+   - Add polished dashboard/app mockup on the right. If no assets exist, create a CSS-based mockup using cards, charts, member stats, meal plan, check-in, revenue, and progress UI.
+   - Make the hero visually impressive but lightweight.
+
+3. Social proof / stats
+   Use realistic polished cards:
+   - 200+ Arabic foods in database
+   - 7 role-based dashboards
+   - Arabic & English support
+   - Fast analytics and reports
+   Do not make fake huge claims like “100% RTL support” unless implemented.
+
+4. Problem/Solution section
+   Explain the pain:
+   - scattered WhatsApp messages
+   - manual member tracking
+   - paper workout plans
+   - nutrition data not localized
+   - no clear analytics
+   Then show how Qawi solves it in one platform.
+
+5. Features section
+   Create beautiful feature cards:
+   - Member Management
+   - AI Nutrition Plans
+   - Workout Builder
+   - Class Booking
+   - Coach Dashboard
+   - Advanced Analytics
+   - Arabic Food Database
+   - Mobile Member App
+   Each card needs a clear title, benefit-focused description, and clean icon.
+
+6. Role-based dashboards section
+   Show roles:
+   - Gym Admin
+   - Coach
+   - Nutritionist
+   - Receptionist
+   - Member
+   - Staff/Manager if relevant
+   Explain what each role can do.
+   Add visual mockups for Admin View and Member View.
+
+7. Bilingual / MENA-ready section
+   Highlight Arabic-first support, RTL layout readiness, Arabic food database, local gym workflows, and bilingual experience.
+   If there is already i18n support, wire it correctly. If not, structure the page so language switching can be added cleanly.
+
+8. Pricing / Early access section
+   Since product is early access, do not invent complex pricing.
+   Use:
+   - Start free
+   - 14-day full access
+   - No credit card required
+   - Setup in less than 5 minutes
+   CTA: Get Early Access
+
+9. Testimonials section
+   If there are no real testimonials, do NOT fake named testimonials.
+   Instead use anonymous “Designed for” cards or placeholder testimonial cards clearly written as product value statements.
+   Better: create a “Built for modern gyms” section instead of fake reviews.
+
+10. FAQ section
+   Add SEO-friendly FAQs:
+   - What is Qawi?
+   - Who is Qawi for?
+   - Does Qawi support Arabic?
+   - Can coaches create workout plans?
+   - Does Qawi include nutrition plans?
+   - Is there a mobile app?
+   - How does early access work?
+
+11. Final CTA
+   Strong card:
+   “Ready to run your gym smarter?”
+   Include early access CTA and short reassurance.
+
+12. Footer
+   Clean footer with:
+   - Logo and short description
+   - Product links
+   - Company links
+   - Support links
+   - Privacy Policy
+   - Terms
+   - Copyright
+   - App Store / Google Play buttons only if they are real or clearly disabled/coming soon. Do not create misleading active buttons.
+
+Design requirements:
+- Fix spacing. Current page has too much empty space and inconsistent vertical rhythm.
+- Make sections flow naturally.
+- Use a professional max-width container.
+- Use responsive layouts for desktop, tablet, and mobile.
+- Mobile must look excellent, not just acceptable.
+- No horizontal overflow.
+- Use consistent typography scale.
+- Use semantic HTML: header, main, section, article, footer.
+- Use accessible buttons and links.
+- Color contrast must pass WCAG AA.
+- Animations must be subtle and should respect prefers-reduced-motion.
+- Avoid heavy animation libraries unless already installed.
+- Use CSS/Tailwind transitions where possible.
+
+Performance requirements:
+- Optimize for Lighthouse 95+ performance where realistically possible.
+- Remove unused heavy dependencies from this page if safe.
+- Avoid large images. Use CSS mockups or optimized assets.
+- Lazy-load non-critical visuals.
+- Prevent layout shift.
+- Use responsive image sizes if images are used.
+- Use font-display swap or system fonts.
+- Minimize client-side JavaScript.
+- Do not add unnecessary packages.
+- Split components cleanly.
+- Run production build and fix all errors.
+
+SEO requirements:
+- Add proper title and meta description.
+- Add Open Graph and Twitter card metadata.
+- Add canonical URL placeholder if site URL exists in config/env. If not, leave a clean TODO comment.
+- Use one H1 only.
+- Use proper H2/H3 hierarchy.
+- Add descriptive alt text.
+- Add structured data JSON-LD:
+  - Organization
+  - SoftwareApplication
+  - FAQPage
+- Add or improve robots.txt and sitemap if the framework supports it.
+- Make all copy keyword-rich but natural:
+  “gym management software,” “gym management app,” “fitness club management,” “workout planning,” “nutrition plans,” “Arabic gym software,” “MENA fitness platform.”
+- Do not keyword stuff.
+
+Code quality:
+- First inspect the codebase.
+- Identify framework: Next.js, React/Vite, Remix, etc.
+- Follow the existing project style.
+- Create reusable components:
+  - Header
+  - Hero
+  - FeatureCard
+  - Stats
+  - RoleCard
+  - CTASection
+  - FAQ
+  - Footer
+- Keep code clean and maintainable.
+- Use TypeScript types if the project uses TypeScript.
+- Do not leave broken imports.
+- Do not leave console errors.
+- Do not leave dead code.
+- Do not add fake backend calls.
+- Preserve existing routes.
+
+Content improvements:
+Replace weak copy with polished SaaS copy. Make Qawi sound premium and useful. Use concise, benefit-driven language. Avoid generic phrases like “Everything your gym needs” unless supported by clear details.
+
+Specific fixes from current page:
+- Remove awkward text like “Arabic Foods in DB.”
+- Improve “Built for growth” stats.
+- Make the CTA section less empty.
+- Make header consistent across sections.
+- Make app store buttons only appear if real or mark them as “Coming soon.”
+- Fix inconsistent spacing between hero, features, roles, stats, CTA, and footer.
+- Make the landing page feel like one cohesive product.
+
+Testing checklist:
+After implementation:
+1. Run install if needed.
+2. Run lint/typecheck if available.
+3. Run production build.
+4. Fix all build errors.
+5. Check mobile layout at 375px width.
+6. Check tablet layout.
+7. Check desktop layout.
+8. Check for horizontal scrolling.
+9. Check Lighthouse/performance basics.
+10. Check SEO tags in page source/head.
+11. Check accessibility basics: keyboard nav, focus states, alt text, color contrast.
+
+Final response:
+After completing, summarize:
+- What files changed
+- What sections were added/redesigned
+- What SEO improvements were added
+- What performance improvements were made
+- What commands were run
+- Any remaining TODOs
