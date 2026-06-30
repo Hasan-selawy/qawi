@@ -37,7 +37,7 @@ export function Footer({
           <div className={cn('col-span-2 md:col-span-1 space-y-4', isAr && 'text-right')}>
             <div className={cn('flex items-center gap-2', isAr && 'flex-row-reverse')}>
               <img
-                src={`${import.meta.env.BASE_URL}logo.svg`}
+                src={`${import.meta.env.BASE_URL}qawi-logo.png`}
                 alt="Qawi"
                 width={32}
                 height={32}
