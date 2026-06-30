@@ -13,12 +13,14 @@ const LINKS = [
 function Logo() {
   return (
     <a href="#top" className="flex items-center gap-2 outline-none focus-visible:ring-2 focus-visible:ring-green-500 rounded-lg" aria-label="Qawi home">
-      <span
-        className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-base"
-        style={{ background: GREEN, color: BG }}
-      >
-        Q
-      </span>
+      <img
+        src={`${import.meta.env.BASE_URL}logo.svg`}
+        alt="Qawi"
+        width={36}
+        height={36}
+        className="w-9 h-9 rounded-xl"
+        decoding="async"
+      />
       <span className="font-bold text-white text-lg tracking-tight">Qawi</span>
     </a>
   );

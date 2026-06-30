@@ -1,5 +1,5 @@
 import { content } from '@/locales/content';
-import { GREEN, BG, cn, CONTAINER } from './shared';
+import { cn, CONTAINER } from './shared';
 
 const ANCHORS: Record<string, string | undefined> = {
   Features: '#features',
@@ -36,7 +36,14 @@ export function Footer({
           {/* Brand */}
           <div className={cn('col-span-2 md:col-span-1 space-y-4', isAr && 'text-right')}>
             <div className={cn('flex items-center gap-2', isAr && 'flex-row-reverse')}>
-              <span className="w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm" style={{ background: GREEN, color: BG }}>Q</span>
+              <img
+                src={`${import.meta.env.BASE_URL}logo.svg`}
+                alt="Qawi"
+                width={32}
+                height={32}
+                className="w-8 h-8 rounded-lg"
+                decoding="async"
+              />
               <span className="font-bold text-white text-lg">Qawi</span>
             </div>
             <p className="text-sm text-white/50 leading-relaxed max-w-[220px]">{t.tagline}</p>
