@@ -233,6 +233,7 @@ export default function AdminMembers() {
                 <TabsTrigger value="ALL">{t('common.all')}</TabsTrigger>
                 <TabsTrigger value="ACTIVE">{t('common.active')}</TabsTrigger>
                 <TabsTrigger value="EXPIRING">{t('common.expiring')}</TabsTrigger>
+                <TabsTrigger value="GRACE">{t('common.grace')}</TabsTrigger>
                 <TabsTrigger value="EXPIRED">{t('common.expired')}</TabsTrigger>
               </TabsList>
             </Tabs>

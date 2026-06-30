@@ -99,6 +99,7 @@ com/qawi/controller/MemberReportController$SuggestionRequest.class
 com/qawi/dto/MemberLeadRequest.class
 com/qawi/dto/UpdateCoachNoteRequest.class
 com/qawi/repository/WorkoutTemplateDayRepository.class
+com/qawi/service/SubscriptionStatusUtil$Status.class
 com/qawi/entity/MemberLead.class
 com/qawi/repository/GymExerciseOverrideRepository.class
 com/qawi/dto/GymLeadResponse$NoteDto.class
@@ -263,6 +264,7 @@ com/qawi/entity/SubscriptionHistory$SubscriptionHistoryBuilder.class
 com/qawi/entity/MealSuggestion.class
 com/qawi/dto/CheckInResponse.class
 com/qawi/entity/WorkoutTemplateDayExercise.class
+com/qawi/service/SubscriptionStatusUtil.class
 com/qawi/dto/ReceptionMemberResult$ReceptionMemberResultBuilder.class
 com/qawi/filter/RateLimitFilter.class
 com/qawi/controller/GymClassController.class

@@ -271,7 +271,7 @@ public class ReceptionService {
                 String status = "ACTIVE";
                 if (member.getSubscriptionEndDate() == null) {
                     status = "NO_PLAN";
-                } else if (member.getSubscriptionEndDate().isBefore(today)) {
+                } else if (member.getSubscriptionEndDate().isBefore(SubscriptionStatusUtil.graceCutoff(today))) {
                     status = "EXPIRED";
                 } else if (member.getSubscriptionEndDate().isBefore(today.plusDays(8))) {
                     status = "EXPIRING_SOON";
@@ -367,7 +367,8 @@ public class ReceptionService {
             String message = null;
             String messageAr = null;
 
-            if (m.getSubscriptionEndDate() != null && m.getSubscriptionEndDate().isBefore(today)) {
+            if (m.getSubscriptionEndDate() != null
+                    && m.getSubscriptionEndDate().isBefore(SubscriptionStatusUtil.graceCutoff(today))) {
                 type = "EXPIRED";
                 message = m.getName() + " subscription expired";
                 messageAr = "انتهى اشتراك " + m.getName();
@@ -440,8 +441,9 @@ public class ReceptionService {
     private String getSubscriptionStatus(User m) {
         if (m.getSubscriptionEndDate() == null) return "NO_PLAN";
         LocalDate today = LocalDate.now();
-        if (m.getSubscriptionEndDate().isBefore(today)) return "EXPIRED";
-        if (m.getSubscriptionEndDate().isBefore(today.plusDays(7))) return "EXPIRING_SOON";
+        LocalDate end = m.getSubscriptionEndDate();
+        if (end.isBefore(SubscriptionStatusUtil.graceCutoff(today))) return "EXPIRED";
+        if (end.isBefore(today.plusDays(7))) return "EXPIRING_SOON";
         return "ACTIVE";
     }
 

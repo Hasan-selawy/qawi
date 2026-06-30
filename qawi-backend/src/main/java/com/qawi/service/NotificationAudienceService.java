@@ -42,15 +42,19 @@ public class NotificationAudienceService {
         return switch (audience) {
             case ALL_MEMBERS -> userRepository.findByGymIdAndRole(gymId, Role.MEMBER);
 
+            // Accessible members: active and not locked out — includes grace-window
+            // members and members with no end date yet.
             case ACTIVE_MEMBERS -> userRepository.findByGymIdAndRole(gymId, Role.MEMBER).stream()
                     .filter(User::isActive)
-                    .filter(u -> u.getSubscriptionEndDate() == null || !u.getSubscriptionEndDate().isBefore(today))
+                    .filter(u -> !SubscriptionStatusUtil.isLockedForAccess(u, today))
                     .collect(Collectors.toList());
 
             case EXPIRING_MEMBERS ->
                     userRepository.findMembersWithExpiringSubscription(gymId, today, today.plusDays(7));
 
-            case EXPIRED_MEMBERS -> userRepository.findExpiredMembers(gymId, today);
+            // Locked-out only (ended more than the grace period ago); grace-window
+            // members still receive expiring/renewal reminders instead.
+            case EXPIRED_MEMBERS -> userRepository.findExpiredMembers(gymId, SubscriptionStatusUtil.graceCutoff(today));
 
             case INACTIVE_MEMBERS -> resolveInactiveMembers(gymId);
 

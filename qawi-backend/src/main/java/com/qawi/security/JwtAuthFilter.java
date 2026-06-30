@@ -1,5 +1,7 @@
 package com.qawi.security;
 
+import com.qawi.entity.User;
+import com.qawi.service.SubscriptionStatusUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,6 +17,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.time.LocalDate;
 
 @Component
 @RequiredArgsConstructor
@@ -40,6 +43,18 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails user = userDetailsService.loadUserByUsername(email);
                 if (jwtService.isTokenValid(token, user)) {
+                    // Locked-out member (subscription ended past the grace period):
+                    // reject the request outright so no member endpoint is reachable,
+                    // with an explicit bilingual 403 (not a silent anonymous fallback).
+                    if (user instanceof User u
+                            && SubscriptionStatusUtil.isLockedForAccess(u, LocalDate.now())) {
+                        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                        response.setContentType("application/json;charset=UTF-8");
+                        response.getWriter().write(
+                                "{\"error\":\"Your subscription has expired. Please renew to access the gym.\","
+                                        + "\"messageAr\":\"انتهت صلاحية اشتراكك. يرجى التجديد للوصول إلى الصالة.\"}");
+                        return;
+                    }
                     UsernamePasswordAuthenticationToken auth =
                             new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
                     auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

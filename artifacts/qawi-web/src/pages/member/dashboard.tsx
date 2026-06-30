@@ -14,6 +14,7 @@ import {
   TrendingUp, Bell, Clock, Plus, Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getSubStatus, getDaysRemaining, GRACE_PERIOD_DAYS } from '@/lib/sub-status';
 
 function StatCard({ icon: Icon, value, label, color = 'text-primary' }: {
   icon: any; value: number | string; label: string; color?: string;
@@ -211,6 +212,27 @@ export default function MemberDashboard() {
         <h1 className="text-3xl font-extrabold text-foreground">{firstName}</h1>
         {gymName && <p className="text-primary text-sm font-medium mt-1">{gymName}</p>}
       </div>
+
+      {/* Grace-period banner — shown when subscription has expired but member
+          still has post-expiry grace access. Locked members never reach here. */}
+      {getSubStatus(user?.subscriptionEndDate) === 'GRACE' && (() => {
+        const graceLeft = Math.max(0, GRACE_PERIOD_DAYS + getDaysRemaining(user?.subscriptionEndDate));
+        return (
+          <div className="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 flex items-start gap-3">
+            <Clock size={18} className="text-amber-400 mt-0.5 shrink-0" />
+            <div className="text-sm">
+              <p className="font-semibold text-amber-400">
+                {isAr ? 'انتهى اشتراكك' : 'Your subscription has expired'}
+              </p>
+              <p className="text-muted-foreground">
+                {isAr
+                  ? `لديك ${graceLeft} ${graceLeft === 1 ? 'يوم' : 'أيام'} من فترة السماح المتبقية. يرجى التجديد لتفادي فقدان الوصول.`
+                  : `You have ${graceLeft} day${graceLeft === 1 ? '' : 's'} of grace access left. Please renew to avoid losing access.`}
+              </p>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Check-in + Stats row */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">

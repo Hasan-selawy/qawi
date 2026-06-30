@@ -1,11 +1,15 @@
 import { differenceInDays, parseISO } from "date-fns";
 
-export type SubStatus = "ACTIVE" | "EXPIRING" | "EXPIRED";
+/** Days of post-expiry grace access before a member is locked out. Mirrors the
+ *  backend SubscriptionStatusUtil.GRACE_PERIOD_DAYS. */
+export const GRACE_PERIOD_DAYS = 3;
+
+export type SubStatus = "ACTIVE" | "EXPIRING" | "GRACE" | "EXPIRED";
 
 export function getSubStatus(endDate?: string | null): SubStatus {
   if (!endDate) return "ACTIVE";
   const days = differenceInDays(parseISO(endDate), new Date());
-  if (days < 0) return "EXPIRED";
+  if (days < 0) return days >= -GRACE_PERIOD_DAYS ? "GRACE" : "EXPIRED";
   if (days <= 7) return "EXPIRING";
   return "ACTIVE";
 }

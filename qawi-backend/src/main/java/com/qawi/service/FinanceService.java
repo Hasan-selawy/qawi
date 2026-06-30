@@ -91,9 +91,13 @@ public class FinanceService {
 
         for (User m : members) {
             Map<String, Object> sub = buildMemberSubscription(m);
-            if (m.getSubscriptionEndDate() == null || m.getSubscriptionEndDate().isBefore(today)) {
+            LocalDate end = m.getSubscriptionEndDate();
+            // Grace-window members are still accessible — bucket them with "expiring"
+            // (renewal due) rather than "expired", matching their per-member status
+            // label and keeping the 3-way partition total intact.
+            if (end == null || end.isBefore(SubscriptionStatusUtil.graceCutoff(today))) {
                 expired.add(sub);
-            } else if (!m.getSubscriptionEndDate().isAfter(today.plusDays(7))) {
+            } else if (!end.isAfter(today.plusDays(7))) {
                 expiring.add(sub);
             } else {
                 active.add(sub);
@@ -183,7 +187,8 @@ public class FinanceService {
         sb.append("Name,Email,Phone,SubscriptionStart,SubscriptionEnd,Status\n");
         LocalDate today = LocalDate.now();
         for (User m : members) {
-            String status = (m.getSubscriptionEndDate() == null || m.getSubscriptionEndDate().isBefore(today))
+            String status = (m.getSubscriptionEndDate() == null
+                    || m.getSubscriptionEndDate().isBefore(SubscriptionStatusUtil.graceCutoff(today)))
                     ? "EXPIRED" : "ACTIVE";
             sb.append(csv(m.getName())).append(",")
                     .append(csv(m.getEmail())).append(",")
@@ -209,8 +214,10 @@ public class FinanceService {
     private String getStatus(User m) {
         if (m.getSubscriptionEndDate() == null) return "NO_PLAN";
         LocalDate today = LocalDate.now();
-        if (m.getSubscriptionEndDate().isBefore(today)) return "EXPIRED";
-        if (!m.getSubscriptionEndDate().isAfter(today.plusDays(7))) return "EXPIRING_SOON";
+        LocalDate end = m.getSubscriptionEndDate();
+        // Grace-window members still have access — show as a renewal warning, not expired.
+        if (end.isBefore(SubscriptionStatusUtil.graceCutoff(today))) return "EXPIRED";
+        if (!end.isAfter(today.plusDays(7))) return "EXPIRING_SOON";
         return "ACTIVE";
     }
 

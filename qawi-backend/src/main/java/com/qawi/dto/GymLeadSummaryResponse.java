@@ -17,6 +17,7 @@ public class GymLeadSummaryResponse {
     private LocalDateTime registeredAt;
     private long totalMembers;
     private long activeMembers;
+    private long graceMembers;
     private long expiredMembers;
     private long inactiveMembers;
     private long pendingMembers;

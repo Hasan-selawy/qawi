@@ -69,16 +69,15 @@ public class AuthService {
                         HttpStatus.UNAUTHORIZED
                 ));
 
-        // Block login if member subscription expired
-        if (user.getRole().name().equals("MEMBER") && user.getSubscriptionEndDate() != null) {
-            LocalDate today = LocalDate.now();
-            if (user.getSubscriptionEndDate().isBefore(today)) {
-                throw new AppException(
-                        "Your subscription has expired. Please renew to access the gym.",
-                        "انتهت صلاحية اشتراكك. يرجى التجديد للوصول إلى الصالة.",
-                        HttpStatus.FORBIDDEN
-                );
-            }
+        // Block login only when the member is locked out — i.e. the subscription
+        // ended more than the grace period ago. Members still within the grace
+        // window keep full access and may log in.
+        if (SubscriptionStatusUtil.isLockedForAccess(user, LocalDate.now())) {
+            throw new AppException(
+                    "Your subscription has expired. Please renew to access the gym.",
+                    "انتهت صلاحية اشتراكك. يرجى التجديد للوصول إلى الصالة.",
+                    HttpStatus.FORBIDDEN
+            );
         }
 
         authenticationManager.authenticate(
@@ -91,7 +90,8 @@ public class AuthService {
                 .token(token)
                 .user(UserDto.from(user));
 
-        // Subscription alert if expires within 7 days
+        // Subscription alert: warn when expiring soon, or when in the post-expiry
+        // grace window (already expired but still accessible for a few more days).
         if (user.getRole().name().equals("MEMBER") && user.getSubscriptionEndDate() != null) {
             LocalDate today = LocalDate.now();
             long daysLeft = ChronoUnit.DAYS.between(today, user.getSubscriptionEndDate());
@@ -101,6 +101,16 @@ public class AuthService {
                 );
                 builder.subscriptionAlertAr(
                         "اشتراكك ينتهي خلال " + daysLeft + " يوم/أيام. يرجى التجديد قريبًا."
+                );
+            } else if (daysLeft < 0) {
+                long graceLeft = Math.max(SubscriptionStatusUtil.GRACE_PERIOD_DAYS + daysLeft, 0);
+                builder.subscriptionAlert(
+                        "Your subscription has expired. You have " + graceLeft
+                                + " day(s) of grace access left — please renew now."
+                );
+                builder.subscriptionAlertAr(
+                        "انتهى اشتراكك. متبقٍ لك " + graceLeft
+                                + " يوم/أيام من فترة السماح — يرجى التجديد الآن."
                 );
             }
         }

@@ -181,8 +181,11 @@ public class CoachDashboardService {
     private String resolveSubStatus(User member) {
         if (member.getSubscriptionEndDate() == null) return "UNKNOWN";
         LocalDate today = LocalDate.now();
-        if (member.getSubscriptionEndDate().isBefore(today)) return "EXPIRED";
-        if (member.getSubscriptionEndDate().isBefore(today.plusDays(7))) return "EXPIRING";
+        LocalDate end = member.getSubscriptionEndDate();
+        // Locked ("expired") only once past the grace window; grace-window members
+        // still have access, so surface them as a renewal warning, not expired.
+        if (end.isBefore(SubscriptionStatusUtil.graceCutoff(today))) return "EXPIRED";
+        if (end.isBefore(today.plusDays(7))) return "EXPIRING";
         return "ACTIVE";
     }
 

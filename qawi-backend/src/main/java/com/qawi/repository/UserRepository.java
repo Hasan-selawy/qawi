@@ -40,7 +40,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
                    OR (u.phone IS NOT NULL AND LOWER(u.phone) LIKE LOWER(CONCAT('%', :search, '%'))))
               AND (:status IS NULL
                    OR (:status = 'ACTIVE' AND u.isActive = true AND u.subscriptionEndDate IS NOT NULL AND u.subscriptionEndDate >= :today)
-                   OR (:status = 'EXPIRED' AND u.isActive = true AND u.subscriptionEndDate IS NOT NULL AND u.subscriptionEndDate < :today)
+                   OR (:status = 'GRACE_PERIOD' AND u.isActive = true AND u.subscriptionEndDate IS NOT NULL AND u.subscriptionEndDate < :today AND u.subscriptionEndDate >= :graceCutoff)
+                   OR (:status = 'EXPIRED' AND u.isActive = true AND u.subscriptionEndDate IS NOT NULL AND u.subscriptionEndDate < :graceCutoff)
                    OR (:status = 'INACTIVE' AND u.isActive = false)
                    OR (:status = 'PENDING' AND u.isActive = true AND u.subscriptionEndDate IS NULL))
             """)
@@ -48,13 +49,14 @@ public interface UserRepository extends JpaRepository<User, UUID> {
                                @Param("search") String search,
                                @Param("status") String status,
                                @Param("today") LocalDate today,
+                               @Param("graceCutoff") LocalDate graceCutoff,
                                Pageable pageable);
 
     @Query("SELECT u FROM User u WHERE u.gymId = :gymId AND u.role = 'MEMBER' AND u.subscriptionEndDate BETWEEN :start AND :end")
     List<User> findMembersWithExpiringSubscription(UUID gymId, LocalDate start, LocalDate end);
 
-    @Query("SELECT u FROM User u WHERE u.gymId = :gymId AND u.role = 'MEMBER' AND u.subscriptionEndDate < :today")
-    List<User> findExpiredMembers(UUID gymId, LocalDate today);
+    @Query("SELECT u FROM User u WHERE u.gymId = :gymId AND u.role = 'MEMBER' AND u.subscriptionEndDate < :cutoff")
+    List<User> findExpiredMembers(UUID gymId, LocalDate cutoff);
 
     @Query("SELECT YEAR(u.createdAt) as yr, MONTH(u.createdAt) as mo, COUNT(u) FROM User u WHERE u.role = 'MEMBER' AND u.gymId = :gymId AND u.createdAt >= :since GROUP BY YEAR(u.createdAt), MONTH(u.createdAt) ORDER BY yr ASC, mo ASC")
     List<Object[]> findMemberGrowthByGym(UUID gymId, java.time.LocalDateTime since);

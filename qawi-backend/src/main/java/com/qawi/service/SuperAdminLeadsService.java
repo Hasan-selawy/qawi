@@ -58,7 +58,8 @@ public class SuperAdminLeadsService {
 
         LocalDate today = LocalDate.now();
         Page<User> result = userRepository.findLeadMembers(
-                gymId, searchParam(search), normalizeStatus(status), today, pageable);
+                gymId, searchParam(search), normalizeStatus(status), today,
+                SubscriptionStatusUtil.graceCutoff(today), pageable);
 
         List<LeadMemberResponse> content = result.getContent().stream()
                 .map(u -> toMember(u, today))
@@ -75,9 +76,13 @@ public class SuperAdminLeadsService {
 
     private GymLeadSummaryResponse toSummary(Gym gym, LocalDate today) {
         UUID gymId = gym.getId();
+        LocalDate graceCutoff = SubscriptionStatusUtil.graceCutoff(today);
         long total = userRepository.countByGymIdAndRole(gymId, Role.MEMBER);
         long active = userRepository.countByGymIdAndRoleAndIsActiveAndSubscriptionEndDateGreaterThanEqual(gymId, Role.MEMBER, true, today);
-        long expired = userRepository.countByGymIdAndRoleAndIsActiveAndSubscriptionEndDateLessThan(gymId, Role.MEMBER, true, today);
+        // Everything past the end date splits into grace (within window) and locked-expired.
+        long pastDue = userRepository.countByGymIdAndRoleAndIsActiveAndSubscriptionEndDateLessThan(gymId, Role.MEMBER, true, today);
+        long expired = userRepository.countByGymIdAndRoleAndIsActiveAndSubscriptionEndDateLessThan(gymId, Role.MEMBER, true, graceCutoff);
+        long grace = pastDue - expired;
         long inactive = userRepository.countByGymIdAndRoleAndIsActive(gymId, Role.MEMBER, false);
         long pending = userRepository.countByGymIdAndRoleAndIsActiveAndSubscriptionEndDateIsNull(gymId, Role.MEMBER, true);
 
@@ -92,6 +97,7 @@ public class SuperAdminLeadsService {
                 .registeredAt(gym.getCreatedAt())
                 .totalMembers(total)
                 .activeMembers(active)
+                .graceMembers(grace)
                 .expiredMembers(expired)
                 .inactiveMembers(inactive)
                 .pendingMembers(pending)
@@ -111,12 +117,9 @@ public class SuperAdminLeadsService {
                 .build();
     }
 
-    /** Single source of truth for derived member status. */
+    /** Single source of truth for derived member status (grace-period aware). */
     private String memberStatus(User u, LocalDate today) {
-        if (!u.isActive()) return "INACTIVE";
-        if (u.getSubscriptionEndDate() == null) return "PENDING";
-        if (u.getSubscriptionEndDate().isBefore(today)) return "EXPIRED";
-        return "ACTIVE";
+        return SubscriptionStatusUtil.compute(u, today).name();
     }
 
     private void sortSummaries(List<GymLeadSummaryResponse> list, String sort) {

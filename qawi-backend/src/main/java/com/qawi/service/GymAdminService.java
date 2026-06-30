@@ -445,10 +445,11 @@ public class GymAdminService {
             String memberName = idToName.getOrDefault(h.getMemberId(), "Unknown");
             User member = members.stream().filter(m -> m.getId().equals(h.getMemberId())).findFirst().orElse(null);
             String status;
+            LocalDate lockCutoff = SubscriptionStatusUtil.graceCutoff(today);
             if (member != null && member.getSubscriptionEndDate() != null) {
-                status = member.getSubscriptionEndDate().isBefore(today) ? "Expired" : "Active";
+                status = member.getSubscriptionEndDate().isBefore(lockCutoff) ? "Expired" : "Active";
             } else {
-                status = h.getEndDate().isBefore(today) ? "Expired" : "Active";
+                status = h.getEndDate().isBefore(lockCutoff) ? "Expired" : "Active";
             }
             Map<String, Object> row = new LinkedHashMap<>();
             row.put("memberName", memberName);

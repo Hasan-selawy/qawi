@@ -97,8 +97,8 @@
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/service/NutritionCalendarPlanService.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/service/AuthService.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/ReceptionTodayStats.java
-/home/runner/workspace/qawi-backend/src/main/java/com/qawi/service/GymAdminService.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/service/NotificationService.java
+/home/runner/workspace/qawi-backend/src/main/java/com/qawi/service/GymAdminService.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/config/SecurityConfig.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/MemberLeadRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/controller/SuperAdminSalesController.java
@@ -256,8 +256,8 @@
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/MemberLeadSource.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/CreateFromTemplateRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/AddScheduleDayRequest.java
-/home/runner/workspace/qawi-backend/src/main/java/com/qawi/service/NotificationJobService.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/service/MemberReportService.java
+/home/runner/workspace/qawi-backend/src/main/java/com/qawi/service/NotificationJobService.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/config/PricingDataSeeder.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/controller/GymAdminController.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/repository/PushSubscriptionRepository.java
@@ -289,6 +289,7 @@
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/RegisterGymResponse.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/ScheduledNotification.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/service/NutritionService.java
+/home/runner/workspace/qawi-backend/src/main/java/com/qawi/service/SubscriptionStatusUtil.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/controller/SuperAdminLeadsController.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/dto/SendNotificationRequest.java
 /home/runner/workspace/qawi-backend/src/main/java/com/qawi/entity/MemberSuggestion.java

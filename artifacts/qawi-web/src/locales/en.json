@@ -13,6 +13,7 @@
     "inactive": "Inactive",
     "expiring": "Expiring",
     "expired": "Expired",
+    "grace": "Grace",
     "actions": "Actions",
     "status": "Status",
     "email": "Email",
@@ -182,7 +183,7 @@
     "colRegistered": "Registered",
     "colActions": "Actions",
     "viewMembers": "View Members",
-    "membersLegend": "Members column: Total · Active / Expired / Inactive",
+    "membersLegend": "Members column: Total · Active / Grace / Expired / Inactive",
     "membersSubtitle": "Gym members & subscription status",
     "back": "Back to gyms",
     "searchMembers": "Search by name, email, or phone",
@@ -207,7 +208,8 @@
     "status": {
       "ALL": "All Statuses",
       "ACTIVE": "Active",
-      "EXPIRED": "Expired",
+      "GRACE_PERIOD": "Grace Period",
+      "EXPIRED": "Expired (Locked)",
       "INACTIVE": "Inactive",
       "PENDING": "Pending"
     }

@@ -93,7 +93,7 @@ public class NotificationJobService {
             NotificationSetting setting = settingService.getOrCreate(gymId);
             if (!setting.isExpiredAlertEnabled()) continue;
 
-            for (User member : userRepository.findExpiredMembers(gymId, today)) {
+            for (User member : userRepository.findExpiredMembers(gymId, SubscriptionStatusUtil.graceCutoff(today))) {
                 LocalDate end = member.getSubscriptionEndDate();
                 // Keyed by the expiry date so each membership period alerts exactly once.
                 String key = "membership_expired:" + gymId + ":" + member.getId() + ":" + end;

@@ -15,7 +15,7 @@ import {
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
-type SubStatus = 'ACTIVE' | 'EXPIRED' | 'INACTIVE' | 'PENDING';
+type SubStatus = 'ACTIVE' | 'GRACE_PERIOD' | 'EXPIRED' | 'INACTIVE' | 'PENDING';
 
 interface GymLead {
   id: string;
@@ -26,6 +26,7 @@ interface GymLead {
   registeredAt: string | null;
   totalMembers: number;
   activeMembers: number;
+  graceMembers: number;
   expiredMembers: number;
   inactiveMembers: number;
   pendingMembers: number;
@@ -80,6 +81,7 @@ function csvCell(v: string) {
 function StatusPill({ status, label }: { status: SubStatus; label: string }) {
   const styles: Record<SubStatus, string> = {
     ACTIVE: 'bg-green-500/15 text-green-400 border-green-500/30',
+    GRACE_PERIOD: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
     EXPIRED: 'bg-red-500/15 text-red-400 border-red-500/30',
     INACTIVE: 'bg-slate-500/15 text-slate-400 border-slate-500/30',
     PENDING: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30',
@@ -269,6 +271,7 @@ export default function SuperLeadGyms() {
             <SelectContent>
               <SelectItem value="ALL">{t('superLeads.status.ALL')}</SelectItem>
               <SelectItem value="ACTIVE">{t('superLeads.status.ACTIVE')}</SelectItem>
+              <SelectItem value="GRACE_PERIOD">{t('superLeads.status.GRACE_PERIOD')}</SelectItem>
               <SelectItem value="EXPIRED">{t('superLeads.status.EXPIRED')}</SelectItem>
               <SelectItem value="INACTIVE">{t('superLeads.status.INACTIVE')}</SelectItem>
               <SelectItem value="PENDING">{t('superLeads.status.PENDING')}</SelectItem>
@@ -456,6 +459,8 @@ export default function SuperLeadGyms() {
                         <span className="text-foreground font-semibold">{g.totalMembers}</span>
                         <span className="text-muted-foreground"> · </span>
                         <span className="text-green-400" title={t('superLeads.status.ACTIVE')}>{g.activeMembers}</span>
+                        <span className="text-muted-foreground"> / </span>
+                        <span className="text-amber-400" title={t('superLeads.status.GRACE_PERIOD')}>{g.graceMembers}</span>
                         <span className="text-muted-foreground"> / </span>
                         <span className="text-red-400" title={t('superLeads.status.EXPIRED')}>{g.expiredMembers}</span>
                         <span className="text-muted-foreground"> / </span>
