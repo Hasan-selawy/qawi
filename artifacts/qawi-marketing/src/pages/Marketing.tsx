@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
-import { MotionConfig } from 'framer-motion';
+import { Suspense, lazy, useCallback, useEffect, useState } from 'react';
 import { content } from '@/locales/content';
 import { useLanguage } from '@/hooks/useLanguage';
 import { BG } from '@/components/marketing/shared';
@@ -14,7 +13,11 @@ import { BuiltForModernGyms } from '@/components/marketing/BuiltForModernGyms';
 import { FAQ } from '@/components/marketing/FAQ';
 import { CTASection } from '@/components/marketing/CTASection';
 import { Footer } from '@/components/marketing/Footer';
-import { GetAccessModal } from '@/components/marketing/GetAccessModal';
+
+// Lazy-loaded: only fetched when the user opens the modal (kept out of the initial bundle)
+const GetAccessModal = lazy(() =>
+  import('@/components/marketing/GetAccessModal').then((m) => ({ default: m.GetAccessModal })),
+);
 
 export default function Marketing() {
   const { lang, toggle, isAr } = useLanguage();
@@ -32,26 +35,28 @@ export default function Marketing() {
   }, [lang, isAr]);
 
   return (
-    <MotionConfig reducedMotion="user">
-      <div className="min-h-screen text-white overflow-x-hidden" style={{ background: BG }}>
-        <Navbar t={t.nav} isAr={isAr} toggle={toggle} onCTA={openModal} />
+    <div className="min-h-screen text-white overflow-x-hidden" style={{ background: BG }}>
+      <Navbar t={t.nav} isAr={isAr} toggle={toggle} onCTA={openModal} />
 
-        <main id="main-content">
-          <Hero t={t.hero} isAr={isAr} onCTA={openModal} />
-          <Stats t={t.stats} isAr={isAr} />
-          <ProblemSolution t={t.problem} isAr={isAr} />
-          <Features t={t.features} isAr={isAr} />
-          <Roles t={t.roles} isAr={isAr} />
-          <MenaReady t={t.mena} isAr={isAr} />
-          <BuiltForModernGyms t={t.modern} isAr={isAr} />
-          <FAQ t={t.faq} isAr={isAr} />
-          <CTASection t={t.cta} isAr={isAr} onCTA={openModal} />
-        </main>
+      <main id="main-content">
+        <Hero t={t.hero} isAr={isAr} onCTA={openModal} />
+        <Stats t={t.stats} isAr={isAr} />
+        <ProblemSolution t={t.problem} isAr={isAr} />
+        <Features t={t.features} isAr={isAr} />
+        <Roles t={t.roles} isAr={isAr} />
+        <MenaReady t={t.mena} isAr={isAr} />
+        <BuiltForModernGyms t={t.modern} isAr={isAr} />
+        <FAQ t={t.faq} isAr={isAr} />
+        <CTASection t={t.cta} isAr={isAr} onCTA={openModal} />
+      </main>
 
-        <Footer t={t.footer} isAr={isAr} onCTA={openModal} toggle={toggle} />
+      <Footer t={t.footer} isAr={isAr} onCTA={openModal} toggle={toggle} />
 
-        <GetAccessModal open={modalOpen} onClose={closeModal} t={t.modal} isAr={isAr} />
-      </div>
-    </MotionConfig>
+      {modalOpen && (
+        <Suspense fallback={null}>
+          <GetAccessModal open={modalOpen} onClose={closeModal} t={t.modal} isAr={isAr} />
+        </Suspense>
+      )}
+    </div>
   );
 }

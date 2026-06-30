@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 import { content } from '@/locales/content';
 import { GREEN, cn, CONTAINER, SectionHeading } from './shared';
@@ -43,22 +42,19 @@ function FaqItem({
           />
         </button>
       </h3>
-      <AnimatePresence initial={false}>
-        {open && (
-          <motion.div
-            id={`faq-answer-${id}`}
-            role="region"
-            aria-labelledby={`faq-question-${id}`}
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-            className="overflow-hidden"
-          >
-            <p className={cn('px-5 pb-4 text-sm text-white/55 leading-relaxed', isAr && 'text-right')}>{a}</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* CSS grid-rows trick animates height open/close with no JS animation library */}
+      <div
+        id={`faq-answer-${id}`}
+        role="region"
+        aria-labelledby={`faq-question-${id}`}
+        aria-hidden={!open}
+        className="grid transition-[grid-template-rows] duration-300 ease-out"
+        style={{ gridTemplateRows: open ? '1fr' : '0fr' }}
+      >
+        <div className="overflow-hidden">
+          <p className={cn('px-5 pb-4 text-sm text-white/55 leading-relaxed', isAr && 'text-right')}>{a}</p>
+        </div>
+      </div>
     </div>
   );
 }

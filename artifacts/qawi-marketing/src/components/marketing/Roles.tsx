@@ -1,5 +1,4 @@
 import { useRef, useState, type ReactElement } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
 import { Check, Search, Dumbbell, User } from 'lucide-react';
 import { content, type RoleId } from '@/locales/content';
 import { GREEN, cn, CONTAINER, SectionHeading } from './shared';
@@ -287,16 +286,12 @@ export function Roles({ t, isAr }: { t: RolesContent; isAr: boolean }) {
           tabIndex={0}
           className="outline-none"
         >
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={active}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-              className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center"
-            >
-              {/* Copy + feature list */}
+          {/* Keyed so it re-mounts (and replays the CSS entrance) on tab change */}
+          <div
+            key={active}
+            className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center animate-in fade-in slide-in-from-bottom-2 duration-300"
+          >
+            {/* Copy + feature list */}
               <div className={cn(isAr && 'lg:text-right')}>
                 <h3 className="text-2xl sm:text-3xl font-bold text-white mb-3">{data.title}</h3>
                 <p className="text-white/55 leading-relaxed mb-6">{data.desc}</p>
@@ -313,14 +308,13 @@ export function Roles({ t, isAr }: { t: RolesContent; isAr: boolean }) {
                 </ul>
               </div>
 
-              {/* Mockup */}
-              <div className="flex justify-center lg:justify-end" dir="ltr">
-                <div className="w-full max-w-[360px]">
-                  <Mock m={data.mockup} />
-                </div>
+            {/* Mockup */}
+            <div className="flex justify-center lg:justify-end" dir="ltr">
+              <div className="w-full max-w-[360px]">
+                <Mock m={data.mockup} />
               </div>
-            </motion.div>
-          </AnimatePresence>
+            </div>
+          </div>
         </div>
       </div>
     </section>

@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
 import { content } from '@/locales/content';
 import { GREEN, BG, cn, CONTAINER } from './shared';
@@ -107,6 +106,7 @@ export function Navbar({
             onClick={() => setOpen((o) => !o)}
             aria-label={open ? t.close : t.menu}
             aria-expanded={open}
+            aria-controls="mobile-menu"
             className="w-10 h-10 inline-flex items-center justify-center rounded-lg text-white outline-none focus-visible:ring-2 focus-visible:ring-green-500"
             style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
           >
@@ -115,45 +115,40 @@ export function Navbar({
         </div>
       </nav>
 
-      {/* Mobile menu */}
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-            className="md:hidden overflow-hidden"
-            style={{ background: 'rgba(10,15,30,0.97)', borderTop: '1px solid rgba(255,255,255,0.06)' }}
-          >
-            <div className={cn(CONTAINER, 'py-4 flex flex-col gap-1')}>
-              {LINKS.map((l) => (
-                <a
-                  key={l.key}
-                  href={l.href}
-                  onClick={() => setOpen(false)}
-                  className={cn(
-                    'px-3 py-3 rounded-lg text-base font-medium text-white/75 hover:text-white hover:bg-white/5 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-green-500',
-                    isAr && 'text-right',
-                  )}
-                >
-                  {t[l.key]}
-                </a>
-              ))}
-              <button
-                onClick={() => {
-                  setOpen(false);
-                  onCTA();
-                }}
-                className="mt-2 px-5 py-3 rounded-xl font-bold text-sm outline-none focus-visible:ring-2 focus-visible:ring-green-500"
-                style={{ background: GREEN, color: BG }}
+      {/* Mobile menu — CSS-animated (tw-animate-css), no JS animation library */}
+      {open && (
+        <div
+          id="mobile-menu"
+          className="md:hidden overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
+          style={{ background: 'rgba(10,15,30,0.97)', borderTop: '1px solid rgba(255,255,255,0.06)' }}
+        >
+          <div className={cn(CONTAINER, 'py-4 flex flex-col gap-1')}>
+            {LINKS.map((l) => (
+              <a
+                key={l.key}
+                href={l.href}
+                onClick={() => setOpen(false)}
+                className={cn(
+                  'px-3 py-3 rounded-lg text-base font-medium text-white/75 hover:text-white hover:bg-white/5 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-green-500',
+                  isAr && 'text-right',
+                )}
               >
-                {t.cta}
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                {t[l.key]}
+              </a>
+            ))}
+            <button
+              onClick={() => {
+                setOpen(false);
+                onCTA();
+              }}
+              className="mt-2 px-5 py-3 rounded-xl font-bold text-sm outline-none focus-visible:ring-2 focus-visible:ring-green-500"
+              style={{ background: GREEN, color: BG }}
+            >
+              {t.cta}
+            </button>
+          </div>
+        </div>
+      )}
     </header>
   );
 }

@@ -1,0 +1,79 @@
+Brand color system:
+Use this exact Qawi color palette across the landing page. The design must be easy on the eyes, premium, and not overly neon.
+
+Core colors:
+- Deep Space background: #0A0F1E
+- Midnight section background: #0F172A
+- Slate Dark card background: #1E293B
+- Soft Card background: #111827
+- Slate Border: #334155
+- Primary Energy Green: #22C55E
+- Hover / Active Forest Green: #16A34A
+- Mint success/badge: #DCFCE7
+- Main text: #FFFFFF
+- Body text: #CBD5E1
+- Muted text: #94A3B8
+- Text on green buttons: #06120B
+
+Usage rules:
+- Do NOT use green everywhere.
+- Green should be used only for CTAs, active tabs, icons, important numbers, small highlights, and subtle glows.
+- Main backgrounds should stay dark navy/black, not green.
+- Cards should use dark slate backgrounds with soft borders.
+- Paragraph text should use #CBD5E1, not pure white.
+- Muted labels should use #94A3B8.
+- Main headings should use #FFFFFF.
+- Button text on green must use #06120B for strong contrast.
+- Borders should use rgba(51, 65, 85, 0.45–0.65).
+- Green glows should use #22C55E at only 10–20% opacity.
+- Avoid huge bright green backgrounds because they look cheap and are tiring for the eye.
+- Keep the design premium: dark navy + controlled green accent.
+
+CSS variables:
+If the project uses CSS variables, add or update them like this:
+
+:root {
+  --bg-deep: #0A0F1E;
+  --bg-midnight: #0F172A;
+  --card: #111827;
+  --card-soft: #1E293B;
+  --border: rgba(51, 65, 85, 0.55);
+
+  --green: #22C55E;
+  --green-hover: #16A34A;
+  --mint: #DCFCE7;
+
+  --text-main: #FFFFFF;
+  --text-body: #CBD5E1;
+  --text-muted: #94A3B8;
+  --text-on-green: #06120B;
+}
+
+Tailwind/theme usage:
+If the project uses Tailwind, map these colors into the theme or use them consistently through utility classes.
+Avoid random greens or random grays outside this palette unless needed for accessibility.
+
+Section styling:
+- Body background: #0A0F1E
+- Header background: rgba(10, 15, 30, 0.75) with blur if performance is okay
+- Hero background: #0A0F1E with subtle dark green radial gradient
+- Cards: #111827 or #1E293B
+- Card borders: rgba(51, 65, 85, 0.55)
+- Primary CTA: #22C55E
+- Primary CTA hover: #16A34A
+- Active role tab: #22C55E background or green border/glow
+- Secondary buttons: transparent or #111827 with slate border
+- Badges: dark green transparent background with green text/border
+- Stats numbers: #22C55E
+- FAQ borders: rgba(51, 65, 85, 0.55)
+
+Accessibility:
+Make sure all text color combinations pass WCAG AA contrast.
+Do not place #22C55E text on light mint backgrounds unless contrast is checked.
+Do not use low-opacity text for important content.
+Focus rings should be visible, preferably #22C55E with enough contrast.
+
+Final design check:
+The page should feel premium, calm, sharp, and easy to read.
+It should not feel like a glowing gaming website.
+Use green as a controlled brand accent, not as the whole visual identity.

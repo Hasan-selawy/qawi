@@ -1,0 +1,188 @@
+Now optimize the Qawi landing page for Lighthouse performance and SEO.
+
+Current Lighthouse issues:
+- Performance score around 55
+- First Contentful Paint around 3.8s
+- Largest Contentful Paint around 5.4s
+- Speed Index around 14.9s
+- SEO score around 66
+- SEO issue: “Page is blocked from indexing”
+- CLS is good at 0
+- TBT is acceptable around 130ms
+
+Goal:
+Bring Lighthouse as close as possible to:
+- Performance: 90+
+- SEO: 95+
+- Accessibility: 95+
+- Best Practices: 95+
+Without destroying the premium design.
+
+Important:
+First inspect the project.
+Do not break auth, dashboard pages, APIs, routing, environment variables, or backend logic.
+Optimize only the landing/public marketing page and shared assets used by it.
+Run production build and test the production build, not only the dev server.
+
+Performance fixes required:
+
+1. Fix LCP and FCP
+The hero content is loading too slowly.
+Make the above-the-fold hero render immediately.
+
+Do:
+- Remove any animation that hides hero text on initial load.
+- Do not animate the H1 or main hero paragraph from opacity 0.
+- Do not delay hero rendering until JavaScript loads.
+- Avoid heavy blur effects above the fold.
+- Reduce large box-shadow / blur / gradient layers in the hero.
+- Keep hero mockup lightweight with CSS, not large images.
+- Make sure the hero text uses system fonts or optimized fonts with font-display: swap.
+- If custom fonts are used, preload only the critical font weights or switch to system font.
+- Make the landing page server-rendered/static where possible.
+- If using Next.js App Router, keep the landing page mostly as a Server Component and isolate only interactive parts like RoleTabs into a small Client Component.
+- If using React/Vite, minimize client-side work on page load.
+
+2. Reduce JavaScript
+Do:
+- Remove unnecessary animation libraries from the landing page if used only for small effects.
+- Replace heavy animations with CSS transitions.
+- Lazy-load below-the-fold interactive or decorative sections if appropriate.
+- Keep the role tabs lightweight.
+- Do not import huge icon libraries globally. Import only the icons used, or use small inline SVG icons.
+- Remove unused imports.
+- Remove console logs.
+- Check bundle size if tooling exists.
+
+3. Optimize CSS and visuals
+Do:
+- Avoid huge radial gradients or blur elements that cover the full viewport.
+- Use fewer decorative layers above the fold.
+- Keep premium background depth but make it lightweight.
+- Use CSS variables for colors.
+- Avoid layout thrashing.
+- Ensure all sections have stable dimensions to prevent layout shift.
+- Keep CLS at 0.
+
+4. Optimize images/assets
+If any images are used:
+- Compress them.
+- Use modern formats where possible.
+- Add width and height.
+- Use responsive sizes.
+- Lazy-load below-the-fold images.
+- Do not lazy-load the main above-the-fold visual if it is the LCP element.
+- Prefer CSS dashboard mockups over large screenshots.
+
+5. Production testing
+Do not judge performance from the dev server.
+Run:
+- npm run build
+Then run the production preview/start command available in the project:
+- npm run start
+or
+- npm run preview
+depending on the framework.
+
+Then test Lighthouse on the production version.
+
+SEO fixes required:
+
+1. Fix “Page is blocked from indexing”
+Find why the page is blocked.
+
+Check:
+- robots.txt
+- meta robots tags
+- Next.js metadata robots config
+- headers
+- any noindex/nofollow settings
+- environment-based production/staging logic
+
+Production landing page must allow indexing:
+- robots: index, follow
+- Googlebot: index, follow
+- robots.txt should not block the main site
+- Do not block `/`
+- Do not add `noindex` to the public landing page
+
+Important:
+If this is a temporary Replit preview/staging URL and intentionally blocked, keep a safe environment-based setup:
+- production domain = index, follow
+- preview/dev = optional noindex
+But the actual production config must be ready for indexing.
+
+2. Improve metadata
+Add or verify:
+- Unique title
+- Strong meta description
+- Open Graph title
+- Open Graph description
+- Open Graph image if available
+- Twitter card metadata
+- Canonical URL if production site URL exists
+- If no production URL exists, add a clean TODO comment for canonical
+
+Suggested title:
+“Qawi — AI Gym Management Software for MENA Fitness Teams”
+
+Suggested meta description:
+“Qawi is an AI-powered gym management platform for member management, workout planning, nutrition plans, bookings, staff workflows, and analytics — built for Arabic and English fitness teams.”
+
+3. Heading structure
+Ensure:
+- Only one H1 on the page
+- H2s for main sections
+- H3s for cards/features
+- No skipped or messy heading hierarchy
+
+4. Structured data
+Add JSON-LD:
+- Organization
+- SoftwareApplication
+- FAQPage
+
+Make sure JSON-LD is valid and does not contain fake reviews, fake ratings, or fake pricing.
+
+5. Sitemap and robots
+If framework supports it:
+- Add or improve sitemap.xml
+- Add or improve robots.txt
+- Make sure public pages are crawlable
+- Do not include private dashboard/auth routes in sitemap
+
+Accessibility fixes:
+- All buttons and links need visible focus states.
+- Mobile menu needs aria-expanded and aria-controls.
+- Role tabs need proper button behavior and aria-selected if possible.
+- Color contrast must pass WCAG AA.
+- Add accessible labels to icon-only buttons.
+- Respect prefers-reduced-motion.
+
+Keep the design premium:
+Do not make the page ugly just to improve performance.
+Keep the dark SaaS look, green accent, glass cards, and premium layout.
+But remove anything that is expensive and not worth the performance cost.
+
+Final QA checklist:
+- Run build successfully.
+- Test production preview.
+- Check there is no horizontal overflow.
+- Check mobile at 375px.
+- Check desktop.
+- Check role tabs still work.
+- Check mobile menu still works.
+- Check SEO no longer says blocked from indexing for production.
+- Check there is only one H1.
+- Check no fake pricing section.
+- Check no fake testimonials or reviews.
+- Check console has no errors.
+
+Final response:
+Tell me:
+- What caused the slow LCP/FCP
+- What files you changed
+- What performance fixes you made
+- What SEO indexing issue you found and fixed
+- What commands you ran
+- Any remaining TODOs

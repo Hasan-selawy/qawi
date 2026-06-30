@@ -61,13 +61,6 @@ export default defineConfig({
     cssMinify: true,
     cssCodeSplit: true,
     sourcemap: false,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          'framer-motion': ['framer-motion'],
-        },
-      },
-    },
   },
   server: {
     port,

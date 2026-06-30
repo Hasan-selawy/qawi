@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
 import { X, Check, ArrowRight } from 'lucide-react';
 import { content } from '@/locales/content';
 import { GREEN, BG, cn } from './shared';
@@ -77,6 +76,8 @@ export function GetAccessModal({
     };
   }, [open, onClose]);
 
+  if (!open) return null;
+
   const set = (k: Field, v: string) => {
     setForm((p) => ({ ...p, [k]: v }));
     if (errors[k]) setErrors((p) => ({ ...p, [k]: false }));
@@ -116,125 +117,118 @@ export function GetAccessModal({
   ];
 
   return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          dir={isAr ? 'rtl' : 'ltr'}
-        >
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+      dir={isAr ? 'rtl' : 'ltr'}
+    >
+      <div
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
+        onClick={onClose}
+        aria-hidden="true"
+      />
 
-          <motion.div
-            ref={dialogRef}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="access-modal-title"
-            initial={{ opacity: 0, y: 24, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 24, scale: 0.97 }}
-            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-            className="relative w-full max-w-md rounded-2xl p-6 sm:p-8 max-h-[90vh] overflow-y-auto"
-            style={{ background: '#0E1426', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 40px 90px rgba(0,0,0,0.6)' }}
-          >
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="access-modal-title"
+        className="relative w-full max-w-md rounded-2xl p-6 sm:p-8 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 slide-in-from-bottom-2 duration-200"
+        style={{ background: '#0E1426', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 40px 90px rgba(0,0,0,0.6)' }}
+      >
+        <button
+          onClick={onClose}
+          aria-label={t.close}
+          className={cn(
+            'absolute top-4 w-9 h-9 inline-flex items-center justify-center rounded-lg text-white/60 hover:text-white transition-colors outline-none focus-visible:ring-2 focus-visible:ring-green-500',
+            isAr ? 'left-4' : 'right-4',
+          )}
+          style={{ background: 'rgba(255,255,255,0.05)' }}
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        {done ? (
+          <div className="py-8 text-center space-y-4">
+            <div
+              className="w-16 h-16 mx-auto rounded-full flex items-center justify-center"
+              style={{ background: 'rgba(34,197,94,0.14)', border: '1px solid rgba(34,197,94,0.3)' }}
+            >
+              <Check className="w-8 h-8" style={{ color: GREEN }} />
+            </div>
+            <h2 id="access-modal-title" className="text-xl font-bold text-white">
+              {t.success}
+            </h2>
+            <p className="text-sm text-white/60 leading-relaxed max-w-xs mx-auto">{t.successSub}</p>
             <button
               onClick={onClose}
-              aria-label={t.close}
-              className={cn(
-                'absolute top-4 w-9 h-9 inline-flex items-center justify-center rounded-lg text-white/60 hover:text-white transition-colors outline-none focus-visible:ring-2 focus-visible:ring-green-500',
-                isAr ? 'left-4' : 'right-4',
-              )}
-              style={{ background: 'rgba(255,255,255,0.05)' }}
+              className="mt-2 px-6 py-2.5 rounded-xl font-semibold text-sm outline-none focus-visible:ring-2 focus-visible:ring-green-500"
+              style={{ background: GREEN, color: BG }}
             >
-              <X className="w-5 h-5" />
+              {t.close}
             </button>
+          </div>
+        ) : (
+          <>
+            <div className={cn('mb-6 space-y-1.5', isAr && 'text-right')}>
+              <h2 id="access-modal-title" className="text-xl font-bold text-white">
+                {t.title}
+              </h2>
+              <p className="text-sm text-white/60 leading-relaxed">{t.sub}</p>
+            </div>
 
-            {done ? (
-              <div className="py-8 text-center space-y-4">
-                <div
-                  className="w-16 h-16 mx-auto rounded-full flex items-center justify-center"
-                  style={{ background: 'rgba(34,197,94,0.14)', border: '1px solid rgba(34,197,94,0.3)' }}
-                >
-                  <Check className="w-8 h-8" style={{ color: GREEN }} />
-                </div>
-                <h2 id="access-modal-title" className="text-xl font-bold text-white">
-                  {t.success}
-                </h2>
-                <p className="text-sm text-white/60 leading-relaxed max-w-xs mx-auto">{t.successSub}</p>
-                <button
-                  onClick={onClose}
-                  className="mt-2 px-6 py-2.5 rounded-xl font-semibold text-sm outline-none focus-visible:ring-2 focus-visible:ring-green-500"
-                  style={{ background: GREEN, color: BG }}
-                >
-                  {t.close}
-                </button>
-              </div>
-            ) : (
-              <>
-                <div className={cn('mb-6 space-y-1.5', isAr && 'text-right')}>
-                  <h2 id="access-modal-title" className="text-xl font-bold text-white">
-                    {t.title}
-                  </h2>
-                  <p className="text-sm text-white/60 leading-relaxed">{t.sub}</p>
-                </div>
+            <form onSubmit={submit} className="space-y-4" noValidate>
+              {fields.map((f) => {
+                const hasError = !!errors[f.key];
+                const msg = errorMsg[f.key];
+                return (
+                  <div key={f.key} className={cn('space-y-1.5', isAr && 'text-right')}>
+                    <label htmlFor={`field-${f.key}`} className="block text-xs font-semibold text-white/70">
+                      {f.label}
+                      {f.required && <span style={{ color: GREEN }}> *</span>}
+                    </label>
+                    <input
+                      id={`field-${f.key}`}
+                      ref={f.key === 'name' ? firstInputRef : undefined}
+                      type={f.type}
+                      value={form[f.key]}
+                      onChange={(e) => set(f.key, e.target.value)}
+                      placeholder={f.ph}
+                      aria-invalid={hasError}
+                      aria-required={f.required}
+                      aria-describedby={hasError && msg ? `field-${f.key}-error` : undefined}
+                      dir={isAr ? 'rtl' : 'ltr'}
+                      className={cn(
+                        'w-full px-3.5 py-2.5 rounded-xl text-sm text-white placeholder:text-white/40 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-green-500',
+                        isAr && 'text-right',
+                      )}
+                      style={{
+                        background: 'rgba(255,255,255,0.04)',
+                        border: `1px solid ${hasError ? 'rgba(239,68,68,0.7)' : 'rgba(255,255,255,0.1)'}`,
+                      }}
+                    />
+                    {hasError && msg && (
+                      <p id={`field-${f.key}-error`} className="text-xs text-red-400">
+                        {msg}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
 
-                <form onSubmit={submit} className="space-y-4" noValidate>
-                  {fields.map((f) => {
-                    const hasError = !!errors[f.key];
-                    const msg = errorMsg[f.key];
-                    return (
-                      <div key={f.key} className={cn('space-y-1.5', isAr && 'text-right')}>
-                        <label htmlFor={`field-${f.key}`} className="block text-xs font-semibold text-white/70">
-                          {f.label}
-                          {f.required && <span style={{ color: GREEN }}> *</span>}
-                        </label>
-                        <input
-                          id={`field-${f.key}`}
-                          ref={f.key === 'name' ? firstInputRef : undefined}
-                          type={f.type}
-                          value={form[f.key]}
-                          onChange={(e) => set(f.key, e.target.value)}
-                          placeholder={f.ph}
-                          aria-invalid={hasError}
-                          aria-required={f.required}
-                          aria-describedby={hasError && msg ? `field-${f.key}-error` : undefined}
-                          dir={isAr ? 'rtl' : 'ltr'}
-                          className={cn(
-                            'w-full px-3.5 py-2.5 rounded-xl text-sm text-white placeholder:text-white/40 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-green-500',
-                            isAr && 'text-right',
-                          )}
-                          style={{
-                            background: 'rgba(255,255,255,0.04)',
-                            border: `1px solid ${hasError ? 'rgba(239,68,68,0.7)' : 'rgba(255,255,255,0.1)'}`,
-                          }}
-                        />
-                        {hasError && msg && (
-                          <p id={`field-${f.key}-error`} className="text-xs text-red-400">
-                            {msg}
-                          </p>
-                        )}
-                      </div>
-                    );
-                  })}
-
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all hover:brightness-105 active:scale-[0.98] disabled:opacity-70 outline-none focus-visible:ring-2 focus-visible:ring-green-500"
-                    style={{ background: GREEN, color: BG, boxShadow: '0 0 30px rgba(34,197,94,0.32)' }}
-                  >
-                    {submitting ? t.submitting : t.submit}
-                    {!submitting && <ArrowRight className={cn('w-4 h-4', isAr && 'rotate-180')} />}
-                  </button>
-                  <p className="text-[11px] text-white/55 text-center">{t.privacy}</p>
-                </form>
-              </>
-            )}
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all hover:brightness-105 active:scale-[0.98] disabled:opacity-70 outline-none focus-visible:ring-2 focus-visible:ring-green-500"
+                style={{ background: GREEN, color: BG, boxShadow: '0 0 30px rgba(34,197,94,0.32)' }}
+              >
+                {submitting ? t.submitting : t.submit}
+                {!submitting && <ArrowRight className={cn('w-4 h-4', isAr && 'rotate-180')} />}
+              </button>
+              <p className="text-[11px] text-white/55 text-center">{t.privacy}</p>
+            </form>
+          </>
+        )}
+      </div>
+    </div>
   );
 }

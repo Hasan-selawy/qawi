@@ -1,5 +1,4 @@
-import { useEffect, useState, type ReactNode, type CSSProperties } from 'react';
-import { motion, type Variants } from 'framer-motion';
+import { useEffect, useRef, useState, type ReactNode, type CSSProperties } from 'react';
 
 export const GREEN = '#22C55E';
 export const BG = '#0A0F1E';
@@ -24,22 +23,11 @@ export function useReducedMotion() {
   return reduced;
 }
 
-export function fadeUp(delay = 0): Variants {
-  return {
-    hidden: { opacity: 0, y: 26 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.55,
-        delay,
-        ease: [0.22, 1, 0.36, 1],
-      },
-    },
-  };
-}
-
-/** Single element that fades/rises into view once. Respects reduced motion via MotionConfig. */
+/**
+ * Single element that fades/rises into view once it scrolls into view.
+ * Uses IntersectionObserver + a CSS transition (no JS animation library),
+ * and respects prefers-reduced-motion by rendering visible immediately.
+ */
 export function Reveal({
   children,
   className,
@@ -51,17 +39,55 @@ export function Reveal({
   delay?: number;
   style?: CSSProperties;
 }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const reduced = useReducedMotion();
+  const [shown, setShown] = useState(false);
+
+  useEffect(() => {
+    // Render visible immediately for reduced-motion or when IO is unavailable,
+    // so content is never permanently hidden (SEO/crawl/render robustness).
+    if (reduced || typeof IntersectionObserver === 'undefined') {
+      setShown(true);
+      return;
+    }
+    const el = ref.current;
+    if (!el) {
+      setShown(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setShown(true);
+          io.disconnect();
+        }
+      },
+      { threshold: 0.05, rootMargin: '0px 0px -60px 0px' },
+    );
+    io.observe(el);
+    // Safety net: if the observer somehow never fires, reveal anyway.
+    const fallback = window.setTimeout(() => setShown(true), 1500);
+    return () => {
+      io.disconnect();
+      window.clearTimeout(fallback);
+    };
+  }, [reduced]);
+
   return (
-    <motion.div
+    <div
+      ref={ref}
       className={className}
-      style={style}
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, margin: '-70px' }}
-      variants={fadeUp(delay)}
+      style={{
+        ...style,
+        opacity: shown ? 1 : 0,
+        transform: shown ? 'none' : 'translateY(24px)',
+        transition: reduced
+          ? undefined
+          : `opacity 0.6s cubic-bezier(0.22,1,0.36,1) ${delay}s, transform 0.6s cubic-bezier(0.22,1,0.36,1) ${delay}s`,
+      }}
     >
       {children}
-    </motion.div>
+    </div>
   );
 }
 
@@ -107,7 +133,7 @@ export function GlowBackdrop({ className }: { className?: string }) {
   return (
     <div className={cn('absolute inset-0 -z-10 overflow-hidden pointer-events-none', className)} aria-hidden="true">
       <div
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-[70vw] h-[40vw] rounded-full blur-3xl opacity-[0.12]"
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-[55vw] h-[30vw] rounded-full blur-3xl opacity-[0.1]"
         style={{ background: `radial-gradient(circle, ${GREEN}, transparent 70%)` }}
       />
     </div>
