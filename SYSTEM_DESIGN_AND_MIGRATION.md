@@ -91,6 +91,15 @@ In the mobile app, the `EXPO_PUBLIC_DOMAIN` environment variable was initially h
 ```
 This was a **Replit-specific UUID domain**. When the Replit workspace went to sleep, the first API call would hit an HTML wakeup interstitial page instead of JSON. The fix was a retry loop in `api.ts` (mobile) that detects HTML responses and retries with backoff for up to ~30 seconds. This is a **Replit-specific hack** that should be removed in production.
 
+### Update — security hardening pass
+
+The "no refresh token / no server-side logout" tradeoff above has been **partially addressed** by a code-level hardening pass (full detail in **[`QAWI_SECURITY.md`](QAWI_SECURITY.md)**, Part A):
+
+- A `refresh_tokens` table now exists (storing only a SHA-256 **hash** of each opaque token). `POST /api/v1/auth/refresh` rotates tokens and `POST /api/v1/auth/logout` revokes them, giving real server-side logout and a bounded replay window for a leaked refresh token. The **access JWT is unchanged** (still 7-day HS256) for backward compatibility.
+- A per-email brute-force **account lockout** (`LoginAttemptService`, in-memory) blunts credential stuffing and enumeration.
+
+What is still deferred to infrastructure (Part B): moving the in-memory lockout to **Redis** for multi-instance correctness, and shortening the access-token lifetime once clients reliably use the refresh flow.
+
 ---
 
 ## 3. Database Schema Management
@@ -136,6 +145,12 @@ ddl("ALTER TABLE member_leads ADD COLUMN IF NOT EXISTS source VARCHAR(50) DEFAUL
 ddl("UPDATE member_leads SET source = 'MANUAL_VISIT' WHERE source IS NULL");
 ```
 But this is manual work every time. If you forget to add a `SchemaInitializer` line for a `NOT NULL` column, Spring Boot will fail to start with a PostgreSQL constraint error. This happened twice during development and was caught by the startup logs.
+
+### Update — Flyway + `ddl-auto=validate` is deferred (NOT done)
+
+The security hardening pass deliberately **kept `ddl-auto=update`** and did **not** introduce Flyway. Switching to managed migrations with `validate` is the correct production posture but is **high-risk**: if the migration baseline does not exactly match the schema Hibernate expects, the application **fails to start** — which would violate the "backend must still start" constraint.
+
+The phased, staging-first rollout plan (capture current schema → introduce Flyway baseline-only → `update` → `none` → `validate` → all future changes as versioned migrations, with snapshot + rollback) is documented in **[`QAWI_SECURITY.md`](QAWI_SECURITY.md)**, Part C. Until that work is scheduled, `ddl-auto=update` + `SchemaInitializer` remains in place by design.
 
 ---
 

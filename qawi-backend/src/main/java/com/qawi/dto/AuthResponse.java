@@ -9,6 +9,7 @@ import lombok.Data;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class AuthResponse {
     private String token;
+    private String refreshToken;
     private UserDto user;
     private String subscriptionAlert;
     private String subscriptionAlertAr;

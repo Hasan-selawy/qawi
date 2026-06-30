@@ -203,6 +203,11 @@ pnpm --filter @workspace/qawi-mobile run dev
 | `PORT` | API server port | `9000` |
 | `VITE_API_URL` | Web dashboard API base URL | `https://api.qawi.app/api/v1` |
 | `EXPO_PUBLIC_DOMAIN` | Mobile app API domain | `api.qawi.app` |
+| `QAWI_DEMO_USER_PASSWORD` | Seeded demo user password (dev fallback) | `password123` |
+| `QAWI_DEMO_SUPER_ADMIN_PASSWORD` | Seeded super-admin password (dev fallback) | `qawi_super_2024` |
+| `QAWI_LOGIN_MAX_ATTEMPTS` | Failed logins before account lockout | `5` |
+| `QAWI_LOGIN_LOCK_MINUTES` | Account lock duration (minutes) | `15` |
+| `QAWI_REFRESH_TOKEN_DAYS` | Refresh-token lifetime (days) | `30` |
 
 ---
 
@@ -223,14 +228,26 @@ The database seeds automatically on first startup with **Iron Peak Gym** demo da
 
 ---
 
+## Security
+
+Qawi has undergone a code-level security hardening pass. See **[`QAWI_SECURITY.md`](QAWI_SECURITY.md)** for the full breakdown, split into:
+
+- **Part A — shipped code fixes:** seed passwords moved to env vars, brute-force account lockout, refresh tokens with rotation + revocation, async push fan-out, JSON logging (prod profile), HTTP security headers, OWASP Dependency-Check + CI + k6 tests.
+- **Part B — external infrastructure still required:** Redis (distributed lockout), Sentry (error monitoring), staging environment, UptimeRobot (uptime), read replica, production secrets.
+- **Part C — deferred / risky future work:** the phased plan to adopt Flyway migrations and switch to `ddl-auto=validate` (intentionally **not** done in this pass — the schema strategy remains `ddl-auto=update`).
+
+---
+
 ## API Reference
 
 All endpoints are prefixed with `/api/v1/`. Protected endpoints require `Authorization: Bearer <token>`.
 
 ### Authentication
 ```
-POST   /auth/login                       Login → { token, user }
+POST   /auth/login                       Login → { token, refreshToken, user }
 POST   /auth/register                    Register member
+POST   /auth/refresh                     Rotate refresh token → { token, refreshToken }
+POST   /auth/logout                      Revoke refresh token
 GET    /auth/me                          Get current user
 POST   /auth/change-password             Change password (all roles)
 ```

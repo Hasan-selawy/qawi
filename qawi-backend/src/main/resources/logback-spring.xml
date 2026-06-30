@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- Spring Boot's logback defaults (color converters, base properties). -->
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <property name="CONSOLE_PATTERN"
+              value="%d{HH:mm:ss} [%thread] %highlight(%-5level) %cyan(%logger{36}) - %msg [reqId=%X{requestId}]%n"/>
+
+    <!-- Human-readable console output — the default for local development. -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${CONSOLE_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Structured JSON to stdout, for log aggregation in deployed environments.
+         MDC keys set by RequestLoggingFilter (requestId, userId) are included as
+         first-class fields. -->
+    <appender name="JSON" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeMdcKeyName>requestId</includeMdcKeyName>
+            <includeMdcKeyName>userId</includeMdcKeyName>
+            <customFields>{"app":"qawi-backend"}</customFields>
+        </encoder>
+    </appender>
+
+    <!-- JSON only when the 'prod' or 'json-logging' Spring profile is active. -->
+    <springProfile name="prod | json-logging">
+        <root level="INFO">
+            <appender-ref ref="JSON"/>
+        </root>
+    </springProfile>
+
+    <!-- Default (dev / no profile): readable console. -->
+    <springProfile name="!prod &amp; !json-logging">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+
+    <logger name="com.qawi" level="INFO"/>
+</configuration>

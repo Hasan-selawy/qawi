@@ -1,5 +1,6 @@
 - [Nutrition V2 seed gap](nutrition-v2-seed.md) — DataSeeder has guard `if count > 0`; new role users need their own `seedXIfMissing()` method called from run().
 - [Mobile API wakeup handling](mobile-api-wakeup.md) — Replit wakeup interstitial + Spring Boot startup can take >12s; apiFetch retries with sentinel error; login shows bilingual "warming up" message.
+- [Auth hardening gotchas](auth-hardening.md) — per-IP rate limiter masks per-email lockout in tests (vary XFF); refresh rotation must be an atomic conditional UPDATE to stay single-use under concurrency.
 - [Subscription grace/lock status](subscription-status.md) — status is computed not persisted; route all display/lock through SubscriptionStatusUtil.graceCutoff; per-member labels grace-aware, binary aggregate buckets left raw on purpose.
 - [Notification push delivery](notification-push.md) — web-push 5.1.1 needs bcprov declared; validate push endpoints (SSRF); push fan-out runs after-commit & non-transactional; VAPID no-op when keys absent.
 - [Qawi marketing preview/build/HMR](qawi-marketing-preview.md) — site at port 5173 path `/marketing/` (NOT 5000=qawi-web); build needs PORT+BASE_PATH; renaming content.ts fields → transient HMR key/undefined warnings (not real bugs); no headless Chrome for Lighthouse.

@@ -3,6 +3,7 @@ package com.qawi.controller;
 import com.qawi.dto.AuthResponse;
 import com.qawi.dto.ChangePasswordRequest;
 import com.qawi.dto.LoginRequest;
+import com.qawi.dto.RefreshTokenRequest;
 import com.qawi.dto.RegisterRequest;
 import com.qawi.dto.UserDto;
 import com.qawi.service.AuthService;
@@ -29,6 +30,17 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
+        return ResponseEntity.ok(authService.refresh(request.getRefreshToken()));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(@Valid @RequestBody RefreshTokenRequest request) {
+        authService.logout(request.getRefreshToken());
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/me")

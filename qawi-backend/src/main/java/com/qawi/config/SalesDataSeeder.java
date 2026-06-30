@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.annotation.Order;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -23,6 +24,11 @@ public class SalesDataSeeder implements ApplicationRunner {
     private final UserRepository userRepository;
     private final MemberLeadService memberLeadService;
     private final PasswordEncoder passwordEncoder;
+
+    // Seed credential injected from the environment (dev fallback keeps the
+    // seeded SALES login working out of the box).
+    @Value("${QAWI_DEMO_USER_PASSWORD:password123}")
+    private String demoUserPassword;
 
     @Override
     public void run(ApplicationArguments args) {
@@ -42,7 +48,7 @@ public class SalesDataSeeder implements ApplicationRunner {
             userRepository.save(User.builder()
                     .name("Sales Agent")
                     .email("sales@ironpeak.com")
-                    .password(passwordEncoder.encode("password123"))
+                    .password(passwordEncoder.encode(demoUserPassword))
                     .role(Role.SALES)
                     .gymId(gym.getId())
                     .isActive(true)

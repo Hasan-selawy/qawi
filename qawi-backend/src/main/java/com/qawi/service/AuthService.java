@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -28,6 +29,8 @@ public class AuthService {
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
+    private final LoginAttemptService loginAttemptService;
+    private final RefreshTokenService refreshTokenService;
 
     public AuthResponse register(RegisterRequest req) {
         req.setEmail(req.getEmail().toLowerCase().trim());
@@ -56,22 +59,42 @@ public class AuthService {
         String token = jwtService.generateToken(user);
         return AuthResponse.builder()
                 .token(token)
+                .refreshToken(refreshTokenService.issue(user.getId()))
                 .user(UserDto.from(user))
                 .build();
     }
 
     public AuthResponse login(LoginRequest req) {
         String email = req.getEmail().toLowerCase().trim();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new AppException(
-                        "Invalid email or password",
-                        "البريد الإلكتروني أو كلمة المرور غير صحيحة",
-                        HttpStatus.UNAUTHORIZED
-                ));
+
+        // Brute-force protection: once an account has accumulated too many recent
+        // consecutive failures it is locked for a cooldown window. Checked before
+        // any credential work so a locked account cannot keep guessing.
+        if (loginAttemptService.isLocked(email)) {
+            long minutes = Math.max(loginAttemptService.secondsUntilUnlock(email) / 60 + 1, 1);
+            throw new AppException(
+                    "Too many failed login attempts. Please try again in " + minutes + " minute(s).",
+                    "محاولات تسجيل دخول فاشلة كثيرة. يرجى المحاولة مرة أخرى بعد " + minutes + " دقيقة/دقائق.",
+                    HttpStatus.TOO_MANY_REQUESTS
+            );
+        }
+
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null) {
+            // Unknown email is recorded as a failure (same generic 401) so the
+            // lockout also defends against username enumeration / spraying.
+            loginAttemptService.recordFailure(email);
+            throw new AppException(
+                    "Invalid email or password",
+                    "البريد الإلكتروني أو كلمة المرور غير صحيحة",
+                    HttpStatus.UNAUTHORIZED
+            );
+        }
 
         // Block login only when the member is locked out — i.e. the subscription
         // ended more than the grace period ago. Members still within the grace
-        // window keep full access and may log in.
+        // window keep full access and may log in. This is NOT a credential
+        // failure, so it never contributes to the brute-force lockout counter.
         if (SubscriptionStatusUtil.isLockedForAccess(user, LocalDate.now())) {
             throw new AppException(
                     "Your subscription has expired. Please renew to access the gym.",
@@ -80,14 +103,26 @@ public class AuthService {
             );
         }
 
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(email, req.getPassword())
-        );
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(email, req.getPassword())
+            );
+        } catch (AuthenticationException ex) {
+            loginAttemptService.recordFailure(email);
+            throw new AppException(
+                    "Invalid email or password",
+                    "البريد الإلكتروني أو كلمة المرور غير صحيحة",
+                    HttpStatus.UNAUTHORIZED
+            );
+        }
+
+        loginAttemptService.recordSuccess(email);
 
         String token = jwtService.generateToken(user);
 
         AuthResponse.AuthResponseBuilder builder = AuthResponse.builder()
                 .token(token)
+                .refreshToken(refreshTokenService.issue(user.getId()))
                 .user(UserDto.from(user));
 
         // Subscription alert: warn when expiring soon, or when in the post-expiry
@@ -138,5 +173,30 @@ public class AuthService {
 
         user.setPassword(passwordEncoder.encode(req.getNewPassword()));
         userRepository.save(user);
+    }
+
+    /**
+     * Exchange a valid refresh token for a new access token. The presented
+     * refresh token is rotated (revoked and replaced) so a leaked token has a
+     * limited replay window.
+     */
+    public AuthResponse refresh(String refreshToken) {
+        RefreshTokenService.Rotation rotation = refreshTokenService.rotate(refreshToken);
+        User user = userRepository.findById(rotation.userId())
+                .orElseThrow(() -> new AppException(
+                        "Invalid or expired refresh token",
+                        "رمز التحديث غير صالح أو منتهي الصلاحية",
+                        HttpStatus.UNAUTHORIZED));
+        String token = jwtService.generateToken(user);
+        return AuthResponse.builder()
+                .token(token)
+                .refreshToken(rotation.rawToken())
+                .user(UserDto.from(user))
+                .build();
+    }
+
+    /** Revoke a refresh token (logout). Idempotent — unknown tokens are ignored. */
+    public void logout(String refreshToken) {
+        refreshTokenService.revoke(refreshToken);
     }
 }

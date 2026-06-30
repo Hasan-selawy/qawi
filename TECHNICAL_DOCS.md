@@ -26,6 +26,7 @@
    - 5.12 [Services](#512-services)
    - 5.13 [Data Seeders](#513-data-seeders)
    - 5.14 [Feature Flags](#514-feature-flags)
+   - 5.15 [Security Hardening (code-level pass)](#515-security-hardening-code-level-pass)
 6. [Web Frontend — React / Vite](#6-web-frontend--react--vite)
    - 6.1 [Architecture & Routing](#61-architecture--routing)
    - 6.2 [Auth Flow](#62-auth-flow)
@@ -855,8 +856,10 @@ All 35 repositories extend `JpaRepository<Entity, UUID>` and are located in `com
 #### `/api/v1/auth` — Authentication (Public)
 | Method | Path | Description |
 |---|---|---|
-| POST | `/login` | Authenticate → JWT + UserDto + subscription alert |
+| POST | `/login` | Authenticate → JWT + refresh token + UserDto + subscription alert |
 | POST | `/register` | Register new user |
+| POST | `/refresh` | Rotate refresh token → new JWT + new refresh token |
+| POST | `/logout` | Revoke the presented refresh token |
 | GET | `/me` | Current user's DTO |
 | POST | `/change-password` | Change own password |
 
@@ -1141,6 +1144,20 @@ Per-gym feature flags are stored as boolean columns on the `Gym` entity and togg
 | `analyticsAdvancedEnabled` | Unlocks revenue report endpoint; shows advanced charts in admin analytics |
 
 All clients fetch flags via `GET /api/v1/me/gym-config` on login and cache the result.
+
+### 5.15 Security Hardening (code-level pass)
+
+A safe, non-destructive hardening pass added the following. The schema strategy is **unchanged** (`ddl-auto=update`); see **[`QAWI_SECURITY.md`](QAWI_SECURITY.md)** for the full Part A/B/C breakdown.
+
+| Area | What was added |
+|---|---|
+| Seed credentials | Demo passwords read from `QAWI_DEMO_USER_PASSWORD` / `QAWI_DEMO_SUPER_ADMIN_PASSWORD` (dev fallbacks); never logged |
+| Brute-force lockout | `LoginAttemptService` (in-memory): `QAWI_LOGIN_MAX_ATTEMPTS` (5) failures → lock for `QAWI_LOGIN_LOCK_MINUTES` (15); checked first in `AuthService.login`, returns bilingual `429`; per-email, resets on success; subscription-lock is not a credential failure |
+| Refresh tokens | `RefreshToken` entity (`refresh_tokens`; **only** SHA-256 hash stored); `POST /auth/refresh` rotates, `POST /auth/logout` revokes; `QAWI_REFRESH_TOKEN_DAYS` (30); access JWT unchanged |
+| Async push | `AsyncConfig` bounded `pushTaskExecutor` + `@Async PushFanOutService` invoked from `NotificationService` after-commit hook |
+| JSON logging | `logstash-logback-encoder` + `logback-spring.xml`: readable console by default, JSON only under `prod` / `json-logging` profile (keeps `reqId` MDC) |
+| Security headers | `SecurityConfig` emits HSTS, `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy`, conservative CSP, `Permissions-Policy`. CORS + actuator lockdown unchanged |
+| Dependency scan / CI | OWASP Dependency-Check Maven plugin (unbound; on-demand), `.github/workflows/build-test.yml` + `security.yml`, `tests/k6/load.js` + `security.js` |
 
 ---
 

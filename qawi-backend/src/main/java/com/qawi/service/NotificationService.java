@@ -49,6 +49,7 @@ public class NotificationService {
     private final NotificationSettingService notificationSettingService;
     private final WebPushService webPushService;
     private final ExpoPushService expoPushService;
+    private final PushFanOutService pushFanOutService;
 
     // ── Creation ──────────────────────────────────────────────────────────
 
@@ -155,32 +156,21 @@ public class NotificationService {
         final String actionUrl = cmd.getActionUrl();
         final NotificationType type = cmd.getType();
 
-        final Runnable task = () -> {
-            if (browser) {
-                try {
-                    webPushService.sendToUser(userId, title, titleAr, body, bodyAr, actionUrl, type);
-                } catch (Exception ignored) {
-                    // best-effort
-                }
-            }
-            if (mobile) {
-                try {
-                    expoPushService.sendToUser(userId, title, titleAr, body, bodyAr, actionUrl, type);
-                } catch (Exception ignored) {
-                    // best-effort
-                }
-            }
-        };
-
+        // Dispatch the outbound web/Expo calls asynchronously (PushFanOutService
+        // is @Async), after the in-app row commits — so we never hold a DB
+        // connection open during HTTP calls, never push for a rolled-back row,
+        // and never block the request thread on push latency.
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
                 public void afterCommit() {
-                    task.run();
+                    pushFanOutService.fanOut(userId, browser, mobile, title, titleAr,
+                            body, bodyAr, actionUrl, type);
                 }
             });
         } else {
-            task.run();
+            pushFanOutService.fanOut(userId, browser, mobile, title, titleAr,
+                    body, bodyAr, actionUrl, type);
         }
     }
 

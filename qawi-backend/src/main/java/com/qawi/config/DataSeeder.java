@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.annotation.Order;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -27,6 +28,16 @@ public class DataSeeder implements ApplicationRunner {
     private final ExerciseCategoryRepository categoryRepository;
     private final ExerciseTemplateRepository exerciseTemplateRepository;
 
+    // Demo/seed credentials are injected from the environment so they are not
+    // baked into the source. Dev fallbacks keep the seeded logins working out of
+    // the box; override QAWI_DEMO_USER_PASSWORD / QAWI_DEMO_SUPER_ADMIN_PASSWORD
+    // (and rotate seeded accounts) in any shared or production environment.
+    @Value("${QAWI_DEMO_USER_PASSWORD:password123}")
+    private String demoUserPassword;
+
+    @Value("${QAWI_DEMO_SUPER_ADMIN_PASSWORD:qawi_super_2024}")
+    private String demoSuperAdminPassword;
+
     @Override
     public void run(ApplicationArguments args) {
         if (userRepository.count() > 0) {
@@ -37,13 +48,13 @@ public class DataSeeder implements ApplicationRunner {
         }
 
         log.info("Seeding database...");
-        String hashed = passwordEncoder.encode("password123");
+        String hashed = passwordEncoder.encode(demoUserPassword);
 
         // SUPER_ADMIN
         userRepository.save(User.builder()
                 .name("Qawi Admin")
                 .email("super@qawi.com")
-                .password(passwordEncoder.encode("qawi_super_2024"))
+                .password(passwordEncoder.encode(demoSuperAdminPassword))
                 .role(Role.SUPER_ADMIN)
                 .build());
 
@@ -114,7 +125,7 @@ public class DataSeeder implements ApplicationRunner {
             log.info("Adding SUPER_ADMIN seed user...");
             userRepository.save(User.builder()
                     .name("Qawi Admin").email("super@qawi.com")
-                    .password(passwordEncoder.encode("qawi_super_2024"))
+                    .password(passwordEncoder.encode(demoSuperAdminPassword))
                     .role(Role.SUPER_ADMIN).build());
         }
     }
@@ -128,11 +139,11 @@ public class DataSeeder implements ApplicationRunner {
                         userRepository.save(User.builder()
                                 .name("Dr. Sara Nutrition")
                                 .email("nutritionist@ironpeak.com")
-                                .password(passwordEncoder.encode("password123"))
+                                .password(passwordEncoder.encode(demoUserPassword))
                                 .role(Role.NUTRITIONIST)
                                 .gymId(gym.getId())
                                 .build());
-                        log.info("Seeded NUTRITIONIST user: nutritionist@ironpeak.com / password123");
+                        log.info("Seeded NUTRITIONIST user: nutritionist@ironpeak.com");
                     });
         }
     }

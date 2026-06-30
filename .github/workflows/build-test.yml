@@ -1,0 +1,60 @@
+name: Build & Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  backend:
+    name: Spring Boot API
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: qawi
+          POSTGRES_PASSWORD: qawi
+          POSTGRES_DB: qawi
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U qawi"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      PGHOST: localhost
+      PGPORT: "5432"
+      PGDATABASE: qawi
+      PGUSER: qawi
+      PGPASSWORD: qawi
+      # CI-only signing secret (>= 32 bytes). Never used outside CI.
+      JWT_SECRET: ci-only-test-secret-please-override-32bytes-minimum
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 19
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "19"
+          cache: maven
+      - name: Build & test
+        working-directory: qawi-backend
+        run: mvn -B -ntp verify
+
+  web:
+    name: Web (qawi-web)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - name: Set up Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build qawi-web
+        run: pnpm --filter @workspace/qawi-web run build

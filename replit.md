@@ -52,7 +52,7 @@ com.qawi
 
 | Module | Base Path | Roles | Description |
 |--------|-----------|-------|-------------|
-| **Auth** | `/api/v1/auth` | public/all | Login, register-gym, change-password, me, check-email |
+| **Auth** | `/api/v1/auth` | public/all | Login, register-gym, change-password, me, check-email, refresh, logout |
 | **Me** | `/api/v1/me` | authenticated | Gym config/feature flags, profile |
 | **Gym Admin** | `/api/v1/admin` | GYM_ADMIN | Dashboard KPIs, member/coach CRUD, subscriptions, analytics, notifications |
 | **Employees** | `/api/v1/admin/employees` | GYM_ADMIN | Add/remove/deactivate staff accounts |
@@ -169,6 +169,19 @@ Per-user: `user.selfTrainingEnabled` (boolean) — when true for a MEMBER, they 
 - **GlobalExceptionHandler**: `AppException`, `MethodArgumentNotValidException`, `EntityNotFoundException` (404), `DataIntegrityViolationException` (409), `BadCredentialsException`, `AuthenticationException`, `AccessDeniedException`, `NullPointerException`, generic `Exception`
 - **Rate limiting** (`RateLimitFilter` via Bucket4j 8.10.1): login 5 req/min/IP; register-gym 3 req/hr/IP; all others 100 req/min per user or IP
 - **Request logging** (`RequestLoggingFilter`): MDC-tagged `[METHOD /path] userId=... duration=...ms status=...`, skips `/actuator/*`
+
+### Security Hardening (code-level pass)
+
+A safe, non-destructive pass (schema strategy unchanged — still `ddl-auto=update`). Full Part A/B/C breakdown in **`QAWI_SECURITY.md`**.
+
+- **Seed credentials → env**: demo passwords from `QAWI_DEMO_USER_PASSWORD` / `QAWI_DEMO_SUPER_ADMIN_PASSWORD` (dev fallbacks); never logged
+- **Brute-force lockout** (`LoginAttemptService`, in-memory): `QAWI_LOGIN_MAX_ATTEMPTS` (5) failures → lock `QAWI_LOGIN_LOCK_MINUTES` (15 min) per email; bilingual `429`; subscription-lock is not a credential failure
+- **Refresh tokens** (`refresh_tokens` table, SHA-256 hash only): `POST /auth/refresh` (rotate) + `POST /auth/logout` (revoke); `QAWI_REFRESH_TOKEN_DAYS` (30); access JWT unchanged
+- **Async push**: `AsyncConfig` bounded `pushTaskExecutor` + `@Async PushFanOutService` from `NotificationService` after-commit
+- **JSON logging**: `logback-spring.xml` — readable console default, JSON under `prod` / `json-logging` profile
+- **Security headers** (`SecurityConfig`): HSTS, nosniff, frame DENY, Referrer-Policy, conservative CSP, Permissions-Policy. CORS + actuator lockdown unchanged
+- **Tooling**: OWASP Dependency-Check (unbound, on-demand), `.github/workflows/` CI, `tests/k6/` load + security scripts
+- **Deferred (Part C)**: Flyway + `ddl-auto=validate` — intentionally NOT done (startup-failure risk)
 
 ### Seed Data (runs on startup; guards prevent re-seeding)
 
@@ -367,6 +380,11 @@ Public-facing marketing website for the Qawi SaaS platform. Includes landing pag
 | `SESSION_SECRET` | Fallback for `JWT_SECRET` in dev |
 | `EXPO_PUBLIC_DOMAIN` | Replit domain used by mobile app to reach `/api/v1` |
 | `OPENAI_API_KEY` | Used by `NutritionV3Service` for AI food analysis |
+| `QAWI_DEMO_USER_PASSWORD` | Seeded demo user password (dev fallback `password123`) |
+| `QAWI_DEMO_SUPER_ADMIN_PASSWORD` | Seeded super-admin password (dev fallback `qawi_super_2024`) |
+| `QAWI_LOGIN_MAX_ATTEMPTS` | Failed logins before account lockout (default 5) |
+| `QAWI_LOGIN_LOCK_MINUTES` | Account lock duration in minutes (default 15) |
+| `QAWI_REFRESH_TOKEN_DAYS` | Refresh-token lifetime in days (default 30) |
 
 ---
 

@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.annotation.Order;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -33,6 +34,12 @@ public class V3DataSeeder implements ApplicationRunner {
     private final AttendanceRepository attendanceRepository;
     private final CoachMemberRepository coachMemberRepository;
 
+    // Seed credential injected from the environment (dev fallback keeps seeded
+    // staff/nutritionist logins working out of the box). Override via env in
+    // shared/production environments.
+    @Value("${QAWI_DEMO_USER_PASSWORD:password123}")
+    private String demoUserPassword;
+
     @Override
     public void run(ApplicationArguments args) {
         Optional<com.qawi.entity.Gym> gymOpt = gymRepository.findByName("Iron Peak Gym")
@@ -44,7 +51,7 @@ public class V3DataSeeder implements ApplicationRunner {
 
         com.qawi.entity.Gym gym = gymOpt.get();
         healStaffGymId(gym);
-        String hashed = passwordEncoder.encode("password123");
+        String hashed = passwordEncoder.encode(demoUserPassword);
 
         seedReceptionist(gym, hashed);
         seedAccountant(gym, hashed);
@@ -276,7 +283,7 @@ public class V3DataSeeder implements ApplicationRunner {
                     .role(Role.NUTRITIONIST)
                     .gymId(gym.getId())
                     .build());
-            log.info("Seeded NUTRITIONIST: nutritionist@ironpeak.com / password123");
+            log.info("Seeded NUTRITIONIST: nutritionist@ironpeak.com");
         }
     }
 }

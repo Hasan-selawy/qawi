@@ -47,3 +47,15 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Secrets / environment files (keep the committed example template only)
+.env
+.env.*
+!.env.example
+
+# Java / Maven build output
+target/
+*.class
+
+# Logs
+*.log
