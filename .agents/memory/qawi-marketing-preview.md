@@ -11,4 +11,6 @@ The `artifacts/qawi-marketing` Vite dev server is previewed at **external port 5
 
 **How to apply:** when screenshotting or testing the marketing landing page, use path `/marketing/` (or `/marketing/?lang=ar` for RTL) at port 5173.
 
+QA/Lighthouse note: there is **no headless Chrome/Chromium on PATH** in this environment, so Lighthouse cannot be run directly for Performance/SEO scores. Do a manual audit against the known Lighthouse checks (render-blocking fonts → load Google Fonts async via `media="print" onload`, single H1, meta description, valid hreflang/canonical, structured-data URLs that don't 404, `aria-hidden` decorative mockups, no `maximum-scale<5` in viewport). The `app_preview` screenshot tool captures at ~1280px only — it cannot verify 375px mobile layout, so rely on responsive class review + an `overflow-x: clip` safety net (use `clip` not `hidden` so the sticky navbar still works).
+
 Build/typecheck note: `qawi-marketing/vite.config.ts` throws unless both `PORT` and `BASE_PATH` env vars are set. Run builds as `PORT=5000 BASE_PATH=/marketing/ pnpm --filter @workspace/qawi-marketing run build`. Pre-existing TS errors in `src/components/ui/button-group.tsx` and `calendar.tsx` are unrelated shadcn issues and not imported by marketing pages.

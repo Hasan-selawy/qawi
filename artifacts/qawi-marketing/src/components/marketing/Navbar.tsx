@@ -56,7 +56,7 @@ export function Navbar({
   const langBtn = (
     <button
       onClick={toggle}
-      aria-label={isAr ? 'Switch to English' : 'التبديل إلى العربية'}
+      aria-label={isAr ? 'التبديل إلى الإنجليزية' : 'Switch to Arabic'}
       className="px-3 py-2 rounded-lg text-sm font-semibold text-white/70 hover:text-white transition-colors outline-none focus-visible:ring-2 focus-visible:ring-green-500"
       style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
     >

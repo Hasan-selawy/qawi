@@ -84,7 +84,7 @@ export function Footer({
           <div className="flex items-center gap-4">
             <button
               onClick={toggle}
-              aria-label={isAr ? 'Switch to English' : 'التبديل إلى العربية'}
+              aria-label={isAr ? 'التبديل إلى الإنجليزية' : 'Switch to Arabic'}
               className="text-xs px-3 py-1.5 rounded-lg font-medium text-white/55 hover:text-white transition-colors outline-none focus-visible:ring-2 focus-visible:ring-green-500"
               style={{ background: 'rgba(255,255,255,0.05)' }}
             >

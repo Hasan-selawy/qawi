@@ -13,6 +13,7 @@ function Shell({ title, children }: { title: string; children: React.ReactNode }
   return (
     <div
       className="rounded-2xl overflow-hidden w-full"
+      aria-hidden="true"
       style={{
         background: 'linear-gradient(160deg, rgba(20,27,46,0.95), rgba(10,15,30,0.95))',
         border: '1px solid rgba(255,255,255,0.1)',

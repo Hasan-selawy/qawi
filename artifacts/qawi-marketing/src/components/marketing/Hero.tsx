@@ -6,7 +6,7 @@ import { GREEN, BG, cn, CONTAINER, fadeUp } from './shared';
 function DashboardMockup({ t, isAr }: { t: typeof content.en.hero.mockup; isAr: boolean }) {
   const bars = [42, 60, 48, 72, 58, 88, 70];
   return (
-    <div className="relative w-full max-w-[460px] mx-auto" dir="ltr">
+    <div className="relative w-full max-w-[460px] mx-auto" dir="ltr" aria-hidden="true">
       {/* Main dashboard panel */}
       <motion.div
         initial={{ opacity: 0, y: 30 }}

@@ -477,6 +477,10 @@
 html {
   scroll-behavior: smooth;
 }
+html, body {
+  max-width: 100%;
+  overflow-x: clip;
+}
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
