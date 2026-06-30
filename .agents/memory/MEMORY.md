@@ -1,2 +1,3 @@
 - [Nutrition V2 seed gap](nutrition-v2-seed.md) — DataSeeder has guard `if count > 0`; new role users need their own `seedXIfMissing()` method called from run().
 - [Mobile API wakeup handling](mobile-api-wakeup.md) — Replit wakeup interstitial + Spring Boot startup can take >12s; apiFetch retries with sentinel error; login shows bilingual "warming up" message.
+- [Qawi marketing preview port](qawi-marketing-preview.md) — marketing site is at external port 5173 path /marketing/ (NOT 5000=qawi-web); build needs PORT+BASE_PATH env.

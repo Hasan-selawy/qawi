@@ -1,0 +1,559 @@
+You are a senior product designer, frontend engineer, performance engineer, SEO specialist, accessibility specialist, and conversion-rate optimizer.
+
+I have an app called Qawi. It is an AI-powered gym management platform for gyms, coaches, nutritionists, receptionists, staff, and members. The current landing page looks weak and unprofessional. Redesign and rebuild it into a premium SaaS landing page that feels like a serious MENA fitness-tech product.
+
+IMPORTANT:
+First inspect the project structure and tech stack before editing.
+Identify whether this is Next.js, React/Vite, Remix, or another framework.
+Do not break backend logic, auth, APIs, routing, environment variables, database logic, dashboards, or existing app functionality.
+Improve only the landing/public marketing pages unless shared components are clearly required.
+Follow the existing code style and file structure.
+Run the app/build after editing and fix all errors.
+
+Brand:
+- Name: Qawi
+- Product: smart AI-powered gym management platform
+- Audience: gym owners, coaches, nutritionists, receptionists, staff, and fitness businesses in the MENA region
+- Languages: English and Arabic support
+- Tone: premium, confident, clean, modern, trustworthy, business-ready
+- Visual style: premium dark SaaS, high contrast, neon green accent, polished gradients, glass cards, subtle motion, professional spacing
+- Main color: green, but use it carefully and professionally
+- Avoid childish emojis everywhere. Use clean SVG icons or icon components instead.
+- Fix all weak copy. For example, never use “Arabic Foods in DB.” Use polished copy like “200+ Arabic foods in database.”
+
+Main goal:
+Create a world-class landing page with excellent UX, SEO, accessibility, performance, responsiveness, and conversion rate.
+The page should feel like a real premium startup/product website, not a basic template.
+The page should focus on product value, role-based workflows, and premium UI.
+The main conversion path is early access.
+
+VERY IMPORTANT SECTION RULES:
+Do NOT add a pricing section.
+Do NOT add testimonials.
+Do NOT add reviews.
+Do NOT add fake customer quotes.
+Do NOT add fake people.
+Do NOT add fake company logos.
+Do NOT invent pricing plans.
+Do NOT invent fake social proof.
+
+Instead of pricing and reviews, create a premium interactive “Choose Your Role” section where users can click Admin, Coach, Nutritionist, Receptionist, Member, Staff/Manager, and the content changes for each role.
+
+Design quality bar:
+This must look like a top-tier SaaS landing page from companies like Linear, Vercel, Stripe, Framer, Superhuman, and modern AI startups — but customized for Qawi, gyms, and the MENA market.
+
+Do not create a generic dark website.
+The page should feel custom, expensive, sharp, and memorable.
+
+Visual direction:
+- Premium dark interface with layered gradients, soft green glows, and elegant glass panels.
+- Strong hero composition with a beautiful product mockup, not random boxes.
+- High-end spacing, typography, and alignment.
+- Every section should have a clear visual purpose.
+- Use fewer but better visual elements.
+- No cheap-looking cards.
+- No random emojis.
+- No messy neon overload.
+- Make the page feel like a real funded startup product.
+- Make the first screen instantly explain what Qawi does.
+- The CTA must be obvious without being annoying.
+- The design should build trust for gym owners.
+- Make the page feel reliable, fast, modern, and business-ready.
+
+Required page structure:
+
+1. Header
+Create a premium sticky or clean top navigation.
+
+Header must include:
+- Logo on the left
+- Navigation links:
+  - Features
+  - Roles
+  - MENA Ready
+  - FAQ
+- Language toggle:
+  - عربي / EN
+- Main CTA:
+  - Get Early Access
+- Mobile hamburger menu with accessible behavior
+
+Header requirements:
+- Consistent across the full landing page
+- Smooth scroll to page sections
+- Strong focus states
+- No layout shift
+- Mobile menu should look polished, not default
+- Close mobile menu when clicking a nav link
+- No horizontal overflow
+
+2. Hero section
+Create a powerful hero section.
+
+Headline options:
+Use one strong H1 only. Pick the best one or improve it:
+“Run Your Gym Smarter with Qawi”
+or
+“The AI-powered command center for modern gyms”
+or
+“Manage your gym, coaching, nutrition, and members in one platform”
+
+Subheadline:
+Qawi helps gym owners manage members, workouts, nutrition, bookings, staff, and analytics from one bilingual platform built for the MENA fitness market.
+
+Hero must include:
+- Primary CTA: Get Early Access
+- Secondary CTA: See Features
+- Trust/value line:
+  “Built for gyms, coaches, and nutritionists across the MENA region.”
+- Premium product mockup on the right
+
+Product mockup:
+If there are no real assets, create a CSS-based dashboard/app mockup.
+The mockup should look like an actual premium SaaS product, with:
+- Revenue card
+- Active members
+- Attendance chart
+- Workout plan card
+- Nutrition/macros card
+- Member progress
+- Check-in status
+- Mobile member preview
+
+Hero design requirements:
+- Visually impressive but lightweight
+- Strong background depth
+- Subtle green glow
+- Polished dashboard cards
+- No heavy animation library unless already installed
+- Responsive and beautiful on desktop, tablet, and mobile
+
+3. Stats / proof section
+Create realistic polished stats cards.
+
+Use:
+- 200+ Arabic foods in database
+- 7 role-based dashboards
+- Arabic & English support
+- Fast analytics and reports
+
+Do NOT make fake huge claims like “100% RTL support” unless it is actually implemented.
+Do NOT make fake user/customer/revenue claims.
+
+4. Problem / Solution section
+Create a section showing the real pain gyms deal with and how Qawi solves it.
+
+Problems:
+- Scattered WhatsApp messages
+- Manual member tracking
+- Paper workout plans
+- Nutrition data not localized
+- Confusing class bookings
+- No clear analytics
+- Staff using disconnected tools
+
+Solution:
+Qawi brings members, workouts, nutrition, bookings, staff operations, and analytics into one connected platform.
+
+Design:
+Use a premium split layout:
+Left side: “Before Qawi” pain points
+Right side: “With Qawi” solutions
+Make the “With Qawi” side feel visually better and more polished.
+
+5. Features section
+Create beautiful feature cards.
+
+Section title:
+“Everything your gym team needs to operate smarter”
+
+Subtitle:
+“From member onboarding to workout planning, nutrition, class bookings, and analytics — Qawi keeps your fitness business connected.”
+
+Feature cards:
+- Member Management
+  Description: Manage member profiles, memberships, progress, notes, and activity from one clean dashboard.
+
+- AI Nutrition Plans
+  Description: Build personalized meal plans with macro tracking and localized Arabic food data.
+
+- Workout Builder
+  Description: Create structured workout plans with sets, reps, exercises, and progress tracking.
+
+- Class Booking
+  Description: Schedule classes, manage capacity, track attendance, and simplify member bookings.
+
+- Coach Dashboard
+  Description: Give coaches the tools to manage assigned members, training plans, notes, and progress.
+
+- Advanced Analytics
+  Description: View attendance, member growth, revenue trends, and performance reports in seconds.
+
+- Arabic Food Database
+  Description: Use a localized food database with 200+ Arabic foods for better nutrition tracking.
+
+- Mobile Member App
+  Description: Let members access workouts, meals, bookings, check-ins, and progress from mobile.
+
+Feature design requirements:
+- Clean professional icons
+- Benefit-focused copy
+- Consistent spacing
+- Polished hover states
+- No random emojis
+- No fake “Pro” badges unless they make sense
+
+6. Interactive Role Section
+This should be one of the most impressive parts of the landing page.
+
+Section title:
+“Built for every role in your gym”
+
+Subtitle:
+“Qawi gives each team member the exact tools they need — from owners managing revenue to members tracking progress.”
+
+Create role selector buttons/tabs:
+- Gym Admin
+- Coach
+- Nutritionist
+- Receptionist
+- Member
+- Staff / Manager
+
+When the user clicks a role, the section should update dynamically without page refresh.
+
+For each selected role, show:
+1. Role title
+2. Short role description
+3. Key features for that role
+4. A premium dashboard/mockup preview for that role
+
+Role content:
+
+Gym Admin:
+Title:
+“Gym Admin”
+Description:
+“Control your entire fitness business from one command center.”
+Features:
+- Member management
+- Staff and role permissions
+- Revenue overview
+- Attendance insights
+- Class and schedule control
+- Reports and analytics
+- Gym performance dashboard
+
+Coach:
+Title:
+“Coach”
+Description:
+“Build training plans, track progress, and manage members faster.”
+Features:
+- Workout plan builder
+- Exercise library
+- Member progress tracking
+- Assigned member list
+- Training history
+- Check-ins and notes
+- Performance updates
+
+Nutritionist:
+Title:
+“Nutritionist”
+Description:
+“Create localized nutrition plans with Arabic food data and macro tracking.”
+Features:
+- AI nutrition plan creation
+- Arabic food database
+- Macro and calorie tracking
+- Meal plan templates
+- Member food logs
+- Progress review
+- Nutrition notes
+
+Receptionist:
+Title:
+“Receptionist”
+Description:
+“Make front desk operations faster, cleaner, and easier.”
+Features:
+- Member check-ins
+- Visitor management
+- Class booking
+- Attendance lookup
+- Membership status
+- Quick member search
+- Daily front desk overview
+
+Member:
+Title:
+“Member”
+Description:
+“Give members a modern app to follow plans and track their journey.”
+Features:
+- Workout plan access
+- Meal plan access
+- Progress tracking
+- Class bookings
+- Check-in history
+- Water, calories, and activity tracking
+- Mobile-friendly dashboard
+
+Staff / Manager:
+Title:
+“Staff / Manager”
+Description:
+“Help managers coordinate gym operations without confusion.”
+Features:
+- Staff task overview
+- Schedule visibility
+- Member support tools
+- Attendance monitoring
+- Internal notes
+- Operational reports
+- Role-based access
+
+Role section design requirements:
+- Use clean tabs or pill buttons
+- Active role should have a strong green highlight
+- Changing roles should feel smooth with subtle animation
+- On desktop: tabs on top or left, content and mockup beside it
+- On mobile: tabs should be horizontally scrollable or stacked cleanly
+- No backend calls
+- Use React state if this is a React/Next/Vite app
+- Keep it lightweight
+- Make the mockup change for each role using CSS-based dashboard cards
+- Each role mockup should feel different, not just the same card repeated
+- Add accessible aria states for tabs if possible
+- Keyboard navigation should work if practical
+
+7. Bilingual / MENA-ready section
+Create a strong section focused on Arabic-first and MENA-ready workflows.
+
+Title:
+“Built for Arabic and English fitness teams”
+
+Content should highlight:
+- Arabic and English interface direction
+- RTL layout readiness if supported
+- Arabic food database
+- Local gym workflows
+- MENA fitness business needs
+- Coaches, nutritionists, and admins working together
+
+Important:
+If i18n already exists, wire the language toggle correctly.
+If not, structure the page so language switching can be added cleanly later.
+Do not fake full Arabic translation unless implemented.
+The language toggle can be UI-ready if full translation is not available, but do not break anything.
+
+8. Built for modern gyms section
+This replaces testimonials/reviews.
+
+Do NOT add reviews.
+
+Create a section called:
+“Built for modern gyms, not spreadsheets”
+
+Use 3 or 4 premium cards:
+- For gym owners who need clarity
+- For coaches who need speed
+- For nutritionists who need localized data
+- For members who expect a modern app
+
+Each card should explain the product value without pretending to be a customer quote.
+
+9. FAQ section
+Add SEO-friendly FAQ.
+
+Questions:
+- What is Qawi?
+- Who is Qawi for?
+- Does Qawi support Arabic?
+- Can coaches create workout plans?
+- Does Qawi include nutrition plans?
+- Is there a mobile app?
+- How does early access work?
+- Does Qawi replace spreadsheets and WhatsApp tracking?
+
+FAQ requirements:
+- Clean accordion or simple accessible FAQ cards
+- Use semantic buttons for accordion controls if interactive
+- Keep answers concise and helpful
+- Add FAQPage JSON-LD structured data
+
+10. Final CTA section
+Create one strong final CTA section only.
+
+Title:
+“Ready to run your gym smarter?”
+
+Text:
+“Start with Qawi and give your team one connected platform for members, workouts, nutrition, bookings, and analytics.”
+
+Button:
+“Get Early Access”
+
+Small reassurance text:
+“14-day full access. No credit card required.”
+
+Do not create pricing cards.
+Do not create plan comparisons.
+Do not create fake discounts.
+
+11. Footer
+Create a clean premium footer.
+
+Footer must include:
+- Logo and short description
+- Product links
+- Company links
+- Support links
+- Privacy Policy
+- Terms
+- Copyright
+
+App Store / Google Play buttons:
+Only show them if they are real working links.
+If they are not real, either remove them or clearly label them as “Coming soon.”
+Do not create misleading active app store buttons.
+
+Design requirements:
+- Fix spacing. Current page has too much empty space and inconsistent vertical rhythm.
+- Make sections flow naturally.
+- Use a professional max-width container.
+- Use responsive layouts for desktop, tablet, and mobile.
+- Mobile must look excellent, not just acceptable.
+- No horizontal overflow.
+- Use consistent typography scale.
+- Use semantic HTML: header, main, section, article, footer.
+- Use accessible buttons and links.
+- Color contrast must pass WCAG AA.
+- Animations must be subtle and should respect prefers-reduced-motion.
+- Avoid heavy animation libraries unless already installed.
+- Use CSS/Tailwind transitions where possible.
+- Add micro-interactions on buttons/cards.
+- Add subtle background depth.
+- Add professional dashboard UI mockups.
+- Add consistent icon style.
+- Make mobile layout feel intentionally designed, not just stacked.
+- Use smooth section transitions and strong visual hierarchy.
+- Every section must look finished, not placeholder.
+
+Performance requirements:
+- Optimize for Lighthouse 95+ performance where realistically possible.
+- Avoid large images.
+- Use CSS mockups or optimized assets.
+- Lazy-load non-critical visuals.
+- Prevent layout shift.
+- Use responsive image sizes if images are used.
+- Use font-display swap or system fonts.
+- Minimize client-side JavaScript.
+- Do not add unnecessary packages.
+- Remove unused heavy dependencies from this landing page only if safe.
+- Keep role switching lightweight.
+- Run production build and fix all errors.
+
+SEO requirements:
+- Add proper title and meta description.
+- Add Open Graph metadata.
+- Add Twitter card metadata.
+- Add canonical URL placeholder if site URL exists in config/env.
+- If no site URL exists, leave a clean TODO comment.
+- Use one H1 only.
+- Use proper H2/H3 hierarchy.
+- Add descriptive alt text if images are used.
+- Add structured data JSON-LD:
+  - Organization
+  - SoftwareApplication
+  - FAQPage
+- Add or improve robots.txt and sitemap if the framework supports it.
+- Make copy keyword-rich but natural.
+- Include terms naturally:
+  - gym management software
+  - gym management app
+  - fitness club management
+  - workout planning
+  - nutrition plans
+  - Arabic gym software
+  - MENA fitness platform
+- Do not keyword stuff.
+
+Code quality requirements:
+- First inspect the codebase.
+- Identify framework and routing system.
+- Follow the existing project style.
+- Create reusable components where appropriate:
+  - Header
+  - Hero
+  - Stats
+  - ProblemSolution
+  - FeatureCard
+  - Features
+  - RoleTabs
+  - RoleCard
+  - RoleMockup
+  - MenaReady
+  - BuiltForModernGyms
+  - FAQ
+  - CTASection
+  - Footer
+- Use TypeScript types if the project uses TypeScript.
+- Do not leave broken imports.
+- Do not leave console errors.
+- Do not leave dead code.
+- Do not add fake backend calls.
+- Preserve existing routes.
+- Do not break auth or dashboard pages.
+- Keep components clean and maintainable.
+
+Specific fixes from current page:
+- Remove awkward text like “Arabic Foods in DB.”
+- Improve “Built for growth” stats.
+- Remove “What gym owners say.”
+- Remove fake review/testimonial section.
+- Remove pricing section.
+- Make CTA section less empty.
+- Make header consistent across the site.
+- Make app store buttons only appear if real or clearly “Coming soon.”
+- Fix inconsistent spacing between hero, features, roles, stats, CTA, and footer.
+- Make the landing page feel like one cohesive premium product.
+
+Testing checklist:
+After implementation:
+1. Run install if needed.
+2. Run lint if available.
+3. Run typecheck if available.
+4. Run production build.
+5. Fix all build errors.
+6. Check mobile layout at 375px width.
+7. Check tablet layout.
+8. Check desktop layout.
+9. Check for horizontal scrolling.
+10. Check role tabs interaction.
+11. Check mobile menu interaction.
+12. Check smooth-scroll nav links.
+13. Check SEO tags in page source/head.
+14. Check structured data.
+15. Check keyboard navigation.
+16. Check focus states.
+17. Check color contrast.
+18. Check that there are no fake reviews or fake pricing sections.
+19. Check that no existing app functionality is broken.
+
+Final QA instruction:
+Be brutally honest during QA.
+If any part of the page still looks basic, generic, ugly, empty, unbalanced, repetitive, or weak, redesign it before finalizing.
+Do not stop at “working.”
+Stop only when it looks premium, polished, responsive, fast, and production-ready.
+
+Final response after completing:
+Summarize:
+- What files changed
+- What sections were added/redesigned
+- How the interactive role section works
+- What SEO improvements were added
+- What performance improvements were made
+- What commands were run
+- Any remaining TODOs
