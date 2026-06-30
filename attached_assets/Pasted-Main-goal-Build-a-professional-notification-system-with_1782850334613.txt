@@ -1,0 +1,646 @@
+Main goal
+
+Build a professional notification system with:
+
+Existing in-app notifications improved.
+Browser push notifications for the web dashboard.
+Expo push notifications for the mobile app if feasible.
+Manual admin broadcasts.
+Automatic smart notifications for gym workflows.
+Notification preferences and admin settings.
+Anti-spam and duplicate protection.
+
+The product should feel production-ready.
+
+1. Inspect existing notification implementation first
+
+Before coding, inspect:
+
+Backend:
+
+qawi-backend/src/main/java/com/qawi/entity/Notification
+NotificationType
+Notification repository
+Notification service
+Notification controller
+Existing /api/v1/notifications endpoints
+Existing admin notification endpoints if any
+Existing AccessGuard
+Existing roles
+Existing DTO validation patterns
+Existing global error handling
+Existing rate limiting
+Existing feature flags
+
+Web:
+
+Dashboard navbar/sidebar
+Existing notification bell if any
+Existing notification UI
+use-gym-config.ts
+use-language hook
+locale files
+RTL handling
+React Query API patterns
+
+Mobile:
+
+app/notifications.tsx
+Expo Router structure
+services/api.ts
+LanguageContext
+useGymConfig
+existing notification feed behavior
+
+Then extend the existing system instead of replacing it.
+
+2. Improve existing in-app notifications
+
+Upgrade the existing in-app notification system.
+
+Backend should support:
+
+Get current user notifications
+Get unread count
+Mark one notification as read
+Mark all as read
+Archive/delete notification
+Filter by type/category
+Pagination
+Gym/business scoping
+Role-safe access
+
+Frontend web should include:
+
+Bell icon in dashboard header/nav
+Unread badge
+Notification dropdown
+Full notifications page
+Mark as read
+Mark all as read
+Archive/delete
+Empty state
+Loading state
+Error state
+Arabic/English text
+RTL support
+Mobile responsive design
+
+Mobile app should keep or improve:
+
+Notification feed
+Pull-to-refresh
+Read/unread state
+Empty states
+Arabic/English support
+RTL support
+
+Use the existing dark glass-morphism theme.
+
+3. Add manual admin notifications
+
+Create or improve an admin notification page in the web dashboard.
+
+Suggested route:
+
+/admin/notifications
+
+Authorized roles:
+
+GYM_ADMIN
+optionally SUPER_ADMIN for platform-level notifications if current architecture supports it
+
+Admin should be able to send notifications to:
+
+All gym members
+Active members
+Expired members
+Members expiring soon
+Inactive members
+Specific member
+Coaches
+Receptionists
+Accountants
+HR
+Nutritionists
+Admins only
+
+Only include segments that can be safely supported by the existing database.
+
+Manual notification form:
+
+Title English
+Body English
+Title Arabic
+Body Arabic
+Audience segment
+Specific member/user selector when needed
+Priority
+Optional action URL
+Send now or schedule
+Preview before sending
+Confirmation before large broadcasts
+
+Validation:
+
+Title required
+Body required
+Audience required
+Prevent very long messages
+Prevent empty messages
+Warn before sending to all members
+Respect gym scope
+
+Manual sends should:
+
+Create in-app notifications
+Send browser push if enabled and user subscribed
+Send mobile push if implemented and user has token
+Save status/logs
+Avoid unauthorized access
+4. Add automatic gym workflow notifications
+
+Add automatic notifications for important events.
+
+Use the existing entities:
+
+User
+Gym
+GymMemberPlan
+MemberSubscriptionPlan
+SubscriptionHistory
+Attendance
+GymClass
+ClassBooking
+CoachMember
+Nutrition entities if useful
+
+Implement only what fits safely with the current schema.
+
+Automatic notifications to support:
+
+Membership/subscription
+Membership expiring soon
+Membership expired
+Renewal reminder
+Admin alert for members expiring soon
+
+Example timing:
+
+7 days before expiry
+1 day before expiry
+On expiry day
+Payments/subscriptions
+Payment due if payment/due data exists
+Payment overdue if payment/due data exists
+Admin alert for overdue members
+
+Do not expose sensitive payment details in push bodies.
+
+Attendance
+Member inactive for X days
+Admin alert for inactive members
+Member reminder to return to gym
+Classes
+
+Only if classBookingEnabled is enabled:
+
+Class booking confirmation
+Class cancellation
+Class reminder before start
+Admin alert if class is full or nearly full if easy to support
+Coach/admin alerts
+New member joined
+Member assigned to coach
+Member submitted report/suggestion
+Renewal request submitted
+AI insight alert if existing analytics/AI insight logic supports it
+
+Automatic notifications must be:
+
+Idempotent
+Duplicate-safe
+Gym-scoped
+Respect user preferences
+Respect feature flags
+Logged
+Easy to disable/configure
+
+Do not spam users.
+
+5. Add notification settings
+
+Create admin settings for automatic notifications.
+
+Suggested route:
+
+/admin/notification-settings
+
+Settings should include:
+
+Enable/disable membership expiry reminders
+Days before expiry: default 7 and 1
+Enable/disable expired membership alerts
+Enable/disable inactive member alerts
+Inactive threshold: default 14 days
+Enable/disable class reminders if class booking exists
+Class reminder timing: default 2 hours before
+Enable/disable admin alerts
+English/Arabic template preview
+Save button
+
+Store settings in the database if appropriate.
+
+If there is already a gym settings or feature flag structure, extend it carefully.
+
+Do not overload GymFeatures with too many template fields if a separate settings entity is cleaner.
+
+6. Add notification preferences
+
+Create user/member notification preferences.
+
+Users should be able to:
+
+Enable/disable in-app notification categories where appropriate
+Enable/disable browser push
+Choose preferred notification language
+Set quiet hours if simple
+Remove device/browser subscription
+
+Respect preferences before sending push notifications.
+
+In-app system notifications can still exist for important account/admin events, but avoid unnecessary spam.
+
+7. Add browser push notifications for web
+
+Implement browser push notifications in artifacts/qawi-web/ if feasible.
+
+Requirements:
+
+Add service worker
+Add push subscription flow
+Add permission UI inside notification settings, not on page load
+Do not ask permission immediately after login
+Store push subscriptions securely in backend
+Use VAPID keys if needed
+Add backend endpoint to save subscription
+Add backend endpoint to remove subscription
+Send push notifications for important notification events
+Handle unsupported browsers
+Handle revoked permission
+Handle expired subscriptions
+Remove invalid subscriptions after failed sends
+
+Required environment variables if using Web Push:
+
+VAPID_PUBLIC_KEY
+VAPID_PRIVATE_KEY
+VAPID_SUBJECT
+
+If browser push is not feasible in current Replit setup, finish in-app notifications and leave clear TODOs.
+
+8. Add Expo mobile push notifications if feasible
+
+The mobile app already has app/notifications.tsx.
+
+Add Expo push notifications if feasible with current Expo setup.
+
+Mobile requirements:
+
+Ask permission only from notification settings or clear user action
+Save Expo push token to backend
+Remove token on logout if appropriate
+Send push notifications to mobile users
+Handle permission denied
+Handle unsupported device/emulator gracefully
+Respect language preference
+Respect notification preferences
+
+Backend should store mobile push tokens separately from browser push subscriptions.
+
+If Expo push cannot be completed safely now, leave clear TODOs and keep mobile in-app notifications working.
+
+9. Backend database changes
+
+Extend the current notification database model carefully.
+
+Do not destroy existing data.
+
+Add tables/entities only if needed.
+
+Possible additions:
+
+NotificationPreference
+NotificationSetting
+PushSubscription
+MobilePushToken
+NotificationTemplate
+NotificationDeliveryLog
+
+Use JPA entities, repositories, services, DTOs, and validation consistent with the current backend.
+
+Every notification-related table must include gym/business scoping where needed.
+
+Suggested fields for push subscription:
+
+id
+user
+gym
+endpoint
+p256dh key
+auth key
+user agent/device label
+active
+created_at
+updated_at
+last_used_at
+
+Suggested fields for mobile token:
+
+id
+user
+gym
+expo_push_token
+platform
+device_name optional
+active
+created_at
+updated_at
+last_used_at
+
+Suggested fields for preferences:
+
+id
+user
+gym
+preferred_language
+in_app_enabled
+browser_push_enabled
+mobile_push_enabled
+membership_enabled
+attendance_enabled
+class_enabled
+admin_alerts_enabled
+quiet_hours_start optional
+quiet_hours_end optional
+created_at
+updated_at
+
+Suggested fields for settings:
+
+id
+gym
+membership_expiry_enabled
+expiry_reminder_days
+expired_membership_enabled
+inactive_member_enabled
+inactive_after_days
+class_reminder_enabled
+class_reminder_minutes_before
+admin_alerts_enabled
+created_at
+updated_at
+10. Backend APIs
+
+Use /api/v1/.
+
+Add or improve APIs for:
+
+Current user:
+
+GET /api/v1/notifications
+GET /api/v1/notifications/unread-count
+PATCH /api/v1/notifications/{id}/read
+PATCH /api/v1/notifications/read-all
+DELETE /api/v1/notifications/{id} or archive equivalent
+GET /api/v1/notifications/preferences
+PUT /api/v1/notifications/preferences
+
+Admin:
+
+GET /api/v1/admin/notifications
+POST /api/v1/admin/notifications/send
+POST /api/v1/admin/notifications/schedule
+DELETE /api/v1/admin/notifications/scheduled/{id}
+GET /api/v1/admin/notifications/settings
+PUT /api/v1/admin/notifications/settings
+GET /api/v1/admin/notifications/audience-count
+
+Push:
+
+POST /api/v1/notifications/push-subscriptions
+DELETE /api/v1/notifications/push-subscriptions
+POST /api/v1/notifications/mobile-token
+DELETE /api/v1/notifications/mobile-token
+POST /api/v1/notifications/test-push
+
+Jobs:
+
+Add internal service methods for automatic notification jobs.
+If cron/scheduling exists, wire them in.
+If not, add a safe scheduled Spring service using @Scheduled if appropriate, or leave documented job methods for external cron.
+
+All APIs must:
+
+Validate input with Bean Validation.
+Use current error response format.
+Check roles.
+Use AccessGuard where appropriate.
+Scope by gym.
+Prevent users from reading other users’ notifications.
+11. Automatic job behavior
+
+Automatic jobs must be duplicate-safe.
+
+Examples:
+
+Do not send the same membership expiry reminder twice for the same user, same subscription, same reminder day.
+Do not send inactive-member alert every time the job runs.
+Do not send class reminder more than once for the same class booking.
+Do not send expired alert repeatedly every day unless settings allow it.
+
+Use metadata JSON or delivery log to track unique notification keys.
+
+Example unique keys:
+
+membership_expiry:{gymId}:{userId}:{subscriptionId}:7days
+membership_expiry:{gymId}:{userId}:{subscriptionId}:1day
+membership_expired:{gymId}:{userId}:{subscriptionId}
+inactive_member:{gymId}:{userId}:{thresholdDays}:{date}
+class_reminder:{gymId}:{bookingId}:{minutesBefore}
+12. Frontend web UI
+
+Add or improve web UI:
+
+Dashboard:
+
+Notification bell
+Unread badge
+Dropdown with latest notifications
+Link to full notifications page
+
+Pages:
+
+/notifications for current user notifications
+/admin/notifications for admin manual sends
+/admin/notification-settings for automatic notification settings
+
+UI requirements:
+
+Dark glass-morphism theme
+Bilingual EN/AR
+RTL support
+Loading skeletons
+Empty states
+Error states
+Success toasts
+Mobile responsive
+Accessible buttons
+No nested <button> inside <button>; use <div role="button"> where needed, consistent with project preference
+
+Use existing shadcn/ui components where appropriate.
+
+13. Mobile app UI
+
+Improve or extend:
+
+app/notifications.tsx
+Add notification preferences screen if appropriate
+Add push permission UI if Expo push is implemented
+Keep bilingual EN/AR
+Keep RTL support
+Keep skeleton/empty state style
+Keep refresh control
+Do not break existing mobile routes
+14. Notification content examples
+
+Use clean bilingual templates.
+
+Membership expiring soon:
+
+English title:
+Membership expiring soon
+
+English body:
+Your membership ends in {days} days. Renew now to keep training without interruption.
+
+Arabic title:
+اشتراكك سينتهي قريبًا
+
+Arabic body:
+ينتهي اشتراكك خلال {days} أيام. جدّد الآن لتستمر في التمرين بدون انقطاع.
+
+Inactive member:
+
+English title:
+We miss you at the gym
+
+English body:
+You have not checked in for {days} days. Come back and continue your progress.
+
+Arabic title:
+افتقدناك في الصالة
+
+Arabic body:
+لم تسجّل حضورك منذ {days} يومًا. عد للتدريب وواصل تقدمك.
+
+Class reminder:
+
+English title:
+Class starts soon
+
+English body:
+Your class {className} starts at {time}.
+
+Arabic title:
+حصتك ستبدأ قريبًا
+
+Arabic body:
+ستبدأ حصة {className} الساعة {time}.
+
+Admin inactive alert:
+
+English title:
+Inactive member alert
+
+English body:
+{memberName} has not checked in for {days} days.
+
+Arabic title:
+تنبيه عضو غير نشط
+
+Arabic body:
+العضو {memberName} لم يسجّل حضورًا منذ {days} يومًا.
+
+15. Security and anti-spam
+
+Must implement:
+
+Admin-only manual broadcasts
+Gym-scoped queries
+No cross-gym data access
+No sensitive payment details in push bodies
+No duplicate automatic notifications
+Respect preferences
+Confirmation before broadcast
+Rate limiting if existing system supports it
+No notification permission prompt on page load
+Invalid push subscriptions should be deactivated
+16. Feature flag behavior
+
+Use existing pushNotificationsEnabled gym feature flag.
+
+If disabled:
+
+Hide push-specific UI
+Keep basic in-app notifications available if already part of the app
+Do not show browser/mobile push setup buttons
+Do not attempt push delivery
+
+If enabled:
+
+Show notification bell
+Show push settings
+Enable push subscription features
+17. QA
+
+Run available checks:
+
+Backend Maven build/tests if available
+Web build
+Mobile TypeScript check if available
+Lint if available
+
+Verify:
+
+Existing app still runs
+Existing /api/v1/notifications still works
+Notification bell shows unread count
+Current user can only see own notifications
+Admin can send manual notifications
+Unauthorized users cannot send broadcasts
+Automatic notifications are duplicate-safe
+Browser push works if implemented
+Mobile push works if implemented
+Arabic RTL works
+English works
+Feature flag works
+No pricing was added
+No existing routes were broken
+18. Final response
+
+When finished, give me:
+
+What you changed.
+Files changed.
+Database changes/migrations.
+APIs added or updated.
+How in-app notifications work.
+How manual admin notifications work.
+How automatic notifications work.
+How browser push works, if implemented.
+How mobile push works, if implemented.
+Environment variables needed.
+Production TODOs.
+Confirmation that no duplicate notification system was created.
+Confirmation that no pricing was added.
