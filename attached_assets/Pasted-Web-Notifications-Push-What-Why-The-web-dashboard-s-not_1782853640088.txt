@@ -1,0 +1,33 @@
+Web Notifications & Push
+What & Why
+The web dashboard's notification bell currently renders mock data and there is no full notifications page, no admin broadcast UI, no settings, and no browser push. This task builds the complete web notification experience on top of the notification backend APIs, in the existing dark glass-morphism theme with full EN/AR + RTL support.
+
+Done looks like
+The header bell shows a real unread badge and a dropdown of the latest notifications, with a link to a full notifications page.
+A full /notifications page lists the user's notifications with filtering, mark-as-read, mark-all-read, and archive/delete, with proper loading skeletons, empty state, error state, and success toasts.
+A user can manage notification preferences (in-app categories, browser push on/off, preferred language, quiet hours, remove this browser's subscription).
+A gym admin has an /admin/notifications page to compose a manual notification (bilingual title + body, audience segment, specific-member selector when needed, priority, optional action URL, send-now or schedule), preview it, see an audience count, and confirm before a large broadcast.
+A gym admin has an /admin/notification-settings page to toggle automatic notifications and thresholds (expiry reminder days, inactive threshold, class reminder timing, admin alerts) with a bilingual template preview and save.
+Browser push works where supported: a service worker is registered, the permission prompt only appears from the settings UI (never on load), the subscription is saved to the backend, and unsupported browsers / revoked permission / expired subscriptions are handled gracefully.
+All new UI is bilingual EN/AR, RTL-correct, mobile responsive, and uses <div role="button"> instead of nested buttons.
+Out of scope
+All backend endpoints, persistence, jobs, and actual push sending (handled by the notification backend task).
+The mobile app.
+Steps
+Replace the notification bell's mock data with live data — real unread count, latest items in the dropdown, mark-as-read on open, and a link to the full page — gated so push-specific controls hide when the push feature flag is off.
+Build the full user notifications page with type/category filtering, mark-one/mark-all read, archive/delete, and loading/empty/error states plus success toasts.
+Build a user notification preferences surface (in-app category toggles, browser push toggle, preferred language, quiet hours, and remove-subscription), reading and saving via the preferences API.
+Build the admin manual-broadcast page with a bilingual compose form, audience-segment selector, specific-member picker, priority, optional action URL, send-now/schedule, live audience count, a preview, validation (required title/body/audience, length limits), and a confirmation step before broadcasting to large audiences.
+Build the admin automatic-notification settings page with the toggles/thresholds and bilingual template previews, saving via the settings API.
+Implement the browser push flow: register a service worker, request permission only from the settings UI, subscribe using the backend-provided VAPID public key, persist/remove the subscription via the backend, and handle unsupported/denied/expired cases.
+Register the new routes with role gating in the app router and add the corresponding sidebar entries, keeping everything in the dark glass-morphism theme with EN/AR strings added to both locale files and correct RTL behavior.
+Relevant files
+artifacts/qawi-web/src/components/NotificationBell.tsx
+artifacts/qawi-web/src/App.tsx
+artifacts/qawi-web/src/components/layout/AppShell.tsx
+artifacts/qawi-web/src/components/layout/Sidebar.tsx
+artifacts/qawi-web/src/hooks/use-gym-config.ts
+artifacts/qawi-web/src/hooks/use-language.tsx
+artifacts/qawi-web/src/services/api.ts
+artifacts/qawi-web/src/locales/en.json
+artifacts/qawi-web/src/locales/ar.json
