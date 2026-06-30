@@ -9,13 +9,12 @@ export function cn(...cls: (string | undefined | false | null)[]) {
 }
 
 export function useReducedMotion() {
-  const [reduced, setReduced] = useState(
-    () =>
-      typeof window !== 'undefined' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches,
-  );
+  // Start as `false` on both the server and the first client render so the
+  // prerendered markup hydrates without a mismatch; sync the real value on mount.
+  const [reduced, setReduced] = useState(false);
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setReduced(mq.matches);
     const h = (e: MediaQueryListEvent) => setReduced(e.matches);
     mq.addEventListener('change', h);
     return () => mq.removeEventListener('change', h);

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 
 export type Lang = 'en' | 'ar';
 
-function getInitial(): Lang {
+function getStoredOrUrlLang(): Lang {
   try {
     // Check URL param first for SEO
     const params = new URLSearchParams(window.location.search);
@@ -16,7 +16,15 @@ function getInitial(): Lang {
 }
 
 export function useLanguage() {
-  const [lang, setLangState] = useState<Lang>(getInitial);
+  // Always start as 'en' so the server-prerendered HTML and the first client
+  // render are identical — required for clean hydration of the static page.
+  const [lang, setLangState] = useState<Lang>('en');
+
+  // After mount, adopt the visitor's stored / URL language preference.
+  useEffect(() => {
+    const preferred = getStoredOrUrlLang();
+    if (preferred !== 'en') setLangState(preferred);
+  }, []);
 
   useEffect(() => {
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';

@@ -1,3 +1,4 @@
 - [Nutrition V2 seed gap](nutrition-v2-seed.md) — DataSeeder has guard `if count > 0`; new role users need their own `seedXIfMissing()` method called from run().
 - [Mobile API wakeup handling](mobile-api-wakeup.md) — Replit wakeup interstitial + Spring Boot startup can take >12s; apiFetch retries with sentinel error; login shows bilingual "warming up" message.
 - [Qawi marketing preview/build/HMR](qawi-marketing-preview.md) — site at port 5173 path `/marketing/` (NOT 5000=qawi-web); build needs PORT+BASE_PATH; renaming content.ts fields → transient HMR key/undefined warnings (not real bugs); no headless Chrome for Lighthouse.
+- [Qawi marketing SSG/hydration](qawi-marketing-preview.md) — marketing page is build-time prerendered (client+ssr build+prerender.mjs); browser-only state (lang/reduced-motion/Reveal) must start at a deterministic default and sync in useEffect, never in a useState initializer.

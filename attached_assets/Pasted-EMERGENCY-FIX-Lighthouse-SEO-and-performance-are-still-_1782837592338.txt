@@ -1,0 +1,215 @@
+EMERGENCY FIX: Lighthouse SEO and performance are still bad.
+
+Current Lighthouse:
+- Performance: 59
+- FCP: 2.9s
+- LCP: 4.7s
+- Speed Index: 4.2s
+- TBT: 30ms good
+- CLS: 0 good
+- SEO: 69
+- Critical SEO issue: Page is blocked from indexing
+
+This is not acceptable for investor demo. Fix it properly.
+
+First:
+Inspect the project and identify the framework.
+Do not touch backend logic, auth, dashboard functionality, APIs, database logic, or environment variables unrelated to public deployment.
+Only optimize the public landing page and SEO/public config.
+
+PART 1 — FIX SEO INDEXING COMPLETELY
+
+The page is blocked from indexing. Find the exact cause and fix it.
+
+Search the whole project for:
+- noindex
+- nofollow
+- robots
+- googlebot
+- X-Robots-Tag
+- disallow
+- metadata
+- generateMetadata
+- robots.txt
+- sitemap
+- headers
+- middleware
+
+Fix all production indexing issues.
+
+Production landing page must have:
+- robots: index, follow
+- googlebot: index, follow
+- no meta noindex
+- no X-Robots-Tag noindex
+- robots.txt must NOT block `/`
+- sitemap.xml should include the public landing page
+- private routes like dashboard/auth/admin should NOT be in sitemap
+
+If the app has environment-based indexing, configure it like this:
+- Production domain: index, follow
+- Preview/dev/staging: optional noindex
+But do NOT block the production landing page.
+
+If using Next.js App Router, metadata should be similar to:
+
+export const metadata = {
+  title: "Qawi — AI Gym Management Software for MENA Fitness Teams",
+  description:
+    "Qawi is an AI-powered gym management platform for member management, workout planning, nutrition plans, bookings, staff workflows, and analytics — built for Arabic and English fitness teams.",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-snippet": -1,
+      "max-image-preview": "large",
+      "max-video-preview": -1,
+    },
+  },
+  openGraph: {
+    title: "Qawi — AI Gym Management Software for MENA Fitness Teams",
+    description:
+      "Manage members, workouts, nutrition, bookings, staff, and analytics from one bilingual platform.",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Qawi — AI Gym Management Software for MENA Fitness Teams",
+    description:
+      "AI-powered gym management software for Arabic and English fitness teams.",
+  },
+};
+
+Also add valid JSON-LD:
+- Organization
+- SoftwareApplication
+- FAQPage
+
+Do not include fake reviews, fake ratings, fake pricing, or fake customers in structured data.
+
+PART 2 — FIX PERFORMANCE PROPERLY
+
+The design can stay premium, but the landing page must load fast.
+
+Current issues:
+- FCP too slow
+- LCP too slow
+- Speed Index too slow
+- TBT and CLS are okay
+
+Goal:
+- Performance 90+
+- SEO 95+
+- Accessibility 95+
+- Best Practices 95+
+
+LCP/FCP fixes:
+1. Find the actual LCP element in Lighthouse.
+2. If the LCP element is hero text, make it render immediately.
+3. Remove opacity-0, transform, blur, animation delay, or client-only rendering from:
+   - H1
+   - hero paragraph
+   - hero CTA buttons
+   - top hero content
+4. Do not make hero text depend on JavaScript.
+5. Do not wrap the entire landing page in a client component.
+6. If using Next.js App Router:
+   - Make the landing page a Server Component by default.
+   - Only the role tabs/mobile menu should be Client Components.
+7. Remove Framer Motion or heavy animation libraries from above-the-fold content if used.
+8. Replace above-the-fold animations with simple CSS transitions.
+9. Remove big expensive blur/radial glow layers above the fold.
+10. Keep only 1 or 2 lightweight background gradients in the hero.
+11. Avoid backdrop-filter blur on large full-width elements if it hurts performance.
+12. Make the hero dashboard CSS mockup lightweight.
+13. Do not use huge screenshots or unoptimized images in the hero.
+
+Font fixes:
+1. Check if custom fonts are slowing FCP.
+2. Use system fonts if needed:
+   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+3. If using Next/font, use display: "swap".
+4. Load only needed font weights.
+5. Do not import multiple heavy font families.
+
+JavaScript fixes:
+1. Reduce landing page client JavaScript.
+2. Remove unused imports.
+3. Do not import entire icon libraries.
+4. Use inline SVG icons or individually imported icons only.
+5. Keep role tabs lightweight.
+6. Lazy-load below-the-fold interactive sections if needed.
+7. Remove console logs.
+8. Check bundle size if tooling exists.
+
+CSS fixes:
+1. Remove excessive box-shadows.
+2. Remove huge full-screen blur layers.
+3. Avoid expensive filters above the fold.
+4. Avoid animating layout properties.
+5. Use transform/opacity only for small below-the-fold animations.
+6. Respect prefers-reduced-motion.
+7. Keep CLS at 0.
+
+Image/assets fixes:
+1. If images exist, compress them.
+2. Add width and height.
+3. Use WebP/AVIF where possible.
+4. Lazy-load below-the-fold images.
+5. Do not lazy-load the LCP image if the hero visual is LCP.
+6. Prefer CSS mockups instead of screenshots.
+
+PART 3 — RUN REAL PRODUCTION TESTS
+
+Do not test dev server only.
+
+Run:
+npm run build
+
+Then run the correct production command:
+npm run start
+or
+npm run preview
+
+Then test Lighthouse on the production build.
+
+Also run if available:
+npm run lint
+npm run typecheck
+
+PART 4 — CHECK SPECIFICALLY
+
+After fixing, verify:
+- SEO no longer says “Page is blocked from indexing”
+- robots.txt does not block `/`
+- no meta noindex exists on production landing page
+- no X-Robots-Tag noindex exists
+- exactly one H1
+- title and meta description exist
+- Open Graph tags exist
+- Twitter tags exist
+- JSON-LD is valid
+- sitemap exists if supported
+- mobile menu works
+- role tabs work
+- no horizontal overflow
+- no console errors
+- no fake pricing
+- no fake testimonials
+- no misleading app store buttons
+
+PART 5 — FINAL RESPONSE
+
+Tell me:
+1. Exact cause of the SEO indexing block
+2. Exact file where it was fixed
+3. Exact cause of slow FCP/LCP
+4. Files changed for performance
+5. What was removed or optimized
+6. Commands run
+7. New Lighthouse scores
+8. Any remaining TODOs
+
+Do not stop until production Lighthouse SEO is 95+ and performance is realistically improved.
