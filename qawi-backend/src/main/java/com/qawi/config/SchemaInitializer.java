@@ -67,6 +67,21 @@ public class SchemaInitializer implements ApplicationRunner {
         ddl("ALTER TABLE member_leads ADD COLUMN IF NOT EXISTS source VARCHAR(50) DEFAULT 'MANUAL_VISIT'");
         ddl("UPDATE member_leads SET source = 'MANUAL_VISIT' WHERE source IS NULL");
 
+        // ── notifications: production notification system (additive columns on a
+        //    pre-existing, possibly non-empty table; added here so we don't rely on
+        //    Hibernate ddl-auto to ALTER an existing table) ──
+        ddl("ALTER TABLE notifications ADD COLUMN IF NOT EXISTS gym_id UUID");
+        ddl("ALTER TABLE notifications ADD COLUMN IF NOT EXISTS title_en TEXT");
+        ddl("ALTER TABLE notifications ADD COLUMN IF NOT EXISTS title_ar TEXT");
+        ddl("ALTER TABLE notifications ADD COLUMN IF NOT EXISTS category VARCHAR(40)");
+        ddl("ALTER TABLE notifications ADD COLUMN IF NOT EXISTS priority VARCHAR(20)");
+        ddl("ALTER TABLE notifications ADD COLUMN IF NOT EXISTS action_url VARCHAR(500)");
+        ddl("ALTER TABLE notifications ADD COLUMN IF NOT EXISTS read_at TIMESTAMP");
+        ddl("ALTER TABLE notifications ADD COLUMN IF NOT EXISTS unique_key VARCHAR(255)");
+        ddl("ALTER TABLE notifications ADD COLUMN IF NOT EXISTS archived BOOLEAN NOT NULL DEFAULT false");
+        // drop the legacy type check constraint — NotificationType now has many more values
+        ddl("ALTER TABLE notifications DROP CONSTRAINT IF EXISTS notifications_type_check");
+
         log.info("SchemaInitializer: migration complete");
     }
 

@@ -1,13 +1,16 @@
 package com.qawi.service;
 
 import com.qawi.dto.CreateWalkInMemberRequest;
+import com.qawi.dto.NotificationCommand;
 import com.qawi.dto.ReceptionMemberResult;
 import com.qawi.dto.ReceptionTodayStats;
 import com.qawi.dto.RenewSubscriptionRequest;
 import com.qawi.entity.*;
+import com.qawi.event.NotificationDispatchEvent;
 import com.qawi.exception.AppException;
 import com.qawi.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -27,6 +30,7 @@ public class ReceptionService {
     private final CoachMemberRepository coachMemberRepository;
     private final GymRepository gymRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ApplicationEventPublisher eventPublisher;
 
     private User loadReceptionist(String email) {
         User u = userRepository.findByEmail(email)
@@ -98,14 +102,18 @@ public class ReceptionService {
                 .subscriptionStartDate(LocalDate.now())
                 .subscriptionEndDate(req.getSubscriptionEndDate())
                 .build();
-        member = userRepository.save(member);
+        final User savedMember = userRepository.save(member);
 
         if (req.getCoachId() != null) {
             coachMemberRepository.save(CoachMember.builder()
                     .coachId(req.getCoachId())
-                    .memberId(member.getId())
+                    .memberId(savedMember.getId())
                     .build());
+            userRepository.findById(req.getCoachId())
+                    .ifPresent(coach -> notifyCoachAssignment(caller.getGymId(), savedMember, coach));
         }
+
+        notifyAdminsNewMember(caller.getGymId(), savedMember.getName());
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("memberId", member.getId());
@@ -113,6 +121,42 @@ public class ReceptionService {
         result.put("email", member.getEmail());
         result.put("temporaryPassword", tempPassword);
         return result;
+    }
+
+    private void notifyAdminsNewMember(UUID gymId, String memberName) {
+        NotificationTemplates.Content c = NotificationTemplates.newMemberAdmin(memberName);
+        List<NotificationCommand> cmds = new ArrayList<>();
+        for (User adminUser : userRepository.findByGymIdAndRole(gymId, Role.GYM_ADMIN)) {
+            cmds.add(NotificationCommand.builder()
+                    .userId(adminUser.getId()).gymId(gymId)
+                    .type(NotificationType.NEW_MEMBER)
+                    .titleEn(c.titleEn()).titleAr(c.titleAr())
+                    .message(c.bodyEn()).messageAr(c.bodyAr())
+                    .actionUrl("/admin/members")
+                    .build());
+        }
+        if (!cmds.isEmpty()) eventPublisher.publishEvent(new NotificationDispatchEvent(cmds));
+    }
+
+    private void notifyCoachAssignment(UUID gymId, User member, User coach) {
+        NotificationTemplates.Content toMember = NotificationTemplates.coachAssignedToMember(coach.getName());
+        NotificationTemplates.Content toCoach = NotificationTemplates.memberAssignedToCoach(member.getName());
+        List<NotificationCommand> cmds = List.of(
+                NotificationCommand.builder()
+                        .userId(member.getId()).gymId(gymId)
+                        .type(NotificationType.COACH_ASSIGNED)
+                        .titleEn(toMember.titleEn()).titleAr(toMember.titleAr())
+                        .message(toMember.bodyEn()).messageAr(toMember.bodyAr())
+                        .actionUrl("/member/workout")
+                        .build(),
+                NotificationCommand.builder()
+                        .userId(coach.getId()).gymId(gymId)
+                        .type(NotificationType.COACH_ASSIGNED)
+                        .titleEn(toCoach.titleEn()).titleAr(toCoach.titleAr())
+                        .message(toCoach.bodyEn()).messageAr(toCoach.bodyAr())
+                        .actionUrl("/coach/dashboard")
+                        .build());
+        eventPublisher.publishEvent(new NotificationDispatchEvent(cmds));
     }
 
     @Transactional

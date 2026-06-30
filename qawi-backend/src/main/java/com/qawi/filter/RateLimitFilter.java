@@ -45,6 +45,15 @@ public class RateLimitFilter extends OncePerRequestFilter {
         } else if ("POST".equals(method) && path.contains("/public/register-gym")) {
             key = "register:" + ip;
             bucket = buckets.computeIfAbsent(key, k -> newBucket(3, Duration.ofHours(1)));
+        } else if ("POST".equals(method) && path.contains("/admin/notifications/")
+                && (path.endsWith("/send") || path.endsWith("/schedule"))) {
+            // Admin broadcasts fan out to many recipients — throttle harder, per sender.
+            String authHeader = req.getHeader("Authorization");
+            String identity = authHeader != null && authHeader.startsWith("Bearer ")
+                    ? "user:" + Math.abs(authHeader.hashCode())
+                    : "ip:" + ip;
+            key = "admin-notif:" + identity;
+            bucket = buckets.computeIfAbsent(key, k -> newBucket(10, Duration.ofMinutes(1)));
         } else {
             String authHeader = req.getHeader("Authorization");
             String identity = authHeader != null && authHeader.startsWith("Bearer ")

@@ -1,9 +1,12 @@
 package com.qawi.service;
 
+import com.qawi.dto.NotificationCommand;
 import com.qawi.entity.*;
+import com.qawi.event.NotificationDispatchEvent;
 import com.qawi.exception.AppException;
 import com.qawi.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,27 +20,47 @@ public class MemberReportService {
     private final MemberReportRepository memberReportRepository;
     private final MemberSuggestionRepository memberSuggestionRepository;
     private final UserRepository userRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public MemberReport submitReport(String memberEmail, ReportCategory category, String description) {
         User member = getMember(memberEmail);
-        return memberReportRepository.save(MemberReport.builder()
+        MemberReport saved = memberReportRepository.save(MemberReport.builder()
                 .memberId(member.getId())
                 .gymId(member.getGymId())
                 .category(category)
                 .description(description)
                 .status(ReportStatus.PENDING)
                 .build());
+        notifyAdmins(member.getGymId(), NotificationTemplates.reportSubmittedAdmin(member.getName()));
+        return saved;
     }
 
     @Transactional
     public MemberSuggestion submitSuggestion(String memberEmail, String text) {
         User member = getMember(memberEmail);
-        return memberSuggestionRepository.save(MemberSuggestion.builder()
+        MemberSuggestion saved = memberSuggestionRepository.save(MemberSuggestion.builder()
                 .memberId(member.getId())
                 .gymId(member.getGymId())
                 .text(text)
                 .build());
+        notifyAdmins(member.getGymId(), NotificationTemplates.suggestionSubmittedAdmin(member.getName()));
+        return saved;
+    }
+
+    private void notifyAdmins(UUID gymId, NotificationTemplates.Content c) {
+        if (gymId == null) return;
+        List<NotificationCommand> cmds = new ArrayList<>();
+        for (User adminUser : userRepository.findByGymIdAndRole(gymId, Role.GYM_ADMIN)) {
+            cmds.add(NotificationCommand.builder()
+                    .userId(adminUser.getId()).gymId(gymId)
+                    .type(NotificationType.REPORT_SUBMITTED)
+                    .titleEn(c.titleEn()).titleAr(c.titleAr())
+                    .message(c.bodyEn()).messageAr(c.bodyAr())
+                    .actionUrl("/admin/reports")
+                    .build());
+        }
+        if (!cmds.isEmpty()) eventPublisher.publishEvent(new NotificationDispatchEvent(cmds));
     }
 
     public List<Map<String, Object>> getReportsForGym(UUID gymId) {

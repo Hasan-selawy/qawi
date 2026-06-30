@@ -2,17 +2,21 @@ package com.qawi.service;
 
 import com.qawi.dto.GymMemberPlanDto;
 import com.qawi.dto.GymMemberPlanRequest;
+import com.qawi.dto.NotificationCommand;
 import com.qawi.dto.RenewalRequestDto;
 import com.qawi.dto.SubmitRenewalRequest;
 import com.qawi.entity.*;
+import com.qawi.event.NotificationDispatchEvent;
 import com.qawi.exception.AppException;
 import com.qawi.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -24,6 +28,7 @@ public class GymMemberPlanService {
     private final RenewalRequestRepository renewalRequestRepository;
     private final UserRepository userRepository;
     private final GymRepository gymRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     private static final java.util.Map<MemberPlanDuration, String> DURATION_LABELS = java.util.Map.of(
             MemberPlanDuration.ONE_MONTH, "1 Month",
@@ -137,7 +142,25 @@ public class GymMemberPlanService {
                 .notes(req.getNotes())
                 .status(RenewalRequestStatus.PENDING)
                 .build();
-        return toRenewalDto(renewalRequestRepository.save(renewal));
+        RenewalRequestDto dto = toRenewalDto(renewalRequestRepository.save(renewal));
+        notifyAdminsRenewalRequest(member.getGymId(), member.getName(), req.getPlanName());
+        return dto;
+    }
+
+    private void notifyAdminsRenewalRequest(UUID gymId, String memberName, String planName) {
+        if (gymId == null) return;
+        NotificationTemplates.Content c = NotificationTemplates.renewalRequestAdmin(memberName, planName);
+        List<NotificationCommand> cmds = new ArrayList<>();
+        for (User adminUser : userRepository.findByGymIdAndRole(gymId, Role.GYM_ADMIN)) {
+            cmds.add(NotificationCommand.builder()
+                    .userId(adminUser.getId()).gymId(gymId)
+                    .type(NotificationType.RENEWAL_REQUEST)
+                    .titleEn(c.titleEn()).titleAr(c.titleAr())
+                    .message(c.bodyEn()).messageAr(c.bodyAr())
+                    .actionUrl("/admin/subscriptions")
+                    .build());
+        }
+        if (!cmds.isEmpty()) eventPublisher.publishEvent(new NotificationDispatchEvent(cmds));
     }
 
     private UUID getGymIdForAdmin(String email) {

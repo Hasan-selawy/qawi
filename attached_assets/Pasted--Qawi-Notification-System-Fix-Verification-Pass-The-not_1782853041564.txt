@@ -1,0 +1,356 @@
+# Qawi Notification System — Fix & Verification Pass
+
+The notification system was just built. Before assuming anything works, inspect what was actually created and fix every issue found. Do not rebuild from scratch. Only fix what is broken, missing, or incorrectly implemented.
+
+---
+
+## Step 1 — Audit what was built (do this before touching any code)
+
+Check the following and note what exists, what is missing, and what is broken:
+
+**Backend:**
+- Does `NotificationController.java` exist and have all required endpoints?
+- Does `NotificationService.java` have the automatic notification methods?
+- Does `NotificationScheduler.java` exist with `@Scheduled` annotations?
+- Do the new DB migration files exist (new columns on `notifications` table, `notification_settings`, `notification_preferences`, `push_subscriptions`)?
+- Is `gym_id` present as a filter in every notification query? If not, this is a critical security bug.
+- Does the duplicate-prevention check exist before inserting automatic notifications?
+- Does `PushNotificationService.java` exist with VAPID support?
+- Does `GET /api/v1/notifications/push/vapid-public-key` endpoint exist?
+- Is the `web-push` dependency in `pom.xml`?
+- Do all endpoints return `403` for unauthorized roles?
+- Does `POST /api/v1/notifications/send` return `400` when `confirmed: false` and audience is large?
+
+**Web dashboard:**
+- Does the bell icon in the header show a real unread count from the API (not mock data)?
+- Does the notification dropdown open and show real notifications?
+- Does `/notifications` page exist as a full page with filtering, mark-as-read, delete?
+- Does `/admin/notifications` page exist with the bilingual compose form?
+- Does `/admin/notification-settings` page exist with toggles and thresholds?
+- Does `/settings/notifications` user preferences page exist?
+- Does `public/sw.js` service worker exist?
+- Is browser push permission ONLY requested from the settings page (never on page load)?
+- Are Arabic strings in `ar.json` for every new UI element?
+- Are English strings in `en.json` for every new UI element?
+- Do Arabic fields render with `dir="rtl"`?
+- Are new routes registered in the router?
+- Are admin routes protected by role check?
+
+**Mobile:**
+- Does the notifications screen show read/unread state?
+- Does mark-as-read work?
+- Does mark-all-read work?
+- Does pull-to-refresh still work?
+- Does a notification preferences screen exist?
+- Is Expo push token registration implemented?
+- Is the push token removed on logout?
+- Do Arabic notifications render RTL?
+
+---
+
+## Step 2 — Fix list (fix every item that failed the audit above)
+
+### Critical security fixes (fix these first, no exceptions)
+
+**1. gym_id scoping**
+Every single database query in `NotificationService.java` must include `gym_id` as a filter. If any query fetches notifications without filtering by `gym_id`, fix it immediately. A member from Gym A must never see notifications from Gym B.
+
+Check every method:
+```java
+// WRONG — missing gym scope
+notificationRepository.findByUserId(userId);
+
+// CORRECT
+notificationRepository.findByUserIdAndGymId(userId, gymId);
+```
+
+**2. Role enforcement on admin endpoints**
+Verify that `POST /api/v1/notifications/send` and all admin endpoints reject requests from `MEMBER` and `COACH` roles with `403 Forbidden`. This must be enforced in the backend via `@PreAuthorize` or equivalent — not just hidden in the frontend.
+
+**3. Ownership check on mark-as-read and delete**
+Before marking a notification as read or deleting it, verify the notification belongs to the requesting user AND their gym:
+```java
+Notification notification = notificationRepository.findByIdAndUserIdAndGymId(id, userId, gymId)
+    .orElseThrow(() -> new ResourceNotFoundException("Notification not found"));
+```
+
+---
+
+### Backend fixes
+
+**4. Missing DB migration**
+If the new columns or tables were not created via a proper migration file, create one now:
+- File: `src/main/resources/db/migration/V2__extend_notifications.sql` (or next version number)
+- Must include: `gym_id`, `sender_id`, `title`, `title_ar`, `is_read`, `read_at`, `priority`, `status`, `scheduled_at`, `sent_at`, `action_url`, `metadata`, `audience_type` on the `notifications` table
+- Must include: `notification_settings` table
+- Must include: `notification_preferences` table  
+- Must include: `push_subscriptions` table
+- Use `ADD COLUMN IF NOT EXISTS` to avoid breaking existing data
+
+**5. Scheduler not triggering**
+If `NotificationScheduler.java` was created but scheduling is not working, check:
+- `@EnableScheduling` must be on the main application class or a `@Configuration` class
+- `application.properties` must have `spring.task.scheduling.enabled=true`
+- Cron expressions must be valid
+
+Add to `application.properties` if missing:
+```properties
+spring.task.scheduling.enabled=true
+notification.cron.expiry-check=0 0 9 * * ?
+notification.cron.inactive-check=0 0 10 * * MON
+notification.cron.scheduled-send=0 * * * * ?
+```
+
+**6. Duplicate prevention missing**
+If automatic notifications do not check for duplicates before inserting, add this check to every automatic notification method in `NotificationService.java`:
+```java
+boolean alreadySent = notificationRepository.existsByUserIdAndTypeAndGymIdAndSentAtAfter(
+    userId, type, gymId, LocalDateTime.now().minusDays(7)
+);
+if (alreadySent) return; // skip silently
+```
+
+**7. VAPID keys not configured**
+If `PushNotificationService.java` was created but VAPID keys are not configured:
+- Add to `application.properties`:
+```properties
+push.vapid.public-key=${VAPID_PUBLIC_KEY:}
+push.vapid.private-key=${VAPID_PRIVATE_KEY:}
+push.vapid.subject=mailto:admin@qawi.com
+```
+- The app must start without errors even if VAPID keys are empty (push is optional)
+- If keys are empty, push sending should log a warning and skip, not throw an exception
+
+**8. Missing web-push dependency**
+If `pom.xml` does not include the web-push library, add:
+```xml
+<dependency>
+    <groupId>nl.martijndwars</groupId>
+    <artifactId>web-push</artifactId>
+    <version>5.1.1</version>
+</dependency>
+```
+
+---
+
+### Web dashboard fixes
+
+**9. Bell icon using mock data**
+If the bell icon in the header is not calling `GET /api/v1/notifications/unread-count`, fix it to use a real TanStack Query hook:
+```typescript
+const { data } = useQuery({
+  queryKey: ['notifications', 'unread-count'],
+  queryFn: () => api.get('/notifications/unread-count').then(r => r.data.count),
+  refetchInterval: 30000,
+});
+```
+The badge must disappear when count is 0 and must not show "0".
+
+**10. Notification dropdown not connected**
+If the dropdown is showing placeholder/mock notifications, connect it to `GET /api/v1/notifications?page=0&size=5`. Show the 5 most recent notifications with:
+- Title in the user's preferred language (use `title` for EN, `titleAr` for AR)
+- Relative timestamp ("3 min ago" / "منذ 3 دقائق")
+- Unread dot indicator
+- Click marks it as read and navigates to `actionUrl` if present
+
+**11. Arabic text not RTL**
+Any notification content in Arabic must render right-to-left. Fix by checking the language and applying direction:
+```tsx
+<p dir={isArabic ? 'rtl' : 'ltr'} className={isArabic ? 'text-right font-cairo' : 'text-left'}>
+  {notification.isArabic ? notification.messageAr : notification.message}
+</p>
+```
+If the entire app switches to RTL when Arabic is selected, verify new notification components inherit the correct `dir` attribute.
+
+**12. Admin send form missing bilingual fields**
+The admin compose form must have separate input fields for:
+- Title (English) — required
+- Title (Arabic / عنوان) — required
+- Body (English) — required  
+- Body (Arabic / رسالة) — required
+
+If any of these are missing, add them. Arabic fields must have `dir="rtl"` and use the Cairo font.
+
+**13. Audience count not shown before send**
+Before the admin sends a notification, they must see how many recipients will receive it. If this is missing:
+- Add `GET /api/v1/notifications/audience-count?audienceType=ALL` (or equivalent) endpoint to the backend
+- Show the count in the preview modal: "This will be sent to 47 members"
+- If count > 50, show: "⚠️ You are about to notify 47 members. Are you sure?"
+
+**14. Service worker not registered**
+If `public/sw.js` does not exist, create it:
+```javascript
+self.addEventListener('push', event => {
+  const data = event.data?.json() ?? {};
+  self.registration.showNotification(data.title ?? 'Qawi', {
+    body: data.body ?? '',
+    icon: '/icon-192.png',
+    dir: data.lang === 'ar' ? 'rtl' : 'ltr',
+    lang: data.lang ?? 'ar',
+    data: { actionUrl: data.actionUrl },
+  });
+});
+
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const url = event.notification.data?.actionUrl;
+  if (url) event.waitUntil(clients.openWindow(url));
+});
+```
+
+Register it in the app entry point:
+```typescript
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(console.error);
+}
+```
+This registration is silent — it must NOT ask for notification permission.
+
+**15. Push permission requested on page load**
+This is a critical UX bug if it exists. `Notification.requestPermission()` must ONLY be called when the user explicitly clicks "Enable browser notifications" in the preferences settings page. If it is being called anywhere else (on app load, on login, on mount), remove it immediately.
+
+**16. Missing routes in router**
+If any of these routes are not registered in `App.tsx` or the router config, add them:
+- `/notifications` — user notification list (all authenticated roles)
+- `/admin/notifications` — admin broadcast (GYM_ADMIN, SUPER_ADMIN only)
+- `/admin/notification-settings` — admin settings (GYM_ADMIN, SUPER_ADMIN only)
+- `/settings/notifications` — user preferences (all authenticated roles)
+
+Each admin route must redirect non-admin users to `/dashboard` or show a 403 page.
+
+**17. Missing sidebar navigation entries**
+Add to the sidebar:
+- Under member/user section: "Notifications" link → `/notifications`
+- Under admin section: "Send Notification" link → `/admin/notifications`
+- Under admin section: "Notification Settings" link → `/admin/notification-settings`
+- Under user settings: "Notification Preferences" → `/settings/notifications`
+
+Hide admin links for non-admin roles.
+
+**18. Missing translation strings**
+If any UI text is hardcoded in English (not using the i18n translation hook), move it to both `en.json` and `ar.json`. At minimum these keys must exist in both files:
+```json
+{
+  "notifications": {
+    "title": "Notifications",
+    "markAllRead": "Mark all as read",
+    "viewAll": "View all",
+    "empty": "No notifications yet",
+    "unreadOnly": "Unread",
+    "allNotifications": "All",
+    "deleteNotification": "Delete",
+    "membershipExpiringSoon": "Membership expiring soon",
+    "membershipExpired": "Membership expired",
+    "sendNotification": "Send Notification",
+    "notificationSettings": "Notification Settings",
+    "browserPush": "Browser Notifications",
+    "enablePush": "Enable browser notifications",
+    "disablePush": "Disable",
+    "pushExplainer": "Get notified even when the app is closed",
+    "audience": "Audience",
+    "allMembers": "All Members",
+    "activeMembers": "Active Members",
+    "expiredMembers": "Expired Members",
+    "expiringMembers": "Expiring Soon",
+    "inactiveMembers": "Inactive Members",
+    "specificMember": "Specific Member",
+    "sendNow": "Send Now",
+    "scheduleFor": "Schedule For Later",
+    "preview": "Preview",
+    "confirm": "Confirm & Send",
+    "cancel": "Cancel"
+  }
+}
+```
+
+Arabic equivalents must be added to `ar.json`.
+
+---
+
+### Mobile fixes
+
+**19. Read/unread state not visible**
+If notifications in the mobile screen all look the same regardless of read state, add a visual indicator:
+- Unread: slightly brighter background or a colored left border using the accent color `#22C55E`
+- Read: standard card background
+
+**20. Mark as read not implemented**
+If tapping a notification does not call `PUT /api/v1/notifications/{id}/read`, add it. Call the API on tap and update the local TanStack Query cache optimistically.
+
+**21. Push token not saved on logout cleanup**
+If the Expo push token is not removed from the backend when the user logs out, add this to the logout function:
+```typescript
+// In logout handler
+await api.delete('/notifications/push/unsubscribe').catch(() => {}); // fire and forget
+await AsyncStorage.removeItem('pushToken');
+```
+
+**22. Arabic RTL on mobile**
+If Arabic notification text is not rendering right-to-left on mobile, add:
+```tsx
+<Text style={{ 
+  textAlign: language === 'ar' ? 'right' : 'left',
+  writingDirection: language === 'ar' ? 'rtl' : 'ltr',
+  fontFamily: language === 'ar' ? 'Cairo' : 'Inter'
+}}>
+  {language === 'ar' ? notification.messageAr : notification.message}
+</Text>
+```
+
+---
+
+## Step 3 — Final verification checklist
+
+After all fixes are applied, verify each item by reading the code:
+
+**Security:**
+- [ ] Every notification query includes `gym_id` filter
+- [ ] Admin endpoints return `403` for `MEMBER` and `COACH` roles
+- [ ] Mark-as-read and delete verify notification ownership before acting
+- [ ] `Notification.requestPermission()` is never called on page load
+
+**Backend:**
+- [ ] DB migration file exists and includes all new columns/tables
+- [ ] `@EnableScheduling` is present
+- [ ] Duplicate prevention exists in all automatic notification methods
+- [ ] VAPID keys are read from environment variables, not hardcoded
+- [ ] App starts successfully even when VAPID keys are not set
+
+**Web:**
+- [ ] Bell badge shows real unread count from API
+- [ ] Badge hides when count is 0
+- [ ] Dropdown shows real notifications
+- [ ] `/notifications` page exists and works
+- [ ] `/admin/notifications` page exists with bilingual form
+- [ ] `/admin/notification-settings` exists with toggles
+- [ ] `/settings/notifications` exists with push toggle
+- [ ] `public/sw.js` exists
+- [ ] All new text uses i18n keys, none hardcoded
+- [ ] Arabic content has `dir="rtl"`
+- [ ] All new routes are registered and role-gated
+
+**Mobile:**
+- [ ] Read/unread state is visually distinct
+- [ ] Mark-as-read calls the API
+- [ ] Pull-to-refresh still works
+- [ ] Push token removed on logout
+- [ ] Arabic renders RTL
+
+**No regressions:**
+- [ ] All existing routes still work
+- [ ] Existing notification behavior was not removed
+- [ ] No pricing UI was added anywhere
+- [ ] Build compiles without errors (`mvn clean compile` + `npm run build`)
+
+---
+
+## Step 4 — Report
+
+When done, tell me exactly:
+1. Which items from the audit in Step 1 were missing or broken
+2. Which files were changed and what was fixed in each
+3. Whether the DB migration was applied successfully
+4. Whether browser push is fully working or partially deferred
+5. Whether Expo push is fully working or partially deferred
+6. Any items that could not be fixed and why
+7. Confirmation that no pricing was added and no existing routes were broken
