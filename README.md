@@ -150,7 +150,7 @@ qawi/
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/your-org/qawi.git
+git clone https://github.com/Hasan-selawy/qawi.git
 cd qawi
 
 # 2. Copy environment template
@@ -203,28 +203,17 @@ pnpm --filter @workspace/qawi-mobile run dev
 | `PORT` | API server port | `9000` |
 | `VITE_API_URL` | Web dashboard API base URL | `https://api.qawi.app/api/v1` |
 | `EXPO_PUBLIC_DOMAIN` | Mobile app API domain | `api.qawi.app` |
-| `QAWI_DEMO_USER_PASSWORD` | Seeded demo user password (dev fallback) | `password123` |
-| `QAWI_DEMO_SUPER_ADMIN_PASSWORD` | Seeded super-admin password (dev fallback) | `qawi_super_2024` |
+| `QAWI_DEMO_USER_PASSWORD` | Seeded demo user password | Set locally; do not publish |
+| `QAWI_DEMO_SUPER_ADMIN_PASSWORD` | Seeded super-admin password | Set locally; do not publish |
 | `QAWI_LOGIN_MAX_ATTEMPTS` | Failed logins before account lockout | `5` |
 | `QAWI_LOGIN_LOCK_MINUTES` | Account lock duration (minutes) | `15` |
 | `QAWI_REFRESH_TOKEN_DAYS` | Refresh-token lifetime (days) | `30` |
 
 ---
 
-## Test Accounts
+## Local Demo Accounts
 
-The database seeds automatically on first startup with **Iron Peak Gym** demo data.
-
-| Role | Email | Password |
-|------|-------|----------|
-| Super Admin | `super@qawi.com` | `qawi_super_2024` |
-| Gym Admin | `admin@ironpeak.com` | `password123` |
-| Coach | `coach.jordan@ironpeak.com` | `password123` |
-| Coach | `coach.morgan@ironpeak.com` | `password123` |
-| Member (active 30d) | `sam@ironpeak.com` | `password123` |
-| Member (expiring 5d) | `casey@ironpeak.com` | `password123` |
-| Member (active) | `riley@ironpeak.com` | `password123` |
-| Member (expired/blocked) | `drew@ironpeak.com` | `password123` |
+Use an isolated local development database and set demo passwords through environment variables. Do not reuse demo credentials in production or publish deployment credentials.
 
 ---
 
