@@ -1,0 +1,12 @@
+# Audit Phase 2 only
+
+Approved scope: AUDIT_REPORT.md Phase 2, requested on 2026-11-24. Preserve all Phase 0 and unrelated working-tree/index changes. Phase 1 is excluded. No live deployment, data migration, external account setup, or automatic deletion of existing data.
+
+1. Make nutrition V2 canonical. Convert V3 into request/response adapters that reuse V2 persistence, workflow checks, analysis, and summaries. Keep legacy V1 data/routes deprecated during compatibility migration; do not drop records without evidence that legacy clients have migrated.
+2. Generate OpenAPI from Spring controllers, with bearer security, hidden principals, stable operation IDs, and CI contract checks. Generate the existing React Query and Zod packages from the exported contract. Use generated typed attendance operations in mobile and shared canonical nutrition calls where practical.
+3. Retire the disabled Node api-server and remove its live upload consumers. Preserve the existing design system using accessible hosted-image URL controls. Remove its workspace/deploy/CI references.
+4. Migrate all monetary persistence/DTOs/calculations to BigDecimal and numeric(19,3), preserving JSON numeric compatibility and JOD precision. Add a versioned Flyway migration with explicit precision checks, and verify decimal round trips.
+5. Add authenticated self export/delete for measurements and biometric enrollment metadata, plus a durable device-erasure outbox. Retention is configurable, dry-run/disabled until a policy is set; no invented statutory retention period. Owner clarification pending. Explain that physical device deletion requires acknowledgement and backups have separate retention.
+6. Add opt-in Sentry reporting of sanitized server errors and operational metrics without patient data, tokens, or request bodies. Add backup and fail-closed restore drill tooling, checksum verification, CI drill, and run it on disposable test data.
+7. Replace mobile global attendance queue with per-user durable serialized operations, stable idempotency keys, original timestamps, retry/backoff classification, rejected-item feedback, and session isolation. Add a transactional server operation ledger with payload conflict detection and bounded offline timestamp validation.
+8. Verify backend, migrations, adapters, privacy boundaries, queue races/retries/account changes, generated-client drift, workspace types/builds, restore checks, and production smoke. Record honest rollout requirements and remaining external configuration.

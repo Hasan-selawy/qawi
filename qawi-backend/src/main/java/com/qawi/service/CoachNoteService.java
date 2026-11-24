@@ -5,7 +5,6 @@ import com.qawi.dto.UpdateCoachNoteRequest;
 import com.qawi.entity.*;
 import com.qawi.exception.AppException;
 import com.qawi.repository.CoachNoteRepository;
-import com.qawi.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -20,7 +19,6 @@ import java.util.UUID;
 public class CoachNoteService {
 
     private final CoachNoteRepository noteRepository;
-    private final UserRepository userRepository;
     private final AccessGuard accessGuard;
 
     @Transactional
@@ -37,11 +35,9 @@ public class CoachNoteService {
 
     public List<CoachNote> getNotesByMember(UUID memberId, String coachEmail) {
         User coach = getUser(coachEmail);
-        User member = userRepository.findById(memberId).orElse(null);
-        // Coaches only see their own notes for members in the same gym.
-        if (member == null
-                || member.getRole() != Role.MEMBER
-                || (coach.getGymId() != null && !coach.getGymId().equals(member.getGymId()))) {
+        try {
+            accessGuard.assertCoachManagesMember(coach, memberId);
+        } catch (AppException ex) {
             return List.of();
         }
         return noteRepository.findByMemberIdOrderByCreatedAtDesc(memberId).stream()
@@ -78,7 +74,10 @@ public class CoachNoteService {
     }
 
     private User getUser(String email) {
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new AppException("User not found", "المستخدم غير موجود", HttpStatus.NOT_FOUND));
+        User coach = accessGuard.loadTenantUserByEmail(email);
+        if (coach.getRole() != Role.COACH) {
+            throw new AppException("Access denied", "غير مصرح لك", HttpStatus.FORBIDDEN);
+        }
+        return coach;
     }
 }

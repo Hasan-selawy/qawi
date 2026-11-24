@@ -89,13 +89,10 @@ public class NotificationAudienceService {
             throw new AppException("targetUserId is required for SPECIFIC_MEMBER",
                     "معرف المستخدم مطلوب", HttpStatus.BAD_REQUEST);
         }
-        User user = userRepository.findById(targetUserId)
+        User user = userRepository.findByIdAndGymId(targetUserId, gymId)
+                .filter(candidate -> candidate.getRole() == Role.MEMBER)
                 .orElseThrow(() -> new AppException("Target user not found",
                         "المستخدم المستهدف غير موجود", HttpStatus.NOT_FOUND));
-        if (user.getGymId() == null || !user.getGymId().equals(gymId)) {
-            throw new AppException("Target user is not in your gym",
-                    "المستخدم المستهدف ليس في صالتك", HttpStatus.FORBIDDEN);
-        }
         return List.of(user);
     }
 }

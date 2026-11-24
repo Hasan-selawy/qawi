@@ -14,6 +14,8 @@ import java.util.UUID;
 @Repository
 public interface NutritionCalendarPlanRepository extends JpaRepository<NutritionCalendarPlan, UUID> {
 
+    Optional<NutritionCalendarPlan> findByIdAndGymId(UUID id, UUID gymId);
+
     List<NutritionCalendarPlan> findByMemberIdOrderByCreatedAtDesc(UUID memberId);
 
     Optional<NutritionCalendarPlan> findByMemberIdAndIsActiveTrue(UUID memberId);

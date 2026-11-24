@@ -22,6 +22,14 @@ import java.util.UUID;
 public class AttendanceController {
 
     private final AttendanceService attendanceService;
+    private final com.qawi.service.AttendanceOperationService operations;
+
+    @PostMapping("/me/operations")
+    @PreAuthorize("hasRole('MEMBER')")
+    public com.qawi.dto.AttendanceOperationResponse applyOperation(@AuthenticationPrincipal UserDetails principal,
+            @jakarta.validation.Valid @RequestBody com.qawi.dto.AttendanceOperationRequest request) {
+        return operations.apply(principal.getUsername(), request);
+    }
 
     // ───────── Member self-routes ─────────
 

@@ -29,6 +29,7 @@ public class CoachDashboardService {
     private final ScheduleDayRepository scheduleDayRepository;
     private final PlanExerciseRepository planExerciseRepository;
     private final MealLogRepository mealLogRepository;
+    private final AccessGuard accessGuard;
 
     @Transactional(readOnly = true)
     public List<CoachMemberSummary> getMyMembers(String coachEmail) {
@@ -37,7 +38,7 @@ public class CoachDashboardService {
         LocalDateTime weekAgo = LocalDateTime.now().minusDays(7);
 
         return assignments.stream().map(cm -> {
-            User member = userRepository.findById(cm.getMemberId()).orElse(null);
+            User member = userRepository.findByIdAndGymId(cm.getMemberId(), coach.getGymId()).orElse(null);
             if (member == null) return null;
 
             Optional<Attendance> lastCheckin = attendanceRepository
@@ -73,15 +74,14 @@ public class CoachDashboardService {
     @Transactional(readOnly = true)
     public Map<String, Object> getMemberOverview(UUID memberId, String coachEmail) {
         User coach = getCoach(coachEmail);
-        User member = userRepository.findById(memberId)
-                .orElseThrow(() -> new AppException("Member not found", "العضو غير موجود", HttpStatus.NOT_FOUND));
-        boolean assigned = coachMemberRepository.findByCoachId(coach.getId()).stream()
-                .anyMatch(cm -> cm.getMemberId().equals(memberId));
-        if (!assigned
-                || coach.getGymId() == null
-                || !coach.getGymId().equals(member.getGymId())
-                || !member.isActive()
-                || member.getRole() != Role.MEMBER) {
+        User member;
+        try {
+            member = accessGuard.assertCoachManagesMember(coach, memberId);
+        } catch (AppException ex) {
+            // Hide whether the member exists in another tenant.
+            throw new AppException("Member not found", "العضو غير موجود", HttpStatus.NOT_FOUND);
+        }
+        if (!member.isActive()) {
             throw new AppException("Member not found", "العضو غير موجود", HttpStatus.NOT_FOUND);
         }
 
@@ -190,7 +190,10 @@ public class CoachDashboardService {
     }
 
     private User getCoach(String email) {
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new AppException("User not found", "المستخدم غير موجود", HttpStatus.NOT_FOUND));
+        User coach = accessGuard.loadTenantUserByEmail(email);
+        if (coach.getRole() != Role.COACH) {
+            throw new AppException("Access denied", "غير مصرح لك", HttpStatus.FORBIDDEN);
+        }
+        return coach;
     }
 }

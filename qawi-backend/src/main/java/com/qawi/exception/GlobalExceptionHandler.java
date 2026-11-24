@@ -21,6 +21,19 @@ import java.util.stream.Collectors;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.qawi.service.ErrorReporter reporter;
+
+    private void report(Throwable error) {
+        if (reporter != null) reporter.report(error);
+    }
+
+    @ExceptionHandler(jakarta.validation.ConstraintViolationException.class)
+    public ResponseEntity<ErrorResponse> handleServiceValidation(jakarta.validation.ConstraintViolationException error) {
+        return ResponseEntity.badRequest().body(ErrorResponse.builder()
+                .error("Validation failed").messageAr("فشل التحقق من البيانات")
+                .timestamp(LocalDateTime.now()).build());
+    }
 
     @ExceptionHandler(AppException.class)
     public ResponseEntity<ErrorResponse> handleAppException(AppException ex) {
@@ -92,7 +105,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(NullPointerException.class)
     public ResponseEntity<ErrorResponse> handleNpe(NullPointerException ex) {
-        log.error("Unexpected NullPointerException", ex);
+        report(ex);
+        log.error("Unexpected NullPointerException", com.qawi.service.ErrorReporter.sanitized(ex));
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ErrorResponse.builder()
                 .error("An unexpected error occurred. Please try again.")
                 .messageAr("حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.")
@@ -102,7 +116,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneric(Exception ex) {
-        log.error("Unhandled exception: {}", ex.getMessage(), ex);
+        report(ex);
+        log.error("Unhandled exception", com.qawi.service.ErrorReporter.sanitized(ex));
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ErrorResponse.builder()
                 .error("An unexpected error occurred")
                 .messageAr("حدث خطأ غير متوقع")

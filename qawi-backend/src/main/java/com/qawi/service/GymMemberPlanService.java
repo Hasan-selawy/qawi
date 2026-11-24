@@ -27,8 +27,8 @@ public class GymMemberPlanService {
     private final GymMemberPlanRepository planRepository;
     private final RenewalRequestRepository renewalRequestRepository;
     private final UserRepository userRepository;
-    private final GymRepository gymRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final AccessGuard accessGuard;
 
     private static final java.util.Map<MemberPlanDuration, String> DURATION_LABELS = java.util.Map.of(
             MemberPlanDuration.ONE_MONTH, "1 Month",
@@ -75,11 +75,8 @@ public class GymMemberPlanService {
     @Transactional
     public GymMemberPlanDto updatePlan(UUID planId, GymMemberPlanRequest req, String adminEmail) {
         UUID gymId = getGymIdForAdmin(adminEmail);
-        GymMemberPlan plan = planRepository.findById(planId)
+        GymMemberPlan plan = planRepository.findByIdAndGymId(planId, gymId)
                 .orElseThrow(() -> new AppException("Plan not found", "الخطة غير موجودة", HttpStatus.NOT_FOUND));
-        if (!plan.getGymId().equals(gymId)) {
-            throw new AppException("Forbidden", "غير مسموح", HttpStatus.FORBIDDEN);
-        }
         if (req.getName() != null) plan.setName(req.getName());
         if (req.getNameAr() != null) plan.setNameAr(req.getNameAr());
         if (req.getDuration() != null) plan.setDuration(req.getDuration());
@@ -93,11 +90,8 @@ public class GymMemberPlanService {
     @Transactional
     public void deletePlan(UUID planId, String adminEmail) {
         UUID gymId = getGymIdForAdmin(adminEmail);
-        GymMemberPlan plan = planRepository.findById(planId)
+        GymMemberPlan plan = planRepository.findByIdAndGymId(planId, gymId)
                 .orElseThrow(() -> new AppException("Plan not found", "الخطة غير موجودة", HttpStatus.NOT_FOUND));
-        if (!plan.getGymId().equals(gymId)) {
-            throw new AppException("Forbidden", "غير مسموح", HttpStatus.FORBIDDEN);
-        }
         plan.setActive(false);
         planRepository.save(plan);
     }
@@ -112,11 +106,8 @@ public class GymMemberPlanService {
     @Transactional
     public RenewalRequestDto updateRenewalStatus(UUID requestId, String status, String adminEmail) {
         UUID gymId = getGymIdForAdmin(adminEmail);
-        RenewalRequest req = renewalRequestRepository.findById(requestId)
+        RenewalRequest req = renewalRequestRepository.findByIdAndGymId(requestId, gymId)
                 .orElseThrow(() -> new AppException("Request not found", "الطلب غير موجود", HttpStatus.NOT_FOUND));
-        if (!req.getGymId().equals(gymId)) {
-            throw new AppException("Forbidden", "غير مسموح", HttpStatus.FORBIDDEN);
-        }
         req.setStatus(RenewalRequestStatus.valueOf(status.toUpperCase()));
         return toRenewalDto(renewalRequestRepository.save(req));
     }
@@ -129,22 +120,27 @@ public class GymMemberPlanService {
 
     @Transactional
     public RenewalRequestDto submitRenewalRequest(SubmitRenewalRequest req, String memberEmail) {
-        User member = userRepository.findByEmail(memberEmail)
-                .orElseThrow(() -> new AppException("Member not found", "العضو غير موجود", HttpStatus.NOT_FOUND));
+        User member = accessGuard.loadTenantUserByEmail(memberEmail);
+        if (member.getRole() != Role.MEMBER) {
+            throw new AppException("Access denied", "غير مصرح لك", HttpStatus.FORBIDDEN);
+        }
+        GymMemberPlan plan = planRepository.findByIdAndGymId(req.getPlanId(), member.getGymId())
+                .filter(GymMemberPlan::isActive)
+                .orElseThrow(() -> new AppException("Plan not found", "الخطة غير موجودة", HttpStatus.NOT_FOUND));
         RenewalRequest renewal = RenewalRequest.builder()
                 .memberId(member.getId())
                 .memberName(member.getName())
                 .gymId(member.getGymId())
                 .planId(req.getPlanId())
-                .planName(req.getPlanName())
-                .planNameAr(req.getPlanNameAr())
-                .planDuration(req.getPlanDuration())
+                .planName(plan.getName())
+                .planNameAr(plan.getNameAr())
+                .planDuration(plan.getDuration().name())
                 .notes(req.getNotes())
                 .status(RenewalRequestStatus.PENDING)
                 .build();
         var savedRenewal = renewalRequestRepository.save(renewal);
         RenewalRequestDto dto = toRenewalDto(savedRenewal);
-        notifyAdminsRenewalRequest(member.getGymId(), savedRenewal.getId(), member.getName(), req.getPlanName());
+        notifyAdminsRenewalRequest(member.getGymId(), savedRenewal.getId(), member.getName(), plan.getName());
         return dto;
     }
 
@@ -166,9 +162,11 @@ public class GymMemberPlanService {
     }
 
     private UUID getGymIdForAdmin(String email) {
-        User admin = userRepository.findByEmail(email)
-                .orElseThrow(() -> new AppException("Admin not found", "المشرف غير موجود", HttpStatus.NOT_FOUND));
-        return admin.getGymId();
+        User admin = accessGuard.loadTenantUserByEmail(email);
+        if (admin.getRole() != Role.GYM_ADMIN) {
+            throw new AppException("Access denied", "غير مصرح لك", HttpStatus.FORBIDDEN);
+        }
+        return accessGuard.requireGymId(admin);
     }
 
     private GymMemberPlanDto toDto(GymMemberPlan p) {

@@ -15,6 +15,8 @@ import java.util.*;
 
 @Service
 @RequiredArgsConstructor
+/** Legacy plan compatibility boundary. New nutrition work uses the canonical V2 domain. */
+@Deprecated
 public class NutritionService {
 
     private final NutritionPlanRepository planRepository;

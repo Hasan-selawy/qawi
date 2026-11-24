@@ -59,3 +59,13 @@ target/
 
 # Logs
 *.log
+
+# Database backups contain private data; keep them outside source control.
+.backups/
+*.dump
+*.dump.manifest.json
+__pycache__/
+*.py[cod]
+
+# Generated code-analysis cache (graphify)
+graphify-out/

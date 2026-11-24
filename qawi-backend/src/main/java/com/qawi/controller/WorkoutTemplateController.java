@@ -40,8 +40,11 @@ public class WorkoutTemplateController {
     }
 
     @GetMapping("/{templateId}")
-    public ResponseEntity<Map<String, Object>> getTemplate(@PathVariable UUID templateId) {
-        return ResponseEntity.ok(templateService.getTemplate(templateId));
+    @PreAuthorize("hasRole('COACH')")
+    public ResponseEntity<Map<String, Object>> getTemplate(
+            @PathVariable UUID templateId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(templateService.getTemplate(templateId, userDetails.getUsername()));
     }
 
     @DeleteMapping("/{templateId}")

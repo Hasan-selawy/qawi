@@ -27,6 +27,7 @@ public class EmployeeService {
     private final UserRepository userRepository;
     private final CoachMemberRepository coachMemberRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AccessGuard accessGuard;
 
     public List<EmployeeResponse> getEmployees(String callerEmail) {
         UUID gymId = getCallerGymId(callerEmail);
@@ -79,8 +80,8 @@ public class EmployeeService {
     @Transactional
     public EmployeeResponse toggleStatus(UUID id, String callerEmail) {
         UUID gymId = getCallerGymId(callerEmail);
-        User employee = userRepository.findById(id)
-                .filter(u -> gymId.equals(u.getGymId()) && STAFF_ROLES.contains(u.getRole()))
+        User employee = userRepository.findByIdAndGymId(id, gymId)
+                .filter(u -> STAFF_ROLES.contains(u.getRole()))
                 .orElseThrow(() -> new AppException("Employee not found", "الموظف غير موجود", HttpStatus.NOT_FOUND));
         employee.setActive(!employee.isActive());
         userRepository.save(employee);
@@ -92,15 +93,13 @@ public class EmployeeService {
     @Transactional
     public void deleteEmployee(UUID id, String callerEmail) {
         UUID gymId = getCallerGymId(callerEmail);
-        User employee = userRepository.findById(id)
-                .filter(u -> gymId.equals(u.getGymId()) && STAFF_ROLES.contains(u.getRole()))
+        User employee = userRepository.findByIdAndGymId(id, gymId)
+                .filter(u -> STAFF_ROLES.contains(u.getRole()))
                 .orElseThrow(() -> new AppException("Employee not found", "الموظف غير موجود", HttpStatus.NOT_FOUND));
         userRepository.delete(employee);
     }
 
     private UUID getCallerGymId(String email) {
-        return userRepository.findByEmail(email)
-                .map(User::getGymId)
-                .orElseThrow(() -> new AppException("User not found", "المستخدم غير موجود", HttpStatus.NOT_FOUND));
+        return accessGuard.requireGymId(accessGuard.loadTenantUserByEmail(email));
     }
 }

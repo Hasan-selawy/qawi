@@ -36,12 +36,12 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
         } finally {
             long duration = System.currentTimeMillis() - start;
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            String userId = (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName()))
-                    ? auth.getName()
+            String role = (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName()))
+                    ? auth.getAuthorities().toString()
                     : "anonymous";
 
-            log.info("[{} {}] userId={} duration={}ms status={}",
-                    req.getMethod(), req.getRequestURI(), userId, duration, res.getStatus());
+            log.info("[{} {}] role={} duration={}ms status={}",
+                    req.getMethod(), req.getRequestURI(), role, duration, res.getStatus());
 
             MDC.clear();
         }

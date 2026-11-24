@@ -8,6 +8,8 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Profile;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -15,6 +17,8 @@ import java.util.List;
 import java.util.UUID;
 
 @Component
+@Profile("!prod & !staging")
+@ConditionalOnProperty(name = "qawi.seed.enabled", havingValue = "true")
 @RequiredArgsConstructor
 @Slf4j
 @Order(2)

@@ -10,12 +10,16 @@ import org.springframework.core.annotation.Order;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Profile;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Component
+@Profile("!prod & !staging")
+@ConditionalOnProperty(name = "qawi.seed.enabled", havingValue = "true")
 @RequiredArgsConstructor
 @Slf4j
 @Order(1)

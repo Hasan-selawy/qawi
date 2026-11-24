@@ -24,6 +24,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -104,7 +105,7 @@ public class PublicGymService {
         return List.of(
                 PlanInfo.builder()
                         .plan(SubscriptionPlan.BASIC)
-                        .price(30)
+                        .price(new BigDecimal("30"))
                         .currency("JOD")
                         .billingCycle("monthly")
                         .yearlyPrice(300)
@@ -114,7 +115,7 @@ public class PublicGymService {
                         .build(),
                 PlanInfo.builder()
                         .plan(SubscriptionPlan.PRO)
-                        .price(60)
+                        .price(new BigDecimal("60"))
                         .currency("JOD")
                         .billingCycle("monthly")
                         .yearlyPrice(600)
@@ -124,7 +125,7 @@ public class PublicGymService {
                         .build(),
                 PlanInfo.builder()
                         .plan(SubscriptionPlan.ENTERPRISE)
-                        .price(100)
+                        .price(new BigDecimal("100"))
                         .currency("JOD")
                         .billingCycle("monthly")
                         .yearlyPrice(1000)

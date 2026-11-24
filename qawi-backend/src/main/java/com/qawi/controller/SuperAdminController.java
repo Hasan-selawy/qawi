@@ -99,14 +99,14 @@ public class SuperAdminController {
     }
 
     @PostMapping("/platform-tiers")
-    public ResponseEntity<PlatformTierDto> createTier(@RequestBody PlatformTierRequest request) {
+    public ResponseEntity<PlatformTierDto> createTier(@jakarta.validation.Valid @RequestBody PlatformTierRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(platformTierService.createTier(request));
     }
 
     @PutMapping("/platform-tiers/{id}")
     public ResponseEntity<PlatformTierDto> updateTier(
             @PathVariable UUID id,
-            @RequestBody PlatformTierRequest request) {
+            @jakarta.validation.Valid @RequestBody PlatformTierRequest request) {
         return ResponseEntity.ok(platformTierService.updateTier(id, request));
     }
 

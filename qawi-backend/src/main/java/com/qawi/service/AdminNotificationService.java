@@ -79,12 +79,9 @@ public class AdminNotificationService {
     @Transactional
     public void cancelScheduled(String callerEmail, UUID id) {
         UUID gymId = requireGym(gymFeatureService.getUser(callerEmail));
-        ScheduledNotification sn = scheduledRepository.findById(id)
+        ScheduledNotification sn = scheduledRepository.findByIdAndGymId(id, gymId)
                 .orElseThrow(() -> new AppException("Scheduled notification not found",
                         "الإشعار المجدول غير موجود", HttpStatus.NOT_FOUND));
-        if (!sn.getGymId().equals(gymId)) {
-            throw new AppException("Access denied", "غير مصرح لك", HttpStatus.FORBIDDEN);
-        }
         if (sn.getStatus() != ScheduledNotificationStatus.PENDING) {
             throw new AppException("Only pending notifications can be cancelled",
                     "يمكن إلغاء الإشعارات المعلقة فقط", HttpStatus.CONFLICT);

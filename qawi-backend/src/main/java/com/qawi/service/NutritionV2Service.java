@@ -24,6 +24,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@org.springframework.validation.annotation.Validated
 @RequiredArgsConstructor
 @Slf4j
 public class NutritionV2Service {
@@ -54,9 +55,9 @@ public class NutritionV2Service {
     // ─────────────────────────────────────────────────────────
 
     @Transactional
-    public Map<String, Object> setTarget(String callerEmail, NutritionTargetSetRequest req) {
+    public Map<String, Object> setTarget(String callerEmail, @jakarta.validation.Valid NutritionTargetSetRequest req) {
         User caller = loadUser(callerEmail);
-        User member = loadMemberById(req.getMemberId());
+        User member = loadMemberById(req.getMemberId(), caller);
         assertSameGym(caller, member);
         assertCanManageTarget(caller, member);
 
@@ -68,6 +69,7 @@ public class NutritionV2Service {
 
         target.setGymId(member.getGymId());
         target.setCreatedByUserId(caller.getId());
+        if (caller.getRole() == Role.COACH) target.setCoachId(caller.getId());
         target.setCreatedByRole(caller.getRole().name());
         target.setCalories(req.getTargetCalories());
         target.setProteinG(req.getTargetProtein());
@@ -85,7 +87,7 @@ public class NutritionV2Service {
 
     public Map<String, Object> getTarget(String callerEmail, UUID memberId) {
         User caller = loadUser(callerEmail);
-        User member = loadMemberById(memberId);
+        User member = loadMemberById(memberId, caller);
         assertCanViewMember(caller, member);
         Optional<NutritionTarget> t = nutritionTargetRepository.findByMemberId(memberId);
         if (t.isEmpty()) return Map.of("hasTarget", false);
@@ -132,7 +134,7 @@ public class NutritionV2Service {
     // CALCULATE (cache-first, AI fallback — no entry saved)
     // ─────────────────────────────────────────────────────────
 
-    public Map<String, Object> calculateFood(String callerEmail, FoodCalculateRequest req) {
+    public Map<String, Object> calculateFood(String callerEmail, @jakarta.validation.Valid FoodCalculateRequest req) {
         User caller = loadUser(callerEmail);
         return resolveFood(req.getFoodName(), req.getQuantity(), req.getUnit(), caller);
     }
@@ -142,10 +144,10 @@ public class NutritionV2Service {
     // ─────────────────────────────────────────────────────────
 
     @Transactional
-    public Map<String, Object> logFood(String callerEmail, FoodLogRequest req) {
+    public Map<String, Object> logFood(String callerEmail, @jakarta.validation.Valid FoodLogRequest req) {
         User caller = loadUser(callerEmail);
         UUID memberId = resolveMemberId(caller, req.getMemberId());
-        User member = loadMemberById(memberId);
+        User member = loadMemberById(memberId, caller);
         assertCanViewMember(caller, member);
         assertWorkflowAllowsWrite(caller);
 
@@ -186,10 +188,10 @@ public class NutritionV2Service {
     // ─────────────────────────────────────────────────────────
 
     @Transactional
-    public Map<String, Object> logFoodManual(String callerEmail, FoodLogManualRequest req) {
+    public Map<String, Object> logFoodManual(String callerEmail, @jakarta.validation.Valid FoodLogManualRequest req) {
         User caller = loadUser(callerEmail);
         UUID memberId = resolveMemberId(caller, req.getMemberId());
-        User member = loadMemberById(memberId);
+        User member = loadMemberById(memberId, caller);
         assertCanViewMember(caller, member);
         assertWorkflowAllowsWrite(caller);
 
@@ -227,9 +229,9 @@ public class NutritionV2Service {
     // ─────────────────────────────────────────────────────────
 
     @Transactional
-    public Map<String, Object> updateEntry(String callerEmail, UUID entryId, FoodLogRequest req) {
+    public Map<String, Object> updateEntry(String callerEmail, UUID entryId, @jakarta.validation.Valid FoodLogRequest req) {
         User caller = loadUser(callerEmail);
-        FoodEntry entry = foodEntryRepository.findById(entryId)
+        FoodEntry entry = loadEntryInCallerGym(entryId, caller)
                 .orElseThrow(() -> new AppException("Entry not found", "السجل غير موجود", HttpStatus.NOT_FOUND));
         assertCanModifyEntry(caller, entry);
         assertWorkflowAllowsWrite(caller);
@@ -261,7 +263,7 @@ public class NutritionV2Service {
     @Transactional
     public void deleteEntry(String callerEmail, UUID entryId) {
         User caller = loadUser(callerEmail);
-        FoodEntry entry = foodEntryRepository.findById(entryId)
+        FoodEntry entry = loadEntryInCallerGym(entryId, caller)
                 .orElseThrow(() -> new AppException("Entry not found", "السجل غير موجود", HttpStatus.NOT_FOUND));
         assertCanModifyEntry(caller, entry);
         assertWorkflowAllowsWrite(caller);
@@ -274,7 +276,7 @@ public class NutritionV2Service {
 
     public Map<String, Object> getTodayLog(String callerEmail, UUID memberId) {
         User caller = loadUser(callerEmail);
-        User member = loadMemberById(memberId);
+        User member = loadMemberById(memberId, caller);
         assertCanViewMember(caller, member);
         return buildTodayLog(memberId, LocalDate.now());
     }
@@ -285,7 +287,7 @@ public class NutritionV2Service {
 
     public List<Map<String, Object>> getHistory(String callerEmail, UUID memberId, int days) {
         User caller = loadUser(callerEmail);
-        User member = loadMemberById(memberId);
+        User member = loadMemberById(memberId, caller);
         assertCanViewMember(caller, member);
 
         Optional<NutritionTarget> targetOpt = nutritionTargetRepository.findByMemberId(memberId);
@@ -331,10 +333,10 @@ public class NutritionV2Service {
     // ─────────────────────────────────────────────────────────
 
     @Transactional
-    public Map<String, Object> logWater(String callerEmail, WaterAddRequest req) {
+    public Map<String, Object> logWater(String callerEmail, @jakarta.validation.Valid WaterAddRequest req) {
         User caller = loadUser(callerEmail);
         UUID memberId = resolveMemberId(caller, req.getMemberId());
-        User member = loadMemberById(memberId);
+        User member = loadMemberById(memberId, caller);
         assertCanViewMember(caller, member);
         assertWorkflowAllowsWrite(caller);
 
@@ -352,7 +354,7 @@ public class NutritionV2Service {
 
     public Map<String, Object> getTodayWater(String callerEmail, UUID memberId) {
         User caller = loadUser(callerEmail);
-        User member = loadMemberById(memberId);
+        User member = loadMemberById(memberId, caller);
         assertCanViewMember(caller, member);
         return buildWaterSummary(memberId, LocalDate.now());
     }
@@ -364,7 +366,7 @@ public class NutritionV2Service {
     @Transactional
     public Map<String, Object> createSuggestion(String callerEmail, MealSuggestionRequest req) {
         User caller = loadUser(callerEmail);
-        User member = loadMemberById(req.getMemberId());
+        User member = loadMemberById(req.getMemberId(), caller);
         assertSameGym(caller, member);
         assertCanManageTarget(caller, member);
 
@@ -384,7 +386,7 @@ public class NutritionV2Service {
 
     public List<Map<String, Object>> getSuggestions(String callerEmail, UUID memberId) {
         User caller = loadUser(callerEmail);
-        User member = loadMemberById(memberId);
+        User member = loadMemberById(memberId, caller);
         assertCanViewMember(caller, member);
         return mealSuggestionRepository.findByMemberIdOrderByCreatedAtDesc(memberId)
                 .stream().map(this::buildSuggestionMap).collect(Collectors.toList());
@@ -393,7 +395,10 @@ public class NutritionV2Service {
     @Transactional
     public void deleteSuggestion(String callerEmail, UUID suggestionId) {
         User caller = loadUser(callerEmail);
-        MealSuggestion s = mealSuggestionRepository.findById(suggestionId)
+        MealSuggestion s = caller.getRole() == Role.SUPER_ADMIN
+                ? mealSuggestionRepository.findById(suggestionId)
+                    .orElseThrow(() -> new AppException("Suggestion not found", "الاقتراح غير موجود", HttpStatus.NOT_FOUND))
+                : mealSuggestionRepository.findByIdAndGymId(suggestionId, caller.getGymId())
                 .orElseThrow(() -> new AppException("Suggestion not found", "الاقتراح غير موجود", HttpStatus.NOT_FOUND));
         if (!caller.getGymId().equals(s.getGymId()))
             throw new AppException("Access denied", "غير مصرح لك", HttpStatus.FORBIDDEN);
@@ -489,7 +494,7 @@ public class NutritionV2Service {
 
     public Map<String, Object> getStaffMemberOverview(String callerEmail, UUID memberId) {
         User caller = loadUser(callerEmail);
-        User member = loadMemberById(memberId);
+        User member = loadMemberById(memberId, caller);
         assertCanViewMember(caller, member);
 
         Map<String, Object> result = new LinkedHashMap<>();
@@ -759,6 +764,13 @@ public class NutritionV2Service {
         }
 
         Map<String, Object> result = new LinkedHashMap<>();
+        result.put("entries", entries.stream().map(this::buildEntryMap).toList());
+        result.put("waterMl", waterMl);
+        result.put("waterLogs", waterLogs.stream().map(w -> {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("id", w.getId()); item.put("amountMl", w.getAmountMl()); item.put("loggedAt", w.getLoggedAt());
+            return item;
+        }).toList());
         result.put("date",          date.toString());
         result.put("target",        targetMap);
         result.put("todayPlanDay",  planDayMap);
@@ -826,7 +838,7 @@ public class NutritionV2Service {
 
     private Map<String, Object> buildTargetMap(NutritionTarget t) {
         Map<String, Object> m = new LinkedHashMap<>();
-        m.put("id", t.getId()); m.put("memberId", t.getMemberId());
+        m.put("id", t.getId()); m.put("memberId", t.getMemberId()); m.put("coachId", t.getCoachId());
         m.put("targetCalories", t.getCalories()); m.put("targetProtein", t.getProteinG());
         m.put("targetCarbs", t.getCarbsG()); m.put("targetFat", t.getFatG());
         m.put("targetWater", t.getWaterMl() != null ? t.getWaterMl() / 1000.0 : null);
@@ -838,7 +850,7 @@ public class NutritionV2Service {
 
     private Map<String, Object> buildEntryMap(FoodEntry e) {
         Map<String, Object> m = new LinkedHashMap<>();
-        m.put("id", e.getId()); m.put("foodName", e.getFoodName());
+        m.put("id", e.getId()); m.put("memberId", e.getMemberId()); m.put("rawInput", e.getRawInput()); m.put("foodName", e.getFoodName());
         m.put("foodNameAr", e.getFoodNameAr()); m.put("quantity", e.getQuantity());
         m.put("unit", e.getUnit()); m.put("mealType", e.getMealType());
         m.put("calories", e.getCalories()); m.put("protein", e.getProteinG());
@@ -873,14 +885,30 @@ public class NutritionV2Service {
     // ACCESS + AUTH HELPERS
     // ─────────────────────────────────────────────────────────
 
+    /** Entry-shaped history for older V3 clients, owned by the canonical nutrition service. */
+    public List<Map<String, Object>> getEntryHistory(String email, UUID memberId) {
+        User caller = loadUser(email);
+        assertCanViewMember(caller, loadMemberById(memberId, caller));
+        return foodEntryRepository.findByMemberIdOrderByLoggedAtDesc(memberId).stream().map(this::buildEntryMap).toList();
+    }
+
     private User loadUser(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException("User not found", "المستخدم غير موجود", HttpStatus.NOT_FOUND));
     }
 
-    private User loadMemberById(UUID id) {
-        return userRepository.findById(id)
+    private User loadMemberById(UUID id, User caller) {
+        Optional<User> member = caller.getRole() == Role.SUPER_ADMIN
+                ? userRepository.findById(id)
+                : userRepository.findByIdAndGymId(id, caller.getGymId());
+        return member.filter(user -> user.getRole() == Role.MEMBER)
                 .orElseThrow(() -> new AppException("Member not found", "العضو غير موجود", HttpStatus.NOT_FOUND));
+    }
+
+    private Optional<FoodEntry> loadEntryInCallerGym(UUID entryId, User caller) {
+        return caller.getRole() == Role.SUPER_ADMIN
+                ? foodEntryRepository.findById(entryId)
+                : foodEntryRepository.findByIdAndGymId(entryId, caller.getGymId());
     }
 
     private UUID resolveMemberId(User caller, UUID req) {

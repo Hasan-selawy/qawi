@@ -70,21 +70,26 @@ public class GymClassController {
     }
 
     @PutMapping("/{id}")
+    @Transactional
     public ResponseEntity<Map<String, Object>> updateClass(
             @PathVariable UUID id,
             @RequestBody Map<String, Object> body,
             @AuthenticationPrincipal UserDetails ud) {
         UUID gymId = getGymId(ud.getUsername());
         requireClassBooking(gymId);
-        GymClass gc = gymClassRepository.findById(id)
+        GymClass gc = gymClassRepository.findForUpdateByIdAndGymId(id, gymId)
                 .orElseThrow(() -> new AppException("Class not found", "الحصة غير موجودة", HttpStatus.NOT_FOUND));
-        if (!gc.getGymId().equals(gymId))
-            throw new AppException("Not found", "غير موجود", HttpStatus.NOT_FOUND);
         if (body.containsKey("name")) gc.setName(String.valueOf(body.get("name")));
         if (body.containsKey("instructorName")) gc.setInstructorName(String.valueOf(body.get("instructorName")));
         if (body.containsKey("dateTime")) gc.setDateTime(LocalDateTime.parse(String.valueOf(body.get("dateTime"))));
         if (body.containsKey("durationMinutes")) gc.setDurationMinutes(Integer.parseInt(String.valueOf(body.get("durationMinutes"))));
-        if (body.containsKey("maxCapacity")) gc.setMaxCapacity(Integer.parseInt(String.valueOf(body.get("maxCapacity"))));
+        if (body.containsKey("maxCapacity")) {
+            int capacity = Integer.parseInt(String.valueOf(body.get("maxCapacity")));
+            if (capacity < 1 || capacity < classBookingRepository.countByClassIdAndStatus(id, ClassBookingStatus.BOOKED)) {
+                throw new AppException("Capacity cannot be below current bookings or one", "السعة أقل من عدد الحجوزات", HttpStatus.CONFLICT);
+            }
+            gc.setMaxCapacity(capacity);
+        }
         if (body.containsKey("description")) gc.setDescription(String.valueOf(body.get("description")));
         gymClassRepository.save(gc);
         return ResponseEntity.ok(buildClassResponse(gc, true));
@@ -97,10 +102,8 @@ public class GymClassController {
             @AuthenticationPrincipal UserDetails ud) {
         UUID gymId = getGymId(ud.getUsername());
         requireClassBooking(gymId);
-        GymClass gc = gymClassRepository.findById(id)
+        GymClass gc = gymClassRepository.findForUpdateByIdAndGymId(id, gymId)
                 .orElseThrow(() -> new AppException("Class not found", "الحصة غير موجودة", HttpStatus.NOT_FOUND));
-        if (!gc.getGymId().equals(gymId))
-            throw new AppException("Not found", "غير موجود", HttpStatus.NOT_FOUND);
         gc.setStatus(GymClassStatus.CANCELLED);
         gymClassRepository.save(gc);
         return ResponseEntity.noContent().build();
@@ -112,10 +115,8 @@ public class GymClassController {
             @AuthenticationPrincipal UserDetails ud) {
         UUID gymId = getGymId(ud.getUsername());
         requireClassBooking(gymId);
-        GymClass gc = gymClassRepository.findById(id)
+        GymClass gc = gymClassRepository.findByIdAndGymId(id, gymId)
                 .orElseThrow(() -> new AppException("Class not found", "الحصة غير موجودة", HttpStatus.NOT_FOUND));
-        if (!gc.getGymId().equals(gymId))
-            throw new AppException("Not found", "غير موجود", HttpStatus.NOT_FOUND);
         List<ClassBooking> bookings = classBookingRepository.findByClassId(id);
         List<Map<String, Object>> result = bookings.stream().map(b -> {
             Map<String, Object> m = new LinkedHashMap<>();
@@ -123,7 +124,7 @@ public class GymClassController {
             m.put("memberId", b.getMemberId());
             m.put("status", b.getStatus());
             m.put("bookedAt", b.getBookedAt());
-            userRepository.findById(b.getMemberId()).ifPresent(u -> {
+            userRepository.findByIdAndGymId(b.getMemberId(), gymId).ifPresent(u -> {
                 m.put("memberName", u.getName());
                 m.put("memberEmail", u.getEmail());
             });

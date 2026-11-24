@@ -7,9 +7,12 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface FoodEntryRepository extends JpaRepository<FoodEntry, UUID> {
+
+    Optional<FoodEntry> findByIdAndGymId(UUID id, UUID gymId);
 
     @Query("SELECT f FROM FoodEntry f WHERE f.memberId = :memberId " +
            "AND f.loggedAt >= :startOfDay AND f.loggedAt < :endOfDay ORDER BY f.loggedAt ASC")

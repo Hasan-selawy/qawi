@@ -1,5 +1,7 @@
 package com.qawi.dto;
 
+import java.math.BigDecimal;
+
 import com.qawi.entity.SubscriptionPlan;
 import lombok.Builder;
 import lombok.Data;
@@ -8,7 +10,7 @@ import lombok.Data;
 @Builder
 public class PlanInfo {
     private SubscriptionPlan plan;
-    private int price;
+    private BigDecimal price;
     private String currency;
     private String billingCycle;
     private Integer yearlyPrice;

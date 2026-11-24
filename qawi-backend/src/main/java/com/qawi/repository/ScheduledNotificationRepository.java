@@ -7,10 +7,12 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface ScheduledNotificationRepository extends JpaRepository<ScheduledNotification, UUID> {
+    Optional<ScheduledNotification> findByIdAndGymId(UUID id, UUID gymId);
     List<ScheduledNotification> findByGymIdOrderByScheduledAtDesc(UUID gymId);
     List<ScheduledNotification> findByStatusAndScheduledAtBefore(ScheduledNotificationStatus status, LocalDateTime before);
 }

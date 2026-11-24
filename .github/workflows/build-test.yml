@@ -6,6 +6,15 @@ on:
   pull_request:
 
 jobs:
+  git-hygiene:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - run: node scripts/check-git-hygiene.mjs
+
   backend:
     name: Spring Boot API
     runs-on: ubuntu-latest
@@ -29,6 +38,9 @@ jobs:
       PGDATABASE: qawi
       PGUSER: qawi
       PGPASSWORD: qawi
+      PHASE0_DB_URL: jdbc:postgresql://localhost:5432/qawi
+      PHASE0_DB_USER: qawi
+      PHASE0_DB_PASSWORD: qawi
       # CI-only signing secret (>= 32 bytes). Never used outside CI.
       JWT_SECRET: ci-only-test-secret-please-override-32bytes-minimum
     steps:
@@ -42,6 +54,19 @@ jobs:
       - name: Build & test
         working-directory: qawi-backend
         run: mvn -B -ntp verify
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Verify exported Spring contract
+        run: node scripts/export-openapi.mjs --check
+      - name: Rehearse backup and restore into a new disposable database
+        run: |
+          python scripts/database-backup.py backup --output "$RUNNER_TEMP/qawi_ci.dump"
+          python scripts/database-backup.py drill --archive "$RUNNER_TEMP/qawi_ci.dump" --target-db qawi_drill_ci
+          PGDATABASE=qawi_drill_ci python scripts/phase2-smoke.py --start-app qawi-backend/target/qawi-1.0.0.jar
 
   web:
     name: Web (qawi-web)
@@ -58,3 +83,9 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Build qawi-web
         run: pnpm --filter @workspace/qawi-web run build
+      - name: Test mobile attendance queue
+        run: pnpm --filter @workspace/qawi-mobile test
+      - name: Regenerate clients without drift
+        run: |
+          pnpm --filter @workspace/api-spec run codegen
+          git diff --exit-code -- lib/api-client-react/src/generated lib/api-zod/src/generated

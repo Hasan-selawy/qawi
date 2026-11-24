@@ -8,11 +8,16 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Profile;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
 @Component
+@Profile("!prod & !staging")
+@ConditionalOnProperty(name = "qawi.seed.enabled", havingValue = "true")
 @RequiredArgsConstructor
 @Slf4j
 @Order(3)
@@ -54,7 +59,7 @@ public class Phase4DataSeeder implements ApplicationRunner {
                             .startDate(LocalDate.now().minusDays(60))
                             .endDate(LocalDate.now().minusDays(30))
                             .plan(MemberSubscriptionPlan.MONTHLY)
-                            .price(49.0)
+                            .price(new BigDecimal("49.0"))
                             .build());
 
                     // Current subscription — 30 days ago
@@ -64,7 +69,7 @@ public class Phase4DataSeeder implements ApplicationRunner {
                             .startDate(LocalDate.now().minusDays(30))
                             .endDate(LocalDate.now().plusDays(30))
                             .plan(MemberSubscriptionPlan.MONTHLY)
-                            .price(49.0)
+                            .price(new BigDecimal("49.0"))
                             .build());
                 });
 

@@ -1,5 +1,7 @@
 package com.qawi.dto;
 
+import java.math.BigDecimal;
+
 import com.qawi.entity.SubscriptionPlan;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,10 +19,10 @@ public class PlatformTierDto {
     private UUID id;
     private String name;
     private String nameAr;
-    private int price1m;
-    private int price3m;
-    private int price6m;
-    private int price12m;
+    private BigDecimal price1m;
+    private BigDecimal price3m;
+    private BigDecimal price6m;
+    private BigDecimal price12m;
     private List<String> features;
     private List<String> featuresAr;
     private boolean active;

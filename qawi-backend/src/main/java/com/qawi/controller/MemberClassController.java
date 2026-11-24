@@ -60,7 +60,7 @@ public class MemberClassController {
             m.put("bookingId", b.getId());
             m.put("bookedAt", b.getBookedAt());
             m.put("status", b.getStatus());
-            gymClassRepository.findById(b.getClassId()).ifPresent(gc -> {
+            gymClassRepository.findByIdAndGymId(b.getClassId(), member.getGymId()).ifPresent(gc -> {
                 m.put("class", buildClassResponse(gc, member.getId()));
             });
             return m;
@@ -76,10 +76,8 @@ public class MemberClassController {
         User member = getMember(ud.getUsername());
         requireClassBooking(member.getGymId());
 
-        GymClass gc = gymClassRepository.findById(classId)
+        GymClass gc = gymClassRepository.findForUpdateByIdAndGymId(classId, member.getGymId())
                 .orElseThrow(() -> new AppException("Class not found", "الحصة غير موجودة", HttpStatus.NOT_FOUND));
-        if (!gc.getGymId().equals(member.getGymId()))
-            throw new AppException("Class not found", "الحصة غير موجودة", HttpStatus.NOT_FOUND);
         if (gc.getStatus() == GymClassStatus.CANCELLED)
             throw new AppException("Class is cancelled", "تم إلغاء الحصة", HttpStatus.BAD_REQUEST);
 
@@ -115,6 +113,9 @@ public class MemberClassController {
             @AuthenticationPrincipal UserDetails ud) {
         User member = getMember(ud.getUsername());
         requireClassBooking(member.getGymId());
+
+        gymClassRepository.findForUpdateByIdAndGymId(classId, member.getGymId())
+                .orElseThrow(() -> new AppException("Class not found", "الحصة غير موجودة", HttpStatus.NOT_FOUND));
 
         ClassBooking booking = classBookingRepository.findByClassIdAndMemberId(classId, member.getId())
                 .orElseThrow(() -> new AppException("Booking not found", "الحجز غير موجود", HttpStatus.NOT_FOUND));

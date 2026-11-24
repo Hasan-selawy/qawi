@@ -45,7 +45,7 @@ public class HrService {
     @Transactional
     public Map<String, Object> upsertProfile(String email, UUID userId, StaffProfileRequest req) {
         User caller = loadHr(email);
-        User staff = userRepository.findById(userId)
+        User staff = userRepository.findByIdAndGymId(userId, caller.getGymId())
                 .orElseThrow(() -> new AppException("User not found", "المستخدم غير موجود", HttpStatus.NOT_FOUND));
         if (!caller.getGymId().equals(staff.getGymId()))
             throw new AppException("Access denied", "غير مصرح لك", HttpStatus.FORBIDDEN);
@@ -64,7 +64,7 @@ public class HrService {
 
     public List<Map<String, Object>> getStaffAttendance(String email, UUID staffUserId) {
         User caller = loadHr(email);
-        User staff = userRepository.findById(staffUserId)
+        User staff = userRepository.findByIdAndGymId(staffUserId, caller.getGymId())
                 .orElseThrow(() -> new AppException("User not found", "المستخدم غير موجود", HttpStatus.NOT_FOUND));
         if (!caller.getGymId().equals(staff.getGymId()))
             throw new AppException("Access denied", "غير مصرح لك", HttpStatus.FORBIDDEN);
@@ -88,7 +88,7 @@ public class HrService {
     @Transactional
     public Map<String, Object> logAttendance(String email, UUID staffUserId, StaffAttendanceRequest req) {
         User caller = loadHr(email);
-        User staff = userRepository.findById(staffUserId)
+        User staff = userRepository.findByIdAndGymId(staffUserId, caller.getGymId())
                 .orElseThrow(() -> new AppException("User not found", "المستخدم غير موجود", HttpStatus.NOT_FOUND));
         if (!caller.getGymId().equals(staff.getGymId()))
             throw new AppException("Access denied", "غير مصرح لك", HttpStatus.FORBIDDEN);
@@ -130,7 +130,7 @@ public class HrService {
 
         List<Map<String, Object>> details = new ArrayList<>();
         for (StaffProfile p : profiles) {
-            userRepository.findById(p.getUserId()).ifPresent(u -> {
+            userRepository.findByIdAndGymId(p.getUserId(), caller.getGymId()).ifPresent(u -> {
                 StaffAttendance att = todayAtt.stream().filter(a -> a.getStaffId().equals(p.getId())).findFirst().orElse(null);
                 Map<String, Object> d = new LinkedHashMap<>();
                 d.put("userId", u.getId());
@@ -167,7 +167,7 @@ public class HrService {
 
         List<Map<String, Object>> rows = new ArrayList<>();
         for (StaffProfile p : profiles) {
-            userRepository.findById(p.getUserId()).ifPresent(u -> {
+            userRepository.findByIdAndGymId(p.getUserId(), caller.getGymId()).ifPresent(u -> {
                 List<StaffAttendance> myAtt = monthAtt.stream().filter(a -> a.getStaffId().equals(p.getId())).collect(Collectors.toList());
                 long present = myAtt.stream().filter(a -> "PRESENT".equals(a.getStatus())).count();
                 long late = myAtt.stream().filter(a -> "LATE".equals(a.getStatus())).count();
@@ -194,7 +194,7 @@ public class HrService {
 
     public Map<String, Object> getCoachPerformance(String email, UUID coachId) {
         User caller = loadHr(email);
-        User coach = userRepository.findById(coachId)
+        User coach = userRepository.findByIdAndGymId(coachId, caller.getGymId())
                 .orElseThrow(() -> new AppException("Coach not found", "المدرب غير موجود", HttpStatus.NOT_FOUND));
         if (!caller.getGymId().equals(coach.getGymId()))
             throw new AppException("Access denied", "غير مصرح لك", HttpStatus.FORBIDDEN);
@@ -222,7 +222,7 @@ public class HrService {
         }
 
         long activeMembers = memberIds.stream()
-                .map(id -> userRepository.findById(id).orElse(null))
+                .map(id -> userRepository.findByIdAndGymId(id, caller.getGymId()).orElse(null))
                 .filter(m -> m != null && m.getSubscriptionEndDate() != null
                         && !m.getSubscriptionEndDate().isBefore(LocalDate.now()))
                 .count();

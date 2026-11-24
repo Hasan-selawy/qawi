@@ -11,6 +11,8 @@ import java.util.UUID;
 
 public interface MemberLeadRepository extends JpaRepository<MemberLead, UUID> {
 
+    Optional<MemberLead> findByIdAndGymId(UUID id, UUID gymId);
+
     List<MemberLead> findByGymIdOrderByCreatedAtDesc(UUID gymId);
 
     List<MemberLead> findByGymIdAndStatusOrderByCreatedAtDesc(UUID gymId, MemberLeadStatus status);
