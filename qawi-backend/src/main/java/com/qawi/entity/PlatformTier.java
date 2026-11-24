@@ -1,5 +1,7 @@
 package com.qawi.entity;
 
+import java.math.BigDecimal;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -20,17 +22,17 @@ public class PlatformTier {
     @Column(name = "name_ar")
     private String nameAr;
 
-    @Column(name = "price_1m", nullable = false)
-    private int price1m;
+    @Column(name = "price_1m", nullable = false, precision = 19, scale = 3)
+    private BigDecimal price1m;
 
-    @Column(name = "price_3m", nullable = false)
-    private int price3m;
+    @Column(name = "price_3m", nullable = false, precision = 19, scale = 3)
+    private BigDecimal price3m;
 
-    @Column(name = "price_6m", nullable = false)
-    private int price6m;
+    @Column(name = "price_6m", nullable = false, precision = 19, scale = 3)
+    private BigDecimal price6m;
 
-    @Column(name = "price_12m", nullable = false)
-    private int price12m;
+    @Column(name = "price_12m", nullable = false, precision = 19, scale = 3)
+    private BigDecimal price12m;
 
     @Column(name = "features", columnDefinition = "text")
     private String features;

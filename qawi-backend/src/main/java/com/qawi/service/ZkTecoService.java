@@ -80,10 +80,8 @@ public class ZkTecoService {
     @Transactional
     public Map<String, Object> enrollMember(String email, UUID memberId, EnrollMemberRequest req) {
         User caller = loadCaller(email);
-        User member = userRepo.findById(memberId)
+        User member = userRepo.findByIdAndGymId(memberId, caller.getGymId())
                 .orElseThrow(() -> new AppException("Member not found", "العضو غير موجود", HttpStatus.NOT_FOUND));
-        if (!caller.getGymId().equals(member.getGymId()))
-            throw new AppException("Access denied", "غير مصرح لك", HttpStatus.FORBIDDEN);
 
         deviceRepo.findByDeviceSerialAndGymId(req.getDeviceSerial(), caller.getGymId())
                 .orElseThrow(() -> new AppException("Device not found in this gym",
@@ -115,7 +113,7 @@ public class ZkTecoService {
             Map<String, Object> m = new LinkedHashMap<>();
             m.put("id", e.getId());
             m.put("memberId", e.getMemberId());
-            userRepo.findById(e.getMemberId()).ifPresent(u -> {
+            userRepo.findByIdAndGymId(e.getMemberId(), caller.getGymId()).ifPresent(u -> {
                 m.put("memberName", u.getName());
                 m.put("memberPhone", u.getPhone());
             });
@@ -128,69 +126,13 @@ public class ZkTecoService {
         }).collect(Collectors.toList());
     }
 
-    @Transactional
+    // Physical ingestion remains closed until device authentication and subscription checks exist.
     public String handleAdmsPing(String serial) {
-        if (serial != null && !serial.isBlank()) {
-            deviceRepo.findByDeviceSerial(serial.trim()).ifPresent(d -> {
-                d.setLastSeenAt(LocalDateTime.now());
-                deviceRepo.save(d);
-            });
-        }
-        return "ATTLOGStamp=9999\nOPERLOGStamp=9999\nATTPHOTOStamp=9999\n";
+        throw new AppException("Physical ingestion is disabled", "??????? ?????? ??????? ????", HttpStatus.SERVICE_UNAVAILABLE);
     }
 
-    @Transactional
     public String handleAdmsAttendance(Map<String, String> params, String body) {
-        String serial = coalesce(params.get("SN"), params.get("device_sn"), params.get("serial"));
-        if (serial == null) return "OK";
-
-        Optional<BiometricDevice> deviceOpt = deviceRepo.findByDeviceSerial(serial.trim());
-        if (deviceOpt.isEmpty()) {
-            log.warn("ZKTeco: unknown device serial '{}'", serial);
-            return "OK";
-        }
-        BiometricDevice device = deviceOpt.get();
-        device.setLastSeenAt(LocalDateTime.now());
-        deviceRepo.save(device);
-
-        String userId = coalesce(params.get("PIN"), params.get("user_id"), params.get("uid"));
-
-        if (userId == null && body != null && !body.isBlank()) {
-            for (String line : body.split("\n")) {
-                String trimmed = line.trim();
-                if (trimmed.startsWith("ATTLOG")) {
-                    String[] parts = trimmed.split("\\s+");
-                    if (parts.length >= 2) { userId = parts[1]; break; }
-                }
-            }
-        }
-        if (userId == null) return "OK";
-
-        Optional<BiometricEnrollment> enrollOpt = enrollmentRepo
-                .findByDeviceSerialAndDeviceUserId(serial.trim(), userId.trim());
-        if (enrollOpt.isEmpty()) {
-            log.warn("ZKTeco: no enrollment for device='{}' userId='{}'", serial, userId);
-            return "OK";
-        }
-
-        UUID memberId = enrollOpt.get().getMemberId();
-        Optional<User> memberOpt = userRepo.findById(memberId);
-        if (memberOpt.isEmpty() || !memberOpt.get().getGymId().equals(device.getGymId())) return "OK";
-
-        LocalDateTime fiveMinAgo = LocalDateTime.now().minusMinutes(5);
-        boolean recentCheckin = !attendanceRepo
-                .findByMemberIdAndCheckedInAtAfterOrderByCheckedInAtDesc(memberId, fiveMinAgo).isEmpty();
-        if (recentCheckin) return "OK";
-
-        Attendance att = Attendance.builder()
-                .memberId(memberId)
-                .gymId(device.getGymId())
-                .checkedInAt(LocalDateTime.now())
-                .source("ZKTECO")
-                .build();
-        attendanceRepo.save(att);
-        log.info("ZKTeco: checked in member '{}' via device '{}'", memberId, serial);
-        return "OK";
+        throw new AppException("Physical ingestion is disabled", "??????? ?????? ??????? ????", HttpStatus.SERVICE_UNAVAILABLE);
     }
 
     private String coalesce(String... values) {

@@ -10,11 +10,19 @@
 [![React](https://img.shields.io/badge/React-19-blue.svg)](https://react.dev/)
 [![Expo](https://img.shields.io/badge/Expo-SDK%2054-black.svg)](https://expo.dev/)
 
-**Production-ready multi-tenant SaaS for gym management, built for the Middle East market.**
+**Multi-tenant SaaS for gym management, built for the Middle East market.**
 
 </div>
 
 ---
+
+## Current Phase 2 deployment
+
+Read [Phase 2 rollout and operating instructions](qawi-backend/PHASE2_DEPLOYMENT.md). Spring is the sole backend; the storage sidecar is retired. Nutrition V2 is canonical with V3 compatibility adapters. Monetary data uses exact decimals. Privacy export/erase, configurable retention, durable offline attendance, sanitized Sentry integration, and backup/restore drill tools are available. Retention stays disabled until an approved policy is configured; live Sentry and production backup infrastructure still require deployment configuration. Phase 1 has not been implemented by this work.
+
+## Phase 0 prerequisite
+
+Read [Phase 0 deployment instructions](qawi-backend/PHASE0_DEPLOYMENT.md) before starting against an existing database. Flyway now owns schema changes; existing databases require a reviewed version 1 baseline. Compose requires an explicit random JWT secret and runs with the production profile. Demo accounts require an explicit local opt-in (`QAWI_SEED=true`); production/staging never seed them. Physical ADMS ingestion and private Node storage are disabled.
 
 ## Overview
 
@@ -148,23 +156,32 @@ qawi/
 
 ### Running with Docker (Recommended)
 
+Clone the repository:
+
 ```bash
-# 1. Clone the repository
 git clone https://github.com/Hasan-selawy/qawi.git
 cd qawi
+```
 
-# 2. Copy environment template
-cp .env.example .env
+Start Docker Desktop, then from PowerShell run:
 
-# 3. Fill in your values in .env
+```powershell
+.\scripts\dev.ps1
+```
 
-# 4. Build and run
-docker-compose up --build
+To run in the background or stop the project:
 
-# Access:
-# Web:    http://localhost:80
-# API:    http://localhost:9000
-# Health: http://localhost:9000/actuator/health
+```powershell
+.\scripts\dev.ps1 -Detached
+.\scripts\stop.ps1
+```
+
+The local development defaults in `.env.example` work without editing:
+
+```text
+Web:    http://localhost:5000
+API:    http://localhost:9000/api/v1
+Health: http://localhost:9000/actuator/health
 ```
 
 ---
@@ -172,15 +189,21 @@ docker-compose up --build
 ### Running Manually
 
 **Backend (Spring Boot):**
-```bash
+```powershell
+# Start only PostgreSQL in Docker first
+docker compose up postgres -d
+
 cd qawi-backend
-mvn spring-boot:run
+mvn spring-boot:run "-Dspring-boot.run.profiles=local"
 # API available at http://localhost:9000/api/v1
 ```
 
 **Web Dashboard (React + Vite):**
-```bash
-pnpm --filter @workspace/qawi-web run dev
+```powershell
+corepack enable
+pnpm install
+pnpm dev:web
+# Web available at http://localhost:5000
 ```
 
 **Mobile App (Expo):**
@@ -195,13 +218,12 @@ pnpm --filter @workspace/qawi-mobile run dev
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `DATABASE_URL` | PostgreSQL JDBC URL | `jdbc:postgresql://localhost:5432/qawi` |
+| `DB_URL` | PostgreSQL JDBC URL for native backend runs | `jdbc:postgresql://localhost:5432/qawi` |
 | `DB_USERNAME` | Database user | `postgres` |
 | `DB_PASSWORD` | Database password | `yourpassword` |
 | `JWT_SECRET` | JWT signing key (≥32 bytes) | `your-256-bit-secret-key` |
-| `SESSION_SECRET` | Fallback for JWT_SECRET in dev | `another-secret` |
 | `PORT` | API server port | `9000` |
-| `VITE_API_URL` | Web dashboard API base URL | `https://api.qawi.app/api/v1` |
+| `VITE_API_URL` | Optional API origin; leave empty locally to use the proxy | `https://api.qawi.app` |
 | `EXPO_PUBLIC_DOMAIN` | Mobile app API domain | `api.qawi.app` |
 | `QAWI_DEMO_USER_PASSWORD` | Seeded demo user password | Set locally; do not publish |
 | `QAWI_DEMO_SUPER_ADMIN_PASSWORD` | Seeded super-admin password | Set locally; do not publish |

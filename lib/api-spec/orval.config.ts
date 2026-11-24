@@ -16,7 +16,7 @@ const titleTransformer: InputTransformerFn = (config) => {
 export default defineConfig({
   "api-client-react": {
     input: {
-      target: "./openapi.yaml",
+      target: "./openapi.json",
       override: {
         transformer: titleTransformer,
       },
@@ -26,7 +26,7 @@ export default defineConfig({
       target: "generated",
       client: "react-query",
       mode: "split",
-      baseUrl: "/api",
+      baseUrl: "",
       clean: true,
       prettier: true,
       override: {
@@ -42,7 +42,7 @@ export default defineConfig({
   },
   zod: {
     input: {
-      target: "./openapi.yaml",
+      target: "./openapi.json",
       override: {
         transformer: titleTransformer,
       },

@@ -5,7 +5,6 @@ import com.qawi.dto.StreakResponse;
 import com.qawi.entity.*;
 import com.qawi.exception.AppException;
 import com.qawi.repository.AttendanceRepository;
-import com.qawi.repository.CoachMemberRepository;
 import com.qawi.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -23,16 +22,29 @@ public class AttendanceService {
 
     private final AttendanceRepository attendanceRepository;
     private final UserRepository userRepository;
-    private final CoachMemberRepository coachMemberRepository;
     private final NotificationService notificationService;
+    private final AccessGuard accessGuard;
 
     @Transactional
     public CheckInResponse checkIn(String memberEmail) {
-        User member = userRepository.findByEmail(memberEmail)
+        return checkInAt(memberEmail, LocalDateTime.now());
+    }
+
+    @Transactional
+    public CheckInResponse checkInAt(String memberEmail, LocalDateTime occurredAt) {
+        User member = userRepository.findForUpdateByEmail(memberEmail)
                 .orElseThrow(() -> new AppException("User not found", "المستخدم غير موجود", HttpStatus.NOT_FOUND));
 
         if (member.getGymId() == null) {
             throw new AppException("Member is not assigned to a gym", "المستخدم غير مرتبط بصالة", HttpStatus.BAD_REQUEST);
+        }
+
+        LocalDate today = occurredAt.toLocalDate();
+        Optional<Attendance> existing = attendanceRepository
+                .findFirstByMemberIdAndGymIdAndCheckedInAtGreaterThanEqualAndCheckedInAtLessThan(
+                        member.getId(), member.getGymId(), today.atStartOfDay(), today.plusDays(1).atStartOfDay());
+        if (existing.isPresent()) {
+            return CheckInResponse.builder().attendance(existing.get()).streak(calculateStreak(member.getId())).build();
         }
 
         Optional<Attendance> lastOpt = attendanceRepository.findFirstByMemberIdOrderByCheckedInAtDesc(member.getId());
@@ -40,7 +52,7 @@ public class AttendanceService {
 
         if (lastOpt.isPresent()) {
             long daysSinceLast = ChronoUnit.DAYS.between(
-                    lastOpt.get().getCheckedInAt().toLocalDate(), LocalDate.now());
+                    lastOpt.get().getCheckedInAt().toLocalDate(), today);
             if (daysSinceLast > 3) {
                 missedNotification = notificationService.create(
                         member.getId(),
@@ -54,6 +66,7 @@ public class AttendanceService {
         Attendance attendance = attendanceRepository.save(Attendance.builder()
                 .memberId(member.getId())
                 .gymId(member.getGymId())
+                .checkedInAt(occurredAt)
                 .build());
 
         int streak = calculateStreak(member.getId());
@@ -67,18 +80,27 @@ public class AttendanceService {
 
     @Transactional
     public Attendance checkOut(String memberEmail) {
-        User member = userRepository.findByEmail(memberEmail)
+        return checkOutAt(memberEmail, LocalDateTime.now());
+    }
+
+    @Transactional
+    public Attendance checkOutAt(String memberEmail, LocalDateTime occurredAt) {
+        User member = userRepository.findForUpdateByEmail(memberEmail)
                 .orElseThrow(() -> new AppException("User not found", "المستخدم غير موجود", HttpStatus.NOT_FOUND));
 
-        LocalDate today = LocalDate.now();
-        Attendance todays = attendanceRepository.findFirstByMemberIdOrderByCheckedInAtDesc(member.getId())
-                .filter(a -> a.getCheckedInAt() != null && today.equals(a.getCheckedInAt().toLocalDate()))
+        LocalDate today = occurredAt.toLocalDate();
+        Attendance todays = attendanceRepository
+                .findFirstByMemberIdAndGymIdAndCheckedInAtGreaterThanEqualAndCheckedInAtLessThan(
+                        member.getId(), member.getGymId(), today.atStartOfDay(), today.plusDays(1).atStartOfDay())
                 .orElseThrow(() -> new AppException(
                         "You haven't checked in today",
                         "لم تسجّل حضورك اليوم",
                         HttpStatus.BAD_REQUEST));
 
-        todays.setCheckedOutAt(LocalDateTime.now());
+        if (occurredAt.isBefore(todays.getCheckedInAt()))
+            throw new AppException("Checkout cannot precede check-in", "الخروج لا يسبق الحضور", HttpStatus.BAD_REQUEST);
+        if (todays.getCheckedOutAt() == null || occurredAt.isAfter(todays.getCheckedOutAt()))
+            todays.setCheckedOutAt(occurredAt);
         return attendanceRepository.save(todays);
     }
 
@@ -93,27 +115,7 @@ public class AttendanceService {
      * the member's gym; COACH must be assigned to the member.
      */
     private void assertCanAccessMember(UUID memberId, String callerEmail) {
-        User caller = userRepository.findByEmail(callerEmail)
-                .orElseThrow(() -> new AppException("User not found", "المستخدم غير موجود", HttpStatus.NOT_FOUND));
-        User member = userRepository.findById(memberId)
-                .orElseThrow(() -> new AppException("Member not found", "العضو غير موجود", HttpStatus.NOT_FOUND));
-
-        switch (caller.getRole()) {
-            case SUPER_ADMIN -> { /* allowed */ }
-            case GYM_ADMIN -> {
-                if (caller.getGymId() == null || !caller.getGymId().equals(member.getGymId())) {
-                    throw new AppException("Forbidden", "غير مسموح", HttpStatus.FORBIDDEN);
-                }
-            }
-            case COACH -> {
-                boolean assigned = coachMemberRepository.findByCoachId(caller.getId()).stream()
-                        .anyMatch(cm -> memberId.equals(cm.getMemberId()));
-                if (!assigned) {
-                    throw new AppException("Forbidden", "غير مسموح", HttpStatus.FORBIDDEN);
-                }
-            }
-            default -> throw new AppException("Forbidden", "غير مسموح", HttpStatus.FORBIDDEN);
-        }
+        accessGuard.assertCanAccessMember(callerEmail, memberId);
     }
 
     public List<Map<String, Object>> getMyAttendance(String memberEmail) {

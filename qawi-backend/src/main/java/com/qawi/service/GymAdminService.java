@@ -12,6 +12,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -139,7 +140,10 @@ public class GymAdminService {
         if (caller.getRole() != Role.GYM_ADMIN && caller.getRole() != Role.SUPER_ADMIN) {
             throw new AppException("Access denied", "غير مصرح لك", HttpStatus.FORBIDDEN);
         }
-        User member = userRepository.findById(memberId)
+        User member = caller.getRole() == Role.SUPER_ADMIN
+                ? userRepository.findById(memberId)
+                    .orElseThrow(() -> new AppException("Member not found", "العضو غير موجود", HttpStatus.NOT_FOUND))
+                : userRepository.findByIdAndGymId(memberId, caller.getGymId())
                 .orElseThrow(() -> new AppException("Member not found", "العضو غير موجود", HttpStatus.NOT_FOUND));
         // GYM_ADMIN must own the member's gym; SUPER_ADMIN can toggle any member
         if (caller.getRole() == Role.GYM_ADMIN && !caller.getGymId().equals(member.getGymId())) {
@@ -158,9 +162,9 @@ public class GymAdminService {
     @Transactional
     public CoachMember assignCoach(UUID memberId, AssignCoachRequest req, String adminEmail) {
         User admin = getAdmin(adminEmail);
-        User member = userRepository.findById(memberId)
+        User member = userRepository.findByIdAndGymId(memberId, admin.getGymId())
                 .orElseThrow(() -> new AppException("Member not found", "العضو غير موجود", HttpStatus.NOT_FOUND));
-        User coach = userRepository.findById(req.getCoachId())
+        User coach = userRepository.findByIdAndGymId(req.getCoachId(), admin.getGymId())
                 .orElseThrow(() -> new AppException("Coach not found", "المدرب غير موجود", HttpStatus.NOT_FOUND));
         if (member.getRole() != Role.MEMBER || !admin.getGymId().equals(member.getGymId()) || !member.isActive()) {
             throw new AppException("Member not found", "العضو غير موجود", HttpStatus.NOT_FOUND);
@@ -200,7 +204,7 @@ public class GymAdminService {
     @Transactional
     public void softDelete(UUID userId, String adminEmail) {
         User admin = getAdmin(adminEmail);
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByIdAndGymId(userId, admin.getGymId())
                 .orElseThrow(() -> new AppException("User not found", "المستخدم غير موجود", HttpStatus.NOT_FOUND));
         if (user.getGymId() == null || !user.getGymId().equals(admin.getGymId())) {
             throw new AppException("User is not in your gym", "المستخدم ليس في صالتك", HttpStatus.FORBIDDEN);
@@ -223,7 +227,7 @@ public class GymAdminService {
     @Transactional(readOnly = true)
     public List<User> getCoachMembers(UUID coachId, String adminEmail) {
         User admin = getAdmin(adminEmail);
-        User coach = userRepository.findById(coachId)
+        User coach = userRepository.findByIdAndGymId(coachId, admin.getGymId())
                 .orElseThrow(() -> new AppException("Coach not found", "المدرب غير موجود", HttpStatus.NOT_FOUND));
         if (coach.getRole() != Role.COACH || !admin.getGymId().equals(coach.getGymId())) {
             throw new AppException("Coach not found", "المدرب غير موجود", HttpStatus.NOT_FOUND);
@@ -232,7 +236,7 @@ public class GymAdminService {
                 .map(CoachMember::getMemberId).toList();
         if (memberIds.isEmpty()) return List.of();
         UUID gymId = admin.getGymId();
-        return userRepository.findAllById(memberIds).stream()
+        return userRepository.findByIdInAndGymId(memberIds, gymId).stream()
                 .filter(u -> u.getRole() == Role.MEMBER && u.isActive() && gymId.equals(u.getGymId()))
                 .toList();
     }
@@ -242,7 +246,7 @@ public class GymAdminService {
     @Transactional
     public Map<String, Object> updateMemberSubscription(UUID memberId, MemberSubscriptionRequest req, String adminEmail) {
         User admin = getAdmin(adminEmail);
-        User member = userRepository.findById(memberId)
+        User member = userRepository.findByIdAndGymId(memberId, admin.getGymId())
                 .orElseThrow(() -> new AppException("Member not found", "العضو غير موجود", HttpStatus.NOT_FOUND));
         if (member.getRole() != Role.MEMBER
                 || admin.getGymId() == null
@@ -278,7 +282,7 @@ public class GymAdminService {
 
     public List<SubscriptionHistory> getSubscriptionHistory(UUID memberId, String adminEmail) {
         User admin = getAdmin(adminEmail);
-        User member = userRepository.findById(memberId)
+        User member = userRepository.findByIdAndGymId(memberId, admin.getGymId())
                 .orElseThrow(() -> new AppException("Member not found", "العضو غير موجود", HttpStatus.NOT_FOUND));
         if (member.getRole() != Role.MEMBER
                 || admin.getGymId() == null
@@ -319,7 +323,7 @@ public class GymAdminService {
         // Avg workouts per member (all-time logs / members)
         double avgWorkouts = 0;
         if (totalMembers > 0) {
-            long totalLogs = workoutLogRepository.count();
+            long totalLogs = workoutLogRepository.countByGymId(gymId);
             avgWorkouts = Math.round((double) totalLogs / totalMembers * 10.0) / 10.0;
         }
 
@@ -341,13 +345,13 @@ public class GymAdminService {
         });
 
         // Top performing members (by all-time log count)
-        List<Object[]> topRaw = workoutLogRepository.findTopMembersByLogsSince(now.minusDays(365));
+        List<Object[]> topRaw = workoutLogRepository.findTopMembersByGymIdAndLogsSince(gymId, now.minusDays(365));
         List<Map<String, Object>> topPerforming = new ArrayList<>();
         for (int i = 0; i < Math.min(5, topRaw.size()); i++) {
             Object[] row = topRaw.get(i);
             UUID mid = (UUID) row[0];
             long cnt = (Long) row[1];
-            userRepository.findById(mid).ifPresent(u -> {
+            userRepository.findByIdAndGymId(mid, gymId).ifPresent(u -> {
                 Map<String, Object> m = new LinkedHashMap<>();
                 m.put("name", u.getName()); m.put("workoutsLogged", cnt);
                 topPerforming.add(m);
@@ -435,7 +439,7 @@ public class GymAdminService {
         long expiredCount = members.stream()
                 .filter(m -> m.getSubscriptionEndDate() != null && m.getSubscriptionEndDate().isBefore(today))
                 .count();
-        double totalRevenue = histories.stream().mapToDouble(SubscriptionHistory::getPrice).sum();
+        BigDecimal totalRevenue = histories.stream().map(SubscriptionHistory::getPrice).reduce(BigDecimal.ZERO, BigDecimal::add);
 
         Map<UUID, String> idToName = new HashMap<>();
         members.forEach(m -> idToName.put(m.getId(), m.getName()));
@@ -480,7 +484,7 @@ public class GymAdminService {
     @Transactional
     public void resetPassword(UUID userId, String newPassword, String adminEmail) {
         User admin = getAdmin(adminEmail);
-        User target = userRepository.findById(userId)
+        User target = userRepository.findByIdAndGymId(userId, admin.getGymId())
                 .orElseThrow(() -> new AppException("User not found", "المستخدم غير موجود", HttpStatus.NOT_FOUND));
         if (target.getRole() == Role.GYM_ADMIN || target.getRole() == Role.SUPER_ADMIN) {
             throw new AppException("Cannot reset password for admin accounts", "لا يمكن إعادة تعيين كلمة مرور حسابات المسؤولين", HttpStatus.FORBIDDEN);

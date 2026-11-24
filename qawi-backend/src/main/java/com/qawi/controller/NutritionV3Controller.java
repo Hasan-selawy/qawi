@@ -53,8 +53,9 @@ public class NutritionV3Controller {
 
     @PostMapping("/analyze")
     public ResponseEntity<Map<String, Object>> analyzeFood(
-            @Valid @RequestBody FoodAnalysisRequest req) {
-        return ResponseEntity.ok(nutritionV3Service.analyzeFood(req.getInput()));
+            @Valid @RequestBody FoodAnalysisRequest req,
+            @AuthenticationPrincipal UserDetails ud) {
+        return ResponseEntity.ok(nutritionV3Service.analyzeFood(ud.getUsername(), req.getInput()));
     }
 
     @PostMapping("/log")

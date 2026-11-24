@@ -15,6 +15,8 @@ import java.util.UUID;
 @Repository
 public interface NutritionPlanDayRepository extends JpaRepository<NutritionPlanDay, UUID> {
 
+    Optional<NutritionPlanDay> findByIdAndGymId(UUID id, UUID gymId);
+
     List<NutritionPlanDay> findByPlanIdOrderByDayDate(UUID planId);
 
     Optional<NutritionPlanDay> findByPlanIdAndDayDate(UUID planId, LocalDate dayDate);

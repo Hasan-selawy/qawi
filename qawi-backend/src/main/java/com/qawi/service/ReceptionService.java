@@ -56,21 +56,25 @@ public class ReceptionService {
         return members.stream().map(m -> buildResult(m, caller.getGymId())).collect(Collectors.toList());
     }
 
+    @Transactional
     public Map<String, Object> checkIn(String email, UUID memberId) {
         User caller = loadReceptionist(email);
-        User member = userRepository.findById(memberId)
+        User member = userRepository.findForUpdateByIdAndGymId(memberId, caller.getGymId())
                 .orElseThrow(() -> new AppException("Member not found", "العضو غير موجود", HttpStatus.NOT_FOUND));
 
         if (!caller.getGymId().equals(member.getGymId()))
             throw new AppException("Access denied", "غير مصرح لك", HttpStatus.FORBIDDEN);
 
         LocalDateTime now = LocalDateTime.now();
-        Attendance att = Attendance.builder()
+        LocalDate today = now.toLocalDate();
+        Attendance att = attendanceRepository
+                .findFirstByMemberIdAndGymIdAndCheckedInAtGreaterThanEqualAndCheckedInAtLessThan(
+                        memberId, caller.getGymId(), today.atStartOfDay(), today.plusDays(1).atStartOfDay())
+                .orElseGet(() -> attendanceRepository.save(Attendance.builder()
                 .memberId(memberId)
                 .gymId(caller.getGymId())
                 .checkedInAt(now)
-                .build();
-        attendanceRepository.save(att);
+                .build()));
 
         String subscriptionStatus = getSubscriptionStatus(member);
         int streak = calcStreak(memberId);
@@ -78,7 +82,7 @@ public class ReceptionService {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("memberId", memberId);
         result.put("memberName", member.getName());
-        result.put("checkedInAt", now);
+        result.put("checkedInAt", att.getCheckedInAt());
         result.put("streak", streak);
         result.put("subscriptionStatus", subscriptionStatus);
         return result;
@@ -105,12 +109,14 @@ public class ReceptionService {
         final User savedMember = userRepository.save(member);
 
         if (req.getCoachId() != null) {
+            User coach = userRepository.findByIdAndGymId(req.getCoachId(), caller.getGymId())
+                    .filter(user -> user.getRole() == Role.COACH && user.isActive())
+                    .orElseThrow(() -> new AppException("Coach not found", "المدرب غير موجود", HttpStatus.NOT_FOUND));
             coachMemberRepository.save(CoachMember.builder()
-                    .coachId(req.getCoachId())
+                    .coachId(coach.getId())
                     .memberId(savedMember.getId())
                     .build());
-            userRepository.findById(req.getCoachId())
-                    .ifPresent(coach -> notifyCoachAssignment(caller.getGymId(), savedMember, coach));
+            notifyCoachAssignment(caller.getGymId(), savedMember, coach);
         }
 
         notifyAdminsNewMember(caller.getGymId(), savedMember.getId(), savedMember.getName());
@@ -165,10 +171,15 @@ public class ReceptionService {
     @Transactional
     public Map<String, Object> assignCoach(String email, UUID memberId, UUID coachId) {
         User caller = loadReceptionist(email);
-        User member = userRepository.findById(memberId)
+        User member = userRepository.findByIdAndGymId(memberId, caller.getGymId())
                 .orElseThrow(() -> new AppException("Member not found", "العضو غير موجود", HttpStatus.NOT_FOUND));
-        User coach = userRepository.findById(coachId)
+        User coach = userRepository.findByIdAndGymId(coachId, caller.getGymId())
                 .orElseThrow(() -> new AppException("Coach not found", "المدرب غير موجود", HttpStatus.NOT_FOUND));
+
+        if (member.getRole() != Role.MEMBER || coach.getRole() != Role.COACH
+                || !member.isActive() || !coach.isActive()) {
+            throw new AppException("Member or coach not found", "العضو أو المدرب غير موجود", HttpStatus.NOT_FOUND);
+        }
 
         if (!caller.getGymId().equals(member.getGymId()) || !caller.getGymId().equals(coach.getGymId()))
             throw new AppException("Access denied", "غير مصرح لك", HttpStatus.FORBIDDEN);
@@ -193,7 +204,7 @@ public class ReceptionService {
     @Transactional
     public Map<String, Object> renewSubscription(String email, UUID memberId, RenewSubscriptionRequest req) {
         User caller = loadReceptionist(email);
-        User member = userRepository.findById(memberId)
+        User member = userRepository.findByIdAndGymId(memberId, caller.getGymId())
                 .orElseThrow(() -> new AppException("Member not found", "العضو غير موجود", HttpStatus.NOT_FOUND));
 
         if (!caller.getGymId().equals(member.getGymId()))
@@ -252,7 +263,7 @@ public class ReceptionService {
             long daysLeft = today.until(m.getSubscriptionEndDate(), java.time.temporal.ChronoUnit.DAYS);
             String coachName = coachMemberRepository.findByMemberId(m.getId()).stream()
                     .findFirst()
-                    .flatMap(cm -> userRepository.findById(cm.getCoachId()))
+                    .flatMap(cm -> userRepository.findByIdAndGymId(cm.getCoachId(), gymId))
                     .map(User::getName).orElse(null);
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("memberId", m.getId());
@@ -267,7 +278,7 @@ public class ReceptionService {
         // ── Today's check-ins list ──
         List<Map<String, Object>> checkInsList = new ArrayList<>();
         for (Attendance att : todayAtt) {
-            userRepository.findById(att.getMemberId()).ifPresent(member -> {
+            userRepository.findByIdAndGymId(att.getMemberId(), gymId).ifPresent(member -> {
                 String status = "ACTIVE";
                 if (member.getSubscriptionEndDate() == null) {
                     status = "NO_PLAN";
@@ -305,7 +316,7 @@ public class ReceptionService {
     @Transactional
     public Map<String, Object> updateContact(String email, UUID memberId, Map<String, String> body) {
         User caller = loadReceptionist(email);
-        User member = userRepository.findById(memberId)
+        User member = userRepository.findByIdAndGymId(memberId, caller.getGymId())
                 .orElseThrow(() -> new AppException("Member not found", "العضو غير موجود", HttpStatus.NOT_FOUND));
         if (!caller.getGymId().equals(member.getGymId()))
             throw new AppException("Access denied", "غير مصرح لك", HttpStatus.FORBIDDEN);
@@ -340,7 +351,7 @@ public class ReceptionService {
 
         List<Map<String, Object>> feed = new ArrayList<>();
         for (Attendance att : todayAtt) {
-            userRepository.findById(att.getMemberId()).ifPresent(member -> {
+            userRepository.findByIdAndGymId(att.getMemberId(), caller.getGymId()).ifPresent(member -> {
                 Map<String, Object> item = new LinkedHashMap<>();
                 item.put("memberId", member.getId());
                 item.put("memberName", member.getName());
@@ -413,7 +424,7 @@ public class ReceptionService {
         List<CoachMember> assignments = coachMemberRepository.findByMemberId(m.getId());
         String coachName = assignments.stream()
                 .findFirst()
-                .flatMap(cm -> userRepository.findById(cm.getCoachId()))
+                .flatMap(cm -> userRepository.findByIdAndGymId(cm.getCoachId(), gymId))
                 .map(User::getName)
                 .orElse(null);
 

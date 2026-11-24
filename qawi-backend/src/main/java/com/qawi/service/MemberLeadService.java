@@ -33,11 +33,8 @@ public class MemberLeadService {
     }
 
     private MemberLead findLeadInGym(UUID id, UUID gymId) {
-        MemberLead lead = memberLeadRepository.findById(id)
+        MemberLead lead = memberLeadRepository.findByIdAndGymId(id, gymId)
                 .orElseThrow(() -> new AppException("Lead not found", "السجل غير موجود", HttpStatus.NOT_FOUND));
-        if (!lead.getGymId().equals(gymId)) {
-            throw new AppException("Access denied", "غير مصرح", HttpStatus.FORBIDDEN);
-        }
         return lead;
     }
 
@@ -177,11 +174,13 @@ public class MemberLeadService {
                 .build());
 
         if (req.getCoachId() != null) {
-            userRepository.findById(req.getCoachId()).ifPresent(coach ->
-                    coachMemberRepository.save(CoachMember.builder()
-                            .coachId(coach.getId())
-                            .memberId(member.getId())
-                            .build()));
+            User coach = userRepository.findByIdAndGymId(req.getCoachId(), gymId)
+                    .filter(user -> user.getRole() == Role.COACH && user.isActive())
+                    .orElseThrow(() -> new AppException("Coach not found", "المدرب غير موجود", HttpStatus.NOT_FOUND));
+            coachMemberRepository.save(CoachMember.builder()
+                    .coachId(coach.getId())
+                    .memberId(member.getId())
+                    .build());
         }
 
         // Update the CRM record — do NOT delete it
@@ -231,7 +230,7 @@ public class MemberLeadService {
 
         // Mirror the renewal on the linked User record
         if (lead.getMemberId() != null) {
-            userRepository.findById(lead.getMemberId()).ifPresent(user -> {
+            userRepository.findByIdAndGymId(lead.getMemberId(), gymId).ifPresent(user -> {
                 user.setSubscriptionEndDate(req.getSubscriptionEndDate());
                 user.setSubscriptionStartDate(LocalDate.now());
                 userRepository.save(user);

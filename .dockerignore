@@ -1,0 +1,13 @@
+.git
+.github
+.agents
+**/node_modules
+**/target
+**/dist
+graphify-out
+attached_assets
+qawi-brand
+*.md
+.env
+.env.*
+!.env.example

@@ -11,6 +11,7 @@ import java.util.UUID;
 public interface CoachMemberRepository extends JpaRepository<CoachMember, UUID> {
     List<CoachMember> findByCoachId(UUID coachId);
     List<CoachMember> findByMemberId(UUID memberId);
+    boolean existsByCoachIdAndMemberId(UUID coachId, UUID memberId);
     void deleteByCoachId(UUID coachId);
     void deleteByMemberId(UUID memberId);
 }

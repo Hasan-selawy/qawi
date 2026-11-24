@@ -5,9 +5,11 @@ import com.qawi.entity.MemberPlanDuration;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface GymMemberPlanRepository extends JpaRepository<GymMemberPlan, UUID> {
+    Optional<GymMemberPlan> findByIdAndGymId(UUID id, UUID gymId);
     List<GymMemberPlan> findByGymIdOrderByDurationAscCreatedAtAsc(UUID gymId);
     List<GymMemberPlan> findByGymIdAndActiveTrueOrderByDurationAscCreatedAtAsc(UUID gymId);
     long countByGymId(UUID gymId);

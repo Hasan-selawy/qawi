@@ -40,7 +40,7 @@ public class NutritionCalendarPlanService {
     @Transactional
     public Map<String, Object> createPlan(String callerEmail, CreateNutritionCalendarPlanRequest req) {
         User caller = loadUser(callerEmail);
-        User member = loadUser(req.getMemberId());
+        User member = loadUser(req.getMemberId(), caller);
         assertCanManagePlan(caller, member);
 
         if (req.getEndDate().isBefore(req.getStartDate()))
@@ -101,7 +101,7 @@ public class NutritionCalendarPlanService {
 
     public List<Map<String, Object>> getPlansByMember(String callerEmail, UUID memberId) {
         User caller = loadUser(callerEmail);
-        User member = loadUser(memberId);
+        User member = loadUser(memberId, caller);
         assertCanViewMember(caller, member);
 
         return planRepository.findByMemberIdOrderByCreatedAtDesc(memberId)
@@ -112,8 +112,8 @@ public class NutritionCalendarPlanService {
 
     public Map<String, Object> getPlanById(String callerEmail, UUID planId) {
         User caller = loadUser(callerEmail);
-        NutritionCalendarPlan plan = loadPlan(planId);
-        User member = loadUser(plan.getMemberId());
+        NutritionCalendarPlan plan = loadPlan(planId, caller);
+        User member = loadUser(plan.getMemberId(), caller);
         assertCanViewMember(caller, member);
 
         List<NutritionPlanDay> days = planDayRepository.findByPlanIdOrderByDayDate(planId);
@@ -155,8 +155,8 @@ public class NutritionCalendarPlanService {
     @Transactional
     public Map<String, Object> updatePlanDay(String callerEmail, UUID dayId, UpdateNutritionPlanDayRequest req) {
         User caller = loadUser(callerEmail);
-        NutritionPlanDay day = loadDay(dayId);
-        User member = loadUser(day.getMemberId());
+        NutritionPlanDay day = loadDay(dayId, caller);
+        User member = loadUser(day.getMemberId(), caller);
         assertCanManagePlan(caller, member);
 
         if (req.getTargetCalories() != null) day.setTargetCalories(req.getTargetCalories());
@@ -176,8 +176,8 @@ public class NutritionCalendarPlanService {
     @Transactional
     public Map<String, Object> addDaySuggestion(String callerEmail, UUID dayId, AddDaySuggestionRequest req) {
         User caller = loadUser(callerEmail);
-        NutritionPlanDay day = loadDay(dayId);
-        User member = loadUser(day.getMemberId());
+        NutritionPlanDay day = loadDay(dayId, caller);
+        User member = loadUser(day.getMemberId(), caller);
         assertCanManagePlan(caller, member);
 
         MealSuggestion s = mealSuggestionRepository.save(MealSuggestion.builder()
@@ -201,9 +201,12 @@ public class NutritionCalendarPlanService {
     @Transactional
     public void deleteDaySuggestion(String callerEmail, UUID suggestionId) {
         User caller = loadUser(callerEmail);
-        MealSuggestion s = mealSuggestionRepository.findById(suggestionId)
+        MealSuggestion s = caller.getRole() == Role.SUPER_ADMIN
+                ? mealSuggestionRepository.findById(suggestionId)
+                    .orElseThrow(() -> new AppException("Suggestion not found", "الاقتراح غير موجود", HttpStatus.NOT_FOUND))
+                : mealSuggestionRepository.findByIdAndGymId(suggestionId, caller.getGymId())
                 .orElseThrow(() -> new AppException("Suggestion not found", "الاقتراح غير موجود", HttpStatus.NOT_FOUND));
-        User member = loadUser(s.getMemberId());
+        User member = loadUser(s.getMemberId(), caller);
         assertCanManagePlan(caller, member);
         mealSuggestionRepository.delete(s);
     }
@@ -213,8 +216,8 @@ public class NutritionCalendarPlanService {
     @Transactional
     public Map<String, Object> copyDay(String callerEmail, UUID dayId, CopyDayRequest req) {
         User caller = loadUser(callerEmail);
-        NutritionPlanDay srcDay = loadDay(dayId);
-        User member = loadUser(srcDay.getMemberId());
+        NutritionPlanDay srcDay = loadDay(dayId, caller);
+        User member = loadUser(srcDay.getMemberId(), caller);
         assertCanManagePlan(caller, member);
 
         List<LocalDate> targets = new ArrayList<>();
@@ -270,8 +273,8 @@ public class NutritionCalendarPlanService {
     @Transactional
     public void deactivatePlan(String callerEmail, UUID planId) {
         User caller = loadUser(callerEmail);
-        NutritionCalendarPlan plan = loadPlan(planId);
-        User member = loadUser(plan.getMemberId());
+        NutritionCalendarPlan plan = loadPlan(planId, caller);
+        User member = loadUser(plan.getMemberId(), caller);
         assertCanManagePlan(caller, member);
         plan.setIsActive(false);
         plan.setUpdatedAt(LocalDateTime.now());
@@ -282,8 +285,8 @@ public class NutritionCalendarPlanService {
 
     public Map<String, Object> getDayDetail(String callerEmail, UUID dayId) {
         User caller = loadUser(callerEmail);
-        NutritionPlanDay day = loadDay(dayId);
-        User member = loadUser(day.getMemberId());
+        NutritionPlanDay day = loadDay(dayId, caller);
+        User member = loadUser(day.getMemberId(), caller);
         assertCanViewMember(caller, member);
 
         Map<String, Object> dm = buildDayMap(day);
@@ -337,18 +340,27 @@ public class NutritionCalendarPlanService {
                 .orElseThrow(() -> new AppException("User not found", "المستخدم غير موجود", HttpStatus.NOT_FOUND));
     }
 
-    private User loadUser(UUID id) {
-        return userRepository.findById(id)
+    private User loadUser(UUID id, User caller) {
+        Optional<User> user = caller.getRole() == Role.SUPER_ADMIN
+                ? userRepository.findById(id)
+                : userRepository.findByIdAndGymId(id, caller.getGymId());
+        return user
                 .orElseThrow(() -> new AppException("User not found", "المستخدم غير موجود", HttpStatus.NOT_FOUND));
     }
 
-    private NutritionCalendarPlan loadPlan(UUID planId) {
-        return planRepository.findById(planId)
+    private NutritionCalendarPlan loadPlan(UUID planId, User caller) {
+        Optional<NutritionCalendarPlan> plan = caller.getRole() == Role.SUPER_ADMIN
+                ? planRepository.findById(planId)
+                : planRepository.findByIdAndGymId(planId, caller.getGymId());
+        return plan
                 .orElseThrow(() -> new AppException("Plan not found", "الخطة غير موجودة", HttpStatus.NOT_FOUND));
     }
 
-    private NutritionPlanDay loadDay(UUID dayId) {
-        return planDayRepository.findById(dayId)
+    private NutritionPlanDay loadDay(UUID dayId, User caller) {
+        Optional<NutritionPlanDay> day = caller.getRole() == Role.SUPER_ADMIN
+                ? planDayRepository.findById(dayId)
+                : planDayRepository.findByIdAndGymId(dayId, caller.getGymId());
+        return day
                 .orElseThrow(() -> new AppException("Plan day not found", "يوم الخطة غير موجود", HttpStatus.NOT_FOUND));
     }
 

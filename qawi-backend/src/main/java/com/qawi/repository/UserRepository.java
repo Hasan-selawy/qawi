@@ -5,6 +5,8 @@ import com.qawi.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -17,6 +19,15 @@ import java.util.UUID;
 @Repository
 public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<User> findByEmail(String email);
+    Optional<User> findByIdAndGymId(UUID id, UUID gymId);
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select u from User u where u.email = :email")
+    Optional<User> findForUpdateByEmail(String email);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select u from User u where u.id = :id and u.gymId = :gymId")
+    Optional<User> findForUpdateByIdAndGymId(UUID id, UUID gymId);
+    List<User> findByIdInAndGymId(java.util.Collection<UUID> ids, UUID gymId);
     boolean existsByEmail(String email);
     long countByRole(Role role);
     long countByGymIdAndRole(UUID gymId, Role role);

@@ -29,7 +29,7 @@ public class StaffProfile {
     @Column(name = "start_date")
     private LocalDate startDate;
 
-    @Column(name = "salary", precision = 10, scale = 3)
+    @Column(name = "salary", precision = 19, scale = 3)
     private BigDecimal salary;
 
     @Enumerated(EnumType.STRING)

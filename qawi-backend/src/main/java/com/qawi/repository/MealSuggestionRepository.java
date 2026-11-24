@@ -7,9 +7,12 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface MealSuggestionRepository extends JpaRepository<MealSuggestion, UUID> {
+
+    Optional<MealSuggestion> findByIdAndGymId(UUID id, UUID gymId);
 
     List<MealSuggestion> findByMemberIdOrderByCreatedAtDesc(UUID memberId);
 

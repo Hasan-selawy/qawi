@@ -1,6 +1,5 @@
 package com.qawi.service;
 
-import com.qawi.entity.CoachMember;
 import com.qawi.entity.Role;
 import com.qawi.entity.User;
 import com.qawi.exception.AppException;
@@ -29,9 +28,70 @@ public class AccessGuard {
                         "User not found", "المستخدم غير موجود", HttpStatus.NOT_FOUND));
     }
 
-    public User loadMember(UUID memberId) {
+    /**
+     * Load a caller and require that it belongs to a tenant. Platform users do
+     * not have a gym and must use an explicitly platform-scoped operation.
+     */
+    public User loadTenantUserByEmail(String email) {
+        User caller = loadUserByEmail(email);
+        requireGymId(caller);
+        return caller;
+    }
+
+    /** Return the caller's tenant id, rejecting unassigned/platform accounts. */
+    public UUID requireGymId(User caller) {
+        if (caller.getGymId() == null) {
+            throw forbidden();
+        }
+        return caller.getGymId();
+    }
+
+    /**
+     * Low-level tenant boundary check. This does not grant a business
+     * permission: controllers/services must still enforce the allowed role.
+     * SUPER_ADMIN is the only role allowed to cross tenant boundaries.
+     */
+    public void assertSameGym(User caller, UUID targetGymId) {
+        if (caller.getRole() == Role.SUPER_ADMIN) {
+            return;
+        }
+        if (caller.getGymId() == null || targetGymId == null
+                || !caller.getGymId().equals(targetGymId)) {
+            throw forbidden();
+        }
+    }
+
+    /** Load a target user without allowing its existence to leak across gyms. */
+    public User loadUserInCallerGym(String callerEmail, UUID targetUserId) {
+        User caller = loadUserByEmail(callerEmail);
+        if (caller.getRole() == Role.SUPER_ADMIN) {
+            return userRepository.findById(targetUserId)
+                    .orElseThrow(() -> notFound("User"));
+        }
+        UUID gymId = requireGymId(caller);
+        return userRepository.findByIdAndGymId(targetUserId, gymId)
+                .orElseThrow(() -> notFound("User"));
+    }
+
+    /** Load a user from a known tenant without an unscoped findById call. */
+    public User loadUserInGym(UUID targetUserId, UUID gymId) {
+        if (gymId == null) {
+            throw forbidden();
+        }
+        return userRepository.findByIdAndGymId(targetUserId, gymId)
+                .orElseThrow(() -> notFound("User"));
+    }
+
+    private User loadMember(UUID memberId) {
         User member = userRepository.findById(memberId)
                 .orElseThrow(() -> notFound("Member"));
+        if (member.getRole() != Role.MEMBER) throw notFound("Member");
+        return member;
+    }
+
+    /** Load a member from a known tenant without exposing cross-tenant IDs. */
+    public User loadMemberInGym(UUID memberId, UUID gymId) {
+        User member = loadUserInGym(memberId, gymId);
         if (member.getRole() != Role.MEMBER) throw notFound("Member");
         return member;
     }
@@ -46,7 +106,9 @@ public class AccessGuard {
      */
     public User assertCanAccessMember(String callerEmail, UUID memberId) {
         User caller = loadUserByEmail(callerEmail);
-        User member = loadMember(memberId);
+        User member = caller.getRole() == Role.SUPER_ADMIN
+                ? loadMember(memberId)
+                : loadMemberInGym(memberId, requireGymId(caller));
 
         switch (caller.getRole()) {
             case MEMBER -> {
@@ -72,18 +134,18 @@ public class AccessGuard {
      * Requires same-gym + active assignment. Returns the member entity.
      */
     public User assertCoachManagesMember(String coachEmail, UUID memberId) {
-        User coach = loadUserByEmail(coachEmail);
+        return assertCoachManagesMember(loadUserByEmail(coachEmail), memberId);
+    }
+
+    public User assertCoachManagesMember(User coach, UUID memberId) {
         if (coach.getRole() != Role.COACH) throw forbidden();
-        User member = loadMember(memberId);
-        if (coach.getGymId() == null
-                || !coach.getGymId().equals(member.getGymId())
-                || !isAssigned(coach.getId(), memberId)) throw forbidden();
+        User member = loadMemberInGym(memberId, requireGymId(coach));
+        if (!isAssigned(coach.getId(), memberId)) throw forbidden();
         return member;
     }
 
     public boolean isAssigned(UUID coachId, UUID memberId) {
-        return coachMemberRepository.findByCoachId(coachId).stream()
-                .anyMatch((CoachMember cm) -> cm.getMemberId().equals(memberId));
+        return coachMemberRepository.existsByCoachIdAndMemberId(coachId, memberId);
     }
 
     private AppException forbidden() {

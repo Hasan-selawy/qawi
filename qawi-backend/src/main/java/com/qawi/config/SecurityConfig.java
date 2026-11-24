@@ -4,6 +4,7 @@ import com.qawi.security.JwtAuthFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -77,14 +78,26 @@ public class SecurityConfig {
                         "Permissions-Policy", "geolocation=(), microphone=(), camera=()"))
             )
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/v1/auth/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/auth/register",
+                        "/api/v1/auth/refresh", "/api/v1/auth/logout").permitAll()
                 .requestMatchers("/api/v1/public/**").permitAll()
-                .requestMatchers("/api/v1/zkteco/adms", "/api/v1/zkteco/adms/**").permitAll()
-                .requestMatchers("/iclock/**").permitAll()
+                // Physical ingestion is disabled until device authentication and access gates exist.
+                .requestMatchers("/api/v1/zkteco/adms", "/api/v1/zkteco/adms/**", "/iclock/**").denyAll()
                 .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                 .requestMatchers("/actuator/**").hasRole("SUPER_ADMIN")
+                .requestMatchers("/v3/api-docs", "/v3/api-docs/**", "/v3/api-docs.yaml").hasRole("SUPER_ADMIN")
                 .anyRequest().authenticated()
             )
+            .exceptionHandling(errors -> errors.accessDeniedHandler((request, response, exception) -> {
+                // Write the response directly: sendError triggers an /error dispatch and can replace 403 with 401.
+                response.setStatus(403);
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().write("{\"error\":\"Access denied\"}");
+            }).authenticationEntryPoint((request, response, exception) -> {
+                response.setStatus(401);
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().write("{\"error\":\"Unauthorized\"}");
+            }))
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authenticationProvider(authenticationProvider())
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

@@ -71,8 +71,9 @@ public class WorkoutTemplateService {
     }
 
     @Transactional(readOnly = true)
-    public Map<String, Object> getTemplate(UUID templateId) {
-        WorkoutTemplate template = templateRepository.findById(templateId)
+    public Map<String, Object> getTemplate(UUID templateId, String coachEmail) {
+        User coach = getCoach(coachEmail);
+        WorkoutTemplate template = templateRepository.findByIdAndCoachId(templateId, coach.getId())
                 .orElseThrow(() -> new AppException("Template not found", "القالب غير موجود", HttpStatus.NOT_FOUND));
         return buildTemplateDetail(template, false);
     }

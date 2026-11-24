@@ -17,6 +17,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.UUID;
 
@@ -118,12 +120,8 @@ public class PlatformTierService {
     }
 
     private PlatformTierDto toDto(PlatformTier t) {
-        int save6m = t.getPrice1m() > 0
-                ? Math.round(100f * (1f - (t.getPrice6m() / 6f) / t.getPrice1m()))
-                : 0;
-        int save12m = t.getPrice1m() > 0
-                ? Math.round(100f * (1f - (t.getPrice12m() / 12f) / t.getPrice1m()))
-                : 0;
+        int save6m = savingsPercent(t.getPrice1m(), t.getPrice6m(), 6);
+        int save12m = savingsPercent(t.getPrice1m(), t.getPrice12m(), 12);
         return PlatformTierDto.builder()
                 .id(t.getId())
                 .name(t.getName())
@@ -168,5 +166,12 @@ public class PlatformTierService {
         catch (JsonProcessingException e) { return List.of(); }
     }
 
-    private int orZero(Integer v) { return v == null ? 0 : v; }
+    private BigDecimal orZero(BigDecimal value) { return value == null ? BigDecimal.ZERO : value; }
+
+    private int savingsPercent(BigDecimal monthly, BigDecimal bundle, int months) {
+        if (monthly.signum() <= 0) return 0;
+        if (bundle.compareTo(monthly.multiply(BigDecimal.valueOf(months))) >= 0) return 0;
+        return BigDecimal.ONE.subtract(bundle.divide(monthly.multiply(BigDecimal.valueOf(months)), 10, RoundingMode.HALF_UP))
+                .multiply(BigDecimal.valueOf(100)).setScale(0, RoundingMode.HALF_UP).intValueExact();
+    }
 }

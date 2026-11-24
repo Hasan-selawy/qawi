@@ -14,6 +14,7 @@ import { useBranding } from "@/context/BrandingContext";
 import { useLanguage, pickName } from "@/context/LanguageContext";
 import { useColors } from "@/hooks/useColors";
 import { apiFetch } from "@/services/api";
+import { attendanceQueue, syncAttendance } from "@/services/attendance-sync";
 
 function LogoBanner() {
   const c = useColors();
@@ -70,7 +71,7 @@ function LogoBanner() {
   );
 }
 
-const PENDING_CHECKINS_KEY = "pendingCheckins";
+
 
 function SelfTrainingPlanCard() {
   const c = useColors();
@@ -200,12 +201,6 @@ function SelfTrainingPlanCard() {
   );
 }
 
-type PendingCheckin = {
-  id: string;
-  type: "checkin" | "checkout";
-  timestamp: string;
-};
-
 function UpcomingDayCard({ day }: { day: any }) {
   const c = useColors();
   const { t, lang, isRTL } = useLanguage();
@@ -286,56 +281,58 @@ function UpcomingDayCard({ day }: { day: any }) {
 export default function MemberHome() {
   const c = useColors();
   const { t, lang, isRTL } = useLanguage();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
+  const qc = useQueryClient();
   const router = useRouter();
   const [isOnline, setIsOnline] = useState(true);
   const [pendingCount, setPendingCount] = useState(0);
 
-  // Track network state
-  useEffect(() => {
-    const unsub = NetInfo.addEventListener((state) => {
-      const online = state.isConnected !== false && state.isInternetReachable !== false;
-      const wasOffline = !isOnline;
-      setIsOnline(online);
-      // When we come back online, sync queued check-ins
-      if (wasOffline && online) {
-        syncPendingCheckins();
-      }
-    });
-    return () => unsub();
-  }, [isOnline]);
-
-  // Count pending on mount
-  useEffect(() => {
-    AsyncStorage.getItem(PENDING_CHECKINS_KEY).then((raw) => {
-      if (raw) {
-        try { setPendingCount(JSON.parse(raw).length); } catch { /* */ }
-      }
-    });
-  }, []);
-
+  const [rejectedCount, setRejectedCount] = useState(0);
   const syncPendingCheckins = useCallback(async () => {
-    const raw = await AsyncStorage.getItem(PENDING_CHECKINS_KEY).catch(() => null);
-    if (!raw) return;
-    let pending: PendingCheckin[] = [];
-    try { pending = JSON.parse(raw); } catch { return; }
-    if (pending.length === 0) return;
+    if (!user?.id || !token) return;
+    try {
+      const result = await syncAttendance(user.id, token);
+      setPendingCount(result.pending);
+      setRejectedCount(result.rejected);
+      if (result.synced) qc.invalidateQueries({ queryKey: ["member"] });
+      if (result.newlyRejected) Alert.alert(lang === "ar" ? "سجلات تحتاج مراجعة" : "Attendance needs review",
+        lang === "ar" ? "تعذر قبول بعض السجلات. راجع تاريخ الحضور وحالة الاشتراك." : "Some saved operations were rejected. Check attendance dates and subscription status.");
+      return result;
+    } catch (error) {
+      Alert.alert(lang === "ar" ? "قوي" : "Qawi", error instanceof Error ? error.message : "Unable to read saved attendance");
+    }
+  }, [user?.id, token, qc, lang]);
 
-    const remaining: PendingCheckin[] = [];
-    for (const p of pending) {
-      try {
-        const endpoint = p.type === "checkin" ? "/attendance/me/checkin" : "/attendance/me/checkout";
-        await apiFetch(endpoint, { method: "POST" });
-      } catch {
-        remaining.push(p);
+  useEffect(() => NetInfo.addEventListener((state) => {
+    const online = state.isConnected !== false && state.isInternetReachable !== false;
+    setIsOnline(online);
+    if (online) void syncPendingCheckins();
+  }), [syncPendingCheckins]);
+
+  useEffect(() => {
+    if (!isOnline || !pendingCount) return;
+    const timer = setInterval(() => { void syncPendingCheckins(); }, 15000);
+    return () => clearInterval(timer);
+  }, [isOnline, pendingCount, syncPendingCheckins]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    let active = true;
+    attendanceQueue.list(user.id).then((records) => {
+      if (active) {
+        setPendingCount(records.filter((item) => item.status === "pending").length);
+        setRejectedCount(records.filter((item) => item.status === "rejected").length);
       }
-    }
-    await AsyncStorage.setItem(PENDING_CHECKINS_KEY, JSON.stringify(remaining)).catch(() => {});
-    setPendingCount(remaining.length);
-    if (remaining.length < pending.length) {
-      qc.invalidateQueries({ queryKey: ["member"] });
-    }
-  }, []);
+    }).catch((error) => Alert.alert("Qawi", error.message));
+    // Old global queues have no account owner. Preserve them; never replay under the next login.
+    AsyncStorage.getItem("pendingCheckins").then(async (raw) => {
+      if (raw && raw !== "[]" && !await AsyncStorage.getItem("qawi.legacy-attendance-warning-shown")) {
+        Alert.alert("Qawi", lang === "ar" ? "توجد سجلات قديمة بلا حساب مرتبط. تم الاحتفاظ بها على الجهاز؛ تواصل مع الدعم لمراجعتها." : "Older offline records have no account owner. They remain on this device; contact support to review them.");
+        await AsyncStorage.setItem("qawi.legacy-attendance-warning-shown", "true");
+      }
+    }).catch(() => {});
+    return () => { active = false; };
+  }, [user?.id, lang]);
 
   const today = useQuery({
     queryKey: ["member", "today"],
@@ -350,34 +347,22 @@ export default function MemberHome() {
     queryFn: () => apiFetch<any[]>("/member/workouts/upcoming").catch(() => []),
   });
 
-  const qc = useQueryClient();
   const checkedIn = !!stats.data?.checkedInToday;
   const checkedOut = !!stats.data?.checkedOutToday;
   const checkedOutAt: string | undefined = stats.data?.checkedOutAt;
 
   const doCheckin = async (type: "checkin" | "checkout") => {
-    if (!isOnline) {
-      // Queue for later
-      const raw = await AsyncStorage.getItem(PENDING_CHECKINS_KEY).catch(() => "[]");
-      let queue: PendingCheckin[] = [];
-      try { queue = JSON.parse(raw ?? "[]"); } catch { /* */ }
-      queue.push({ id: Date.now().toString(), type, timestamp: new Date().toISOString() });
-      await AsyncStorage.setItem(PENDING_CHECKINS_KEY, JSON.stringify(queue)).catch(() => {});
-      setPendingCount(queue.length);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      Alert.alert(
-        lang === "ar" ? "قوي" : "Qawi",
-        lang === "ar" ? "تم الحفظ! سيُزامَن تلقائياً عند عودة الاتصال 📶" : "Saved offline! Will sync when back online 📶"
-      );
-      return;
-    }
-    const endpoint = type === "checkin" ? "/attendance/me/checkin" : "/attendance/me/checkout";
+    if (!user?.id || !token) return;
     try {
-      await apiFetch(endpoint, { method: "POST" });
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      qc.invalidateQueries({ queryKey: ["member"] });
-    } catch (e: any) {
-      Alert.alert(lang === "ar" ? "قوي" : "Qawi", e?.body?.error || (type === "checkin" ? "Check-in failed" : "Check-out failed"));
+      await attendanceQueue.enqueue(user.id, type === "checkin" ? "CHECKIN" : "CHECKOUT");
+      const records = await attendanceQueue.list(user.id);
+      setPendingCount(records.filter((item) => item.status === "pending").length);
+      const result = isOnline ? await syncPendingCheckins() : undefined;
+      if (!isOnline) Alert.alert(lang === "ar" ? "قوي" : "Qawi",
+        lang === "ar" ? "تم الحفظ على الجهاز. ستتم المزامنة عند عودة الاتصال." : "Saved on this device. Attendance will sync when connected.");
+      if (!isOnline || result?.synced) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    } catch (error) {
+      Alert.alert("Qawi", error instanceof Error ? error.message : "Attendance could not be saved");
     }
   };
 
@@ -407,6 +392,11 @@ export default function MemberHome() {
         </View>
       )}
 
+      {isOnline && pendingCount > 0 && <View style={{ paddingHorizontal: 16, paddingVertical: 8 }}>
+        <Text accessibilityLiveRegion="polite" style={{ color: c.mutedForeground, fontSize: 12 }}>
+          {lang === "ar" ? `${pendingCount} سجلات محفوظة على الجهاز وتنتظر المزامنة التلقائية.` : `${pendingCount} records are saved on this device and waiting to sync automatically.`}
+        </Text>
+      </View>}
       <ScrollView
         contentContainerStyle={{ padding: 16, gap: 16 }}
         refreshControl={
@@ -417,6 +407,18 @@ export default function MemberHome() {
           />
         }
       >
+        {rejectedCount > 0 && <Card>
+          <Text accessibilityLiveRegion="polite" style={{ color: c.foreground }}>
+            {lang === "ar" ? `${rejectedCount} سجلات تحتاج مراجعة. راجع الحضور وحالة الاشتراك.` : `${rejectedCount} saved records need review. Check attendance dates and subscription status.`}
+          </Text>
+          <Button title={lang === "ar" ? "إزالة السجلات المرفوضة بعد المراجعة" : "Discard rejected records after review"}
+            onPress={() => Alert.alert("Qawi", lang === "ar" ? "هل راجعت هذه السجلات؟" : "Have you reviewed these records?", [
+              { text: t("common.cancel"), style: "cancel" },
+              { text: lang === "ar" ? "إزالة" : "Discard", style: "destructive", onPress: async () => {
+                if (user?.id) { await attendanceQueue.discardRejected(user.id); setRejectedCount(0); }
+              } },
+            ])} />
+        </Card>}
         <Card style={{ alignItems: "center", paddingVertical: 22 }}>
           <View style={{ flexDirection: isRTL ? "row-reverse" : "row", alignItems: "center", gap: 12 }}>
             <Feather

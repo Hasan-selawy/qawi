@@ -25,5 +25,11 @@ public interface WorkoutLogRepository extends JpaRepository<WorkoutLog, UUID> {
     @Query("SELECT w.memberId, COUNT(w) as cnt FROM WorkoutLog w WHERE w.loggedAt >= :since GROUP BY w.memberId ORDER BY cnt DESC")
     List<Object[]> findTopMembersByLogsSince(LocalDateTime since);
 
+    @Query("SELECT COUNT(w) FROM WorkoutLog w WHERE w.memberId IN (SELECT u.id FROM User u WHERE u.gymId = :gymId)")
+    long countByGymId(UUID gymId);
+
+    @Query("SELECT w.memberId, COUNT(w) as cnt FROM WorkoutLog w WHERE w.loggedAt >= :since AND w.memberId IN (SELECT u.id FROM User u WHERE u.gymId = :gymId) GROUP BY w.memberId ORDER BY cnt DESC")
+    List<Object[]> findTopMembersByGymIdAndLogsSince(UUID gymId, LocalDateTime since);
+
     List<WorkoutLog> findByMemberIdAndPlanExerciseIdInOrderByLoggedAtDesc(UUID memberId, List<UUID> planExerciseIds);
 }

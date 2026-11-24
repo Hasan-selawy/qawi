@@ -70,7 +70,7 @@ public class MemberReportService {
         List<Map<String, Object>> result = new ArrayList<>();
 
         for (MemberReport r : memberReportRepository.findByGymIdOrderByCreatedAtDesc(gymId)) {
-            String memberName = userRepository.findById(r.getMemberId())
+            String memberName = userRepository.findByIdAndGymId(r.getMemberId(), gymId)
                     .map(User::getName).orElse("Unknown");
             Map<String, Object> row = new LinkedHashMap<>();
             row.put("id", r.getId());
@@ -84,7 +84,7 @@ public class MemberReportService {
         }
 
         for (MemberSuggestion s : memberSuggestionRepository.findByGymIdOrderByCreatedAtDesc(gymId)) {
-            String memberName = userRepository.findById(s.getMemberId())
+            String memberName = userRepository.findByIdAndGymId(s.getMemberId(), gymId)
                     .map(User::getName).orElse("Unknown");
             Map<String, Object> row = new LinkedHashMap<>();
             row.put("id", s.getId());
@@ -108,17 +108,15 @@ public class MemberReportService {
 
     @Transactional
     public void resolveReport(UUID reportId, UUID gymId) {
-        MemberReport report = memberReportRepository.findById(reportId)
+        MemberReport report = memberReportRepository.findByIdAndGymId(reportId, gymId)
                 .orElseThrow(() -> new AppException("Report not found", "التقرير غير موجود", HttpStatus.NOT_FOUND));
-        if (!report.getGymId().equals(gymId)) {
-            throw new AppException("Access denied", "غير مصرح", HttpStatus.FORBIDDEN);
-        }
         report.setStatus(ReportStatus.RESOLVED);
         memberReportRepository.save(report);
     }
 
     private User getMember(String email) {
         return userRepository.findByEmail(email)
+                .filter(user -> user.getRole() == Role.MEMBER && user.getGymId() != null)
                 .orElseThrow(() -> new AppException("User not found", "المستخدم غير موجود", HttpStatus.NOT_FOUND));
     }
 }

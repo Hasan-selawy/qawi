@@ -29,7 +29,7 @@ public class GymMemberPlan {
     @Column(nullable = false)
     private MemberPlanDuration duration;
 
-    @Column(nullable = false, precision = 10, scale = 3)
+    @Column(nullable = false, precision = 19, scale = 3)
     private BigDecimal price;
 
     @Column(length = 500)

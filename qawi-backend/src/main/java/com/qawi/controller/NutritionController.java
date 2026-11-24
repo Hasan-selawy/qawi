@@ -21,6 +21,8 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/nutrition/plans")
 @RequiredArgsConstructor
+/** Legacy plan compatibility boundary. New nutrition work uses the canonical V2 domain. */
+@Deprecated
 public class NutritionController {
 
     private final NutritionService nutritionService;

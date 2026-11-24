@@ -63,7 +63,7 @@ public class WorkoutPlanService {
         User coach = accessGuard.loadUserByEmail(coachEmail);
         accessGuard.assertCoachManagesMember(coachEmail, req.getMemberId());
 
-        WorkoutTemplate template = templateRepository.findById(req.getTemplateId())
+        WorkoutTemplate template = templateRepository.findByIdAndCoachId(req.getTemplateId(), coach.getId())
                 .orElseThrow(() -> new AppException("Template not found", "القالب غير موجود", HttpStatus.NOT_FOUND));
 
         List<WorkoutTemplateDay> templateDays = templateDayRepository.findByTemplateIdOrderByDayNumber(template.getId());

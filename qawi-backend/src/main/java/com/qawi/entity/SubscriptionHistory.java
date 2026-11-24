@@ -1,5 +1,7 @@
 package com.qawi.entity;
 
+import java.math.BigDecimal;
+
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -32,8 +34,8 @@ public class SubscriptionHistory {
     @Column(nullable = false)
     private MemberSubscriptionPlan plan;
 
-    @Column(nullable = false)
-    private double price;
+    @Column(nullable = false, precision = 19, scale = 3)
+    private BigDecimal price;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     @Builder.Default
